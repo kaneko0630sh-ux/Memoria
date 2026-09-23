@@ -1,0 +1,2281 @@
+<!doctype html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Memoria">
+<meta name="theme-color" content="#0d0e12">
+<meta name="format-detection" content="telephone=no">
+<title>Memoria</title>
+<link rel="apple-touch-icon" id="touchIcon">
+<style>
+:root{
+  --bg:#0d0e12;--bg-elev:#15171d;--bg-elev2:#1d2029;--line:#252932;--line2:#323744;
+  --text:#ebe8e3;--text2:#a7a9b1;--text3:#6c707c;
+  --accent:#b69cff;--accent-ink:#150e28;--accent-soft:rgba(182,156,255,.13);
+  --user-bg:#262038;--danger:#ff6b7a;--ok:#6fd3a0;--warn:#f0c060;
+  --quote:#f1d7a2;--act:#9aa0ae;--c2:#6fc3d3;--c3:#8f96a8;
+  --font:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;
+  --font-serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+  --fs:16px;--sat:env(safe-area-inset-top);--sab:env(safe-area-inset-bottom);
+  color-scheme:dark;
+}
+:root[data-theme=light]{
+  --bg:#f6f4f0;--bg-elev:#fff;--bg-elev2:#efece6;--line:#e4e0d8;--line2:#d5d0c6;
+  --text:#1d1b19;--text2:#5d5a55;--text3:#98938b;
+  --accent:#6d4ed8;--accent-ink:#fff;--accent-soft:rgba(109,78,216,.1);
+  --user-bg:#ebe5fb;--quote:#8a5a00;--act:#6b6f7a;--c2:#2b8a9c;--c3:#7a8196;
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.6}
+body{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}
+[data-act]{cursor:pointer}
+input,textarea,select{font:inherit;font-size:16px;color:var(--text)}
+#app{position:fixed;left:0;right:0;top:0;height:100dvh;max-width:780px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+@media (min-width:800px){#app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
+.view{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
+.topbar{display:flex;align-items:center;gap:4px;padding:calc(var(--sat) + 6px) 8px 6px;min-height:calc(var(--sat) + 56px);background:var(--bg);border-bottom:1px solid var(--line);flex:none;z-index:2}
+.topbar .title{font-size:20px;font-weight:700;margin:0 8px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand{font-family:var(--font-serif);letter-spacing:.08em}
+.grow{flex:1}
+.scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.ic{width:22px;height:22px;flex:none}
+.ic.sm{width:18px;height:18px}
+.ic.xs{width:13px;height:13px}
+.icon-btn{width:42px;height:42px;display:inline-grid;place-items:center;border:0;background:none;color:var(--text2);border-radius:12px;flex:none;position:relative;padding:0}
+.icon-btn:active{background:var(--bg-elev2)}
+.icon-btn:disabled{opacity:.3}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--bg-elev2);color:var(--text);font-size:15px;font-weight:600;white-space:nowrap}
+.btn.sm{min-height:36px;padding:0 12px;font-size:14px;border-radius:10px}
+.btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink)}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent);background:transparent}
+.btn.ghost{background:transparent}
+.btn.block{width:100%}
+.btn:disabled{opacity:.45}
+.btn:active{filter:brightness(1.15)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.btn-row.end{justify-content:flex-end}
+.btn-col{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:22px auto 0}
+/* tabbar */
+.tabbar{display:flex;flex:none;border-top:1px solid var(--line);background:var(--bg);padding:4px 4px calc(var(--sab) + 2px)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0 4px;border:0;background:none;color:var(--text3);font-size:10.5px;font-weight:600}
+.tab.on{color:var(--accent)}
+.kb .tabbar{display:none}
+/* lists */
+.list{padding:4px 0 24px}
+.row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;border:0;background:none;text-align:left}
+.row:active{background:var(--bg-elev)}
+.row-main{flex:1;min-width:0}
+.row-title{font-weight:650;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-sub{font-size:13.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.row-meta{font-size:12px;color:var(--text3);text-align:right;flex:none;line-height:1.6}
+.row-ic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.pill{display:inline-block;padding:0 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:700}
+.av{border-radius:50%;object-fit:cover;flex:none;display:inline-grid;place-items:center;font-weight:700;color:#fff;overflow:hidden;background:var(--bg-elev2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:14px 14px 28px}
+.char-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 12px 14px;border-radius:16px;background:var(--bg-elev);border:1px solid var(--line);text-align:center;min-width:0}
+.char-card:active{background:var(--bg-elev2)}
+.cc-name{font-weight:700;margin-top:4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-desc{font-size:12.5px;color:var(--text2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5}
+.empty,.welcome{padding:36px 24px 40px;text-align:center;color:var(--text2)}
+.empty h2,.welcome h2{color:var(--text);font-size:20px;margin:12px 0 8px}
+.empty p{margin:0 auto;max-width:360px;font-size:14.5px}
+.logo{width:64px;height:64px;border-radius:18px;margin:0 auto;display:grid;place-items:center;background:linear-gradient(145deg,#3a2a6a,#15171d);color:var(--accent)}
+.logo .ic{width:32px;height:32px}
+.steps{text-align:left;max-width:360px;margin:22px auto 0;padding:0;list-style:none;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:28px 1fr;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.steps li::before{content:counter(s);grid-row:span 2;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:13px;font-weight:700}
+.steps b{color:var(--text);font-size:15px}
+.steps span{font-size:13px}
+.empty-s{color:var(--text3);font-size:14px;text-align:center;padding:24px 8px}
+/* forms */
+.form{padding:4px 16px 40px}
+.card{background:var(--bg-elev);border:1px solid var(--line);border-radius:16px;padding:4px 16px 8px;margin:14px}
+.card h3{font-size:12px;letter-spacing:.1em;color:var(--text3);margin:14px 0 2px;font-weight:700}
+.field{display:block;margin:12px 0}
+.field>span,.lbl{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.hint{font-size:12px;color:var(--text3);margin:6px 0 0;line-height:1.55}
+.hint.warn{color:var(--warn)}
+input[type=text],input[type=password],input[type=number],input:not([type]),textarea,select{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:11px;padding:10px 12px;outline:none;-webkit-appearance:none;appearance:none}
+.card input[type=text],.card input[type=password],.card input[type=number],.card input:not([type]),.card textarea,.card select{background:var(--bg)}
+textarea{line-height:1.65;resize:vertical;min-height:84px;display:block}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+.inline{display:flex;gap:8px;align-items:center}
+.inline>input,.inline>textarea{flex:1;min-width:0}
+.inline>select{flex:1}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;font-size:15px}
+.switch input[type=checkbox]{appearance:none;-webkit-appearance:none;width:50px;height:30px;border-radius:999px;background:var(--line2);position:relative;flex:none;transition:background .2s;margin:0}
+.switch input[type=checkbox]::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.switch input[type=checkbox]:checked{background:var(--accent)}
+.switch input[type=checkbox]:checked::after{transform:translateX(20px)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.grid2 .field{margin:8px 0}
+.avatar-edit{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 0 4px}
+.av-pick{display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:none;color:var(--accent);font-size:13px;font-weight:600}
+.foot{text-align:center;color:var(--text3);font-size:12px;padding:8px 0 28px}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none;margin:0}
+.pick-list{display:flex;flex-direction:column;gap:2px;margin:0 -6px 8px}
+.pick{display:flex;align-items:center;gap:12px;padding:8px 6px;border-radius:10px}
+.pick span{font-weight:600}
+/* chat */
+.chat-head{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:4px 6px;border-radius:12px}
+.chat-head:active{background:var(--bg-elev)}
+.ch-text{min-width:0}
+.ch-title{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.ch-sub{font-size:12px;color:var(--accent);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;line-height:1.4}
+.ch-sub span{overflow:hidden;text-overflow:ellipsis}
+.mem-btn .dot{position:absolute;top:9px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:0;transition:opacity .2s}
+.mem-btn.busy .dot{opacity:1;animation:pulse 1s infinite}
+.mem-btn.busy{color:var(--accent)}
+@keyframes pulse{50%{transform:scale(.5);opacity:.4}}
+.mem-flash{position:absolute;top:calc(var(--sat) + 62px);left:50%;transform:translate(-50%,-6px);background:var(--bg-elev2);border:1px solid var(--line2);color:var(--text2);font-size:12.5px;padding:5px 12px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:5;white-space:nowrap;display:flex;align-items:center;gap:6px;max-width:92%}
+.mem-flash.on{opacity:1;transform:translate(-50%,0)}
+.mem-flash.err{color:var(--danger)}
+.msgs{padding:8px 0 20px}
+.msg{padding:9px 16px}
+.msg.ai{display:flex;gap:11px;align-items:flex-start}
+.ai-main{flex:1;min-width:0}
+.msg .name{font-size:13px;font-weight:700;color:var(--text2);margin:5px 0 3px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.meta{font-size:11px;color:var(--text3);font-weight:500}
+.meta .mk{color:var(--accent)}
+.body{font-size:var(--fs);line-height:1.85;word-break:break-word;overflow-wrap:anywhere}
+[data-font=serif] .body{font-family:var(--font-serif)}
+.body p{margin:0 0 .75em}
+.body p:last-child{margin-bottom:0}
+.msg.user{display:flex;flex-direction:column;align-items:flex-end}
+.msg.user .bubble{background:var(--user-bg);padding:10px 14px;border-radius:18px 18px 6px 18px;max-width:86%}
+.msg.user .meta{margin:4px 4px 0}
+.q{color:var(--quote)}
+.act{color:var(--act)}
+.msg.covered{opacity:.5}
+.divider{display:flex;align-items:center;gap:10px;margin:12px 16px;color:var(--text3);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
+.divider span{display:flex;align-items:center;gap:5px;text-align:center}
+.divider.accent{color:var(--accent)}
+.swipe{display:flex;align-items:center;gap:0;margin:6px 0 0 -8px;color:var(--text3);font-size:12.5px}
+.swipe .icon-btn{width:36px;height:34px}
+.caret{display:inline-block;width:.45em;height:1em;vertical-align:-2px;background:var(--accent);opacity:.75;animation:blink 1s steps(2) infinite;margin-left:2px;border-radius:2px}
+@keyframes blink{50%{opacity:0}}
+.typing{display:inline-flex;gap:5px;padding:8px 0}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--text3);animation:bob 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bob{30%{transform:translateY(-5px);background:var(--accent)}}
+.more-btn{display:flex;margin:4px auto 8px}
+.composer{flex:none;display:flex;align-items:flex-end;gap:6px;padding:8px 10px calc(var(--sab) + 8px);border-top:1px solid var(--line);background:var(--bg)}
+.kb .composer{padding-bottom:8px}
+.composer textarea{flex:1;min-height:42px;max-height:170px;resize:none;border-radius:21px;padding:9px 16px;background:var(--bg-elev);line-height:1.5}
+.send-btn{width:42px;height:42px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none;padding:0}
+.send-btn.stop{background:var(--danger);color:#fff}
+/* sheets */
+#sheets{position:absolute;inset:0;pointer-events:none;z-index:40}
+.sheet-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:auto}
+.sheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);animation:fade .2s}
+.sheet{position:relative;width:100%;max-height:calc(100% - var(--sat) - 20px);display:flex;flex-direction:column;background:var(--bg-elev);border-radius:20px 20px 0 0;border-top:1px solid var(--line2);animation:up .26s cubic-bezier(.2,.8,.2,1);padding-bottom:var(--sab)}
+.kb .sheet{padding-bottom:0}
+.sheet.full{height:calc(100% - var(--sat) - 8px)}
+.sheet-head{display:flex;align-items:center;padding:10px 8px 2px 20px;flex:none}
+.sheet-head h2{flex:1;margin:0;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:4px 18px 20px}
+.sheet-wrap.closing .sheet{animation:down .18s forwards}
+.sheet-wrap.closing .sheet-backdrop{animation:fadeout .18s forwards}
+@keyframes up{from{transform:translateY(100%)}}
+@keyframes down{to{transform:translateY(100%)}}
+@keyframes fade{from{opacity:0}}
+@keyframes fadeout{to{opacity:0}}
+.menu{display:flex;flex-direction:column;gap:2px;margin:0 -8px}
+.menu button{display:flex;align-items:center;gap:14px;padding:12px;border:0;background:none;border-radius:12px;text-align:left;font-size:16px}
+.menu button:active{background:var(--bg-elev2)}
+.menu button .ic{color:var(--text2)}
+.menu button.danger,.menu button.danger .ic{color:var(--danger)}
+.menu small{display:block;color:var(--text3);font-size:12px;font-weight:400}
+.menu[hidden],.menu button[hidden]{display:none}
+.msg-preview{font-size:13.5px;color:var(--text2);background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.edit-area{min-height:40vh}
+.plot-opt{display:flex;align-items:flex-start;gap:12px;width:100%;padding:12px 10px;border:1px solid var(--line);border-radius:14px;background:var(--bg);text-align:left;margin-bottom:8px}
+.plot-opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.plot-opt .radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--line2);flex:none;margin-top:2px}
+.plot-opt.on .radio{border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--bg-elev);background:var(--accent)}
+.po-main{min-width:0}
+.po-main b{display:block;font-size:15px}
+.po-main small{display:block;color:var(--text2);font-size:12.5px;line-height:1.5;margin-top:2px}
+/* memory */
+.seg{display:flex;gap:6px;overflow-x:auto;padding:4px 18px 12px;margin:0 -18px;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:none;padding:6px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--bg);color:var(--text2);font-size:13.5px;font-weight:600}
+.seg button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.seg .n{font-size:11px;opacity:.75;margin-left:5px}
+.mem-status{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;font-size:12.5px;color:var(--text2);padding:2px 0 10px}
+.spin{display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid var(--accent);border-right-color:transparent;animation:rot .8s linear infinite;vertical-align:-1px;margin-right:6px}
+@keyframes rot{to{transform:rotate(360deg)}}
+.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:6px 0 4px}
+.meter>i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.meter>i.c2{background:var(--c2)}.meter>i.c3{background:var(--c3)}
+.meter.over>i{background:var(--warn)}
+.meter-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text3)}
+.stat{display:grid;grid-template-columns:1fr 110px 56px;gap:10px;align-items:center;font-size:12.5px;color:var(--text2);margin:6px 0}
+.stat b{text-align:right;font-weight:600}
+.stat .meter{margin:0}
+.mem-add{margin:12px 0 4px;display:flex;flex-direction:column;gap:8px}
+.mem-add textarea{min-height:60px}
+.mem-e{padding:10px 0;border-bottom:1px solid var(--line)}
+.mem-e.pinned{border-left:3px solid var(--accent);padding-left:10px;margin-left:-13px}
+.mem-e.editing{display:flex;flex-direction:column;gap:8px}
+.mem-text{font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.mem-meta{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:12px;color:var(--text3);flex-wrap:wrap}
+.mem-meta .icon-btn{width:34px;height:32px}
+.imp{color:var(--warn);letter-spacing:-1px;font-size:11px}
+.imp .off{color:var(--line2)}
+.tag{padding:0 7px;border-radius:6px;background:var(--bg-elev2);font-size:11px;color:var(--text2)}
+.pinned .pin-b{color:var(--accent)}
+.logline{font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--text2);line-height:1.5}
+.logline.err{color:var(--danger)}
+details{margin:10px 0}
+summary{cursor:pointer;color:var(--text2);font-size:13.5px;font-weight:600;padding:6px 0}
+pre.prompt{white-space:pre-wrap;word-break:break-word;font-size:11.5px;line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;max-height:55vh;overflow:auto;margin:6px 0 0}
+.note-box{background:var(--accent-soft);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--text2);line-height:1.6;margin:4px 0 10px}
+/* toast */
+#toasts{position:absolute;left:0;right:0;top:calc(var(--sat) + 10px);display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:60;padding:0 16px}
+.toast{background:var(--bg-elev2);border:1px solid var(--line2);color:var(--text);padding:10px 16px;border-radius:14px;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.35);max-width:100%;animation:drop .25s;white-space:pre-wrap;word-break:break-word;transition:opacity .3s}
+.toast.err{border-color:var(--danger);color:var(--danger)}
+.toast.ok{border-color:color-mix(in srgb,var(--ok) 50%,transparent)}
+.toast.warn{border-color:var(--warn)}
+.toast.out{opacity:0}
+@keyframes drop{from{transform:translateY(-10px);opacity:0}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="view" class="view"></div>
+  <div id="sheets"></div>
+  <div id="toasts"></div>
+</div>
+<input type="file" id="filePick" hidden>
+<noscript>このアプリには JavaScript が必要です。</noscript>
+<script>
+'use strict';
+/* =====================================================================
+   Memoria — 長期記憶型 AI ロールプレイチャット（単一ファイル）
+   ===================================================================== */
+
+/* ---------- utils ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const attr = s => String(s ?? '').replace(/"/g, '”');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const clone = o => JSON.parse(JSON.stringify(o));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const now = () => Date.now();
+const FINE = matchMedia('(pointer: fine)').matches;
+const tl = t => (t ? 'T' + t : '開始');
+
+function estTokens(s) {
+  s = String(s || '');
+  let w = 0;
+  for (let i = 0; i < s.length; i++) w += s.charCodeAt(i) > 0x2e80 ? 1 : 0.28;
+  return Math.ceil(w);
+}
+function relTime(t) {
+  const d = (now() - t) / 1000;
+  if (d < 60) return 'たった今';
+  if (d < 3600) return Math.floor(d / 60) + '分前';
+  if (d < 86400) return Math.floor(d / 3600) + '時間前';
+  if (d < 86400 * 7) return Math.floor(d / 86400) + '日前';
+  const x = new Date(t);
+  return `${x.getMonth() + 1}/${x.getDate()}`;
+}
+function hhmm(t) {
+  const d = new Date(t), p = n => String(n).padStart(2, '0');
+  return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function ymd() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`; }
+const getPath = (o, p) => p.split('.').reduce((a, k) => a?.[k], o);
+function setPath(o, p, v) { const ks = p.split('.'), last = ks.pop(); let t = o; for (const k of ks) t = t[k] ??= {}; t[last] = v; }
+function deepMerge(base, over) {
+  if (base === null || typeof base !== 'object' || Array.isArray(base)) return over === undefined ? base : over;
+  const out = { ...base };
+  if (over && typeof over === 'object') for (const k of Object.keys(over)) out[k] = k in base ? deepMerge(base[k], over[k]) : over[k];
+  return out;
+}
+function b64utf8(b64) {
+  const bin = atob(b64.trim()), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(u8);
+}
+
+/* ---------- storage (IndexedDB) ---------- */
+const DB = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('memoria', 1);
+      r.onupgradeneeded = () => {
+        for (const s of ['kv', 'chars', 'worlds', 'plots', 'chats'])
+          if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: 'id' });
+      };
+      r.onsuccess = () => { this.db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  tx(store, mode, fn) {
+    return new Promise((res, rej) => {
+      const t = this.db.transaction(store, mode), req = fn(t.objectStore(store));
+      t.oncomplete = () => res(req?.result);
+      t.onerror = () => rej(t.error);
+      t.onabort = () => rej(t.error);
+    });
+  },
+  all(s) { return this.tx(s, 'readonly', st => st.getAll()); },
+  get(s, id) { return this.tx(s, 'readonly', st => st.get(id)); },
+  put(s, o) { return this.tx(s, 'readwrite', st => st.put(o)); },
+  del(s, id) { return this.tx(s, 'readwrite', st => st.delete(id)); },
+  clear(s) { return this.tx(s, 'readwrite', st => st.clear()); },
+};
+
+/* ---------- defaults ---------- */
+const DEFAULT_SYSTEM = `あなたは没入型ロールプレイの語り手であり、{{char}}を演じる作家です。{{user}}と共に一つの物語を紡ぎます。
+
+# 原則
+- {{char}}の性格・口調・価値観・知識の範囲を一貫して守ってください。{{char}}が知り得ないことは知らないものとして振る舞います。
+- {{user}}の台詞・行動・心情を代わりに書かないでください。{{user}}が反応できる余地を残して応答を終えます。
+- <world>・<character>・<chronicle>・<memory>・<current_state> は物語上の確定事実です。矛盾させず、過去の出来事・約束・関係性を自然に踏まえてください。
+- <plot> と <author_note> は物語の方向性の指示です。本文で言及せず、展開の中で自然に反映させます。
+- ユーザーメッセージ冒頭の <context> はシステムが自動で添付する最新の記憶と状況であり、{{user}}の発言ではありません。<current_state> より会話履歴の方が新しい場合は会話履歴を優先します。
+
+# 文体
+- 日本語の小説形式。地の文で情景・所作・表情・五感を描き、台詞は「」で書きます。
+- 同じ言い回しや展開の繰り返しを避け、物語を能動的に前へ進めてください。
+- 応答にはタグや注釈を含めず、物語の本文だけを書きます。`;
+
+const PROVIDERS = {
+  anthropic: { label: 'Anthropic（Claude）', models: ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5', 'claude-fable-5-1', 'claude-opus-4-8'], keyHint: 'sk-ant-...' },
+  openai: { label: 'OpenAI', models: [], keyHint: 'sk-...' },
+  openrouter: { label: 'OpenRouter', models: [], keyHint: 'sk-or-...' },
+  gemini: { label: 'Google Gemini', models: ['gemini-2.5-pro', 'gemini-2.5-flash'], keyHint: 'AIza...' },
+  custom: { label: 'OpenAI互換（カスタムURL）', models: [], keyHint: '不要なら空欄' },
+  mock: { label: 'デモ（APIなし・動作確認用）', models: ['demo'], keyHint: '' },
+};
+
+const DEFAULTS = {
+  provider: 'anthropic',
+  keys: { anthropic: '', openai: '', openrouter: '', gemini: '', custom: '' },
+  models: { anthropic: 'claude-opus-5', openai: '', openrouter: '', gemini: '', custom: '', mock: 'demo' },
+  customBase: '',
+  maxTokens: 4000, temperature: 1, effort: 'low', streaming: true, context: 48000,
+  mem: {
+    auto: true, provider: '', model: '', effort: 'medium', recent: 30, chunk: 10,
+    budgets: { char: 2000, world: 2500, user: 1200, chronicle: 3500, state: 700 },
+  },
+  systemPrompt: DEFAULT_SYSTEM, postPrompt: '',
+  persona: { name: 'あなた', desc: '' },
+  ui: { theme: 'dark', font: 'gothic', fs: 16 },
+};
+
+const TAGS = { event: '出来事', relation: '関係', promise: '約束', secret: '秘密', status: '状態', lore: '設定', item: '所持品' };
+const TAG_KEYS = Object.keys(TAGS);
+const MEM_BATCH = 12;
+
+/* ---------- state ---------- */
+const S = {
+  settings: null, chars: [], worlds: [], plots: [], chats: [],
+  stack: [{ v: 'home', p: {} }], tab: 'chats', gen: null, memJobs: {},
+  memTab: 'state', memEditing: null, drafts: {}, showN: {}, lastPrompt: {}, draft: null, pickKind: null, lastKey: '',
+};
+const getChar = id => S.chars.find(x => x.id === id);
+const getWorld = id => S.worlds.find(x => x.id === id);
+const getPlot = id => S.plots.find(x => x.id === id);
+const getChat = id => S.chats.find(x => x.id === id);
+const curChatId = () => { const t = S.stack.at(-1); return t.v === 'chat' ? t.p.id : null; };
+const curChat = () => getChat(curChatId());
+const txt = m => m.swipes[m.sw] ?? '';
+const isDialog = m => m.role === 'user' || m.role === 'ai';
+const lastDialog = chat => { for (let i = chat.messages.length - 1; i >= 0; i--) if (isDialog(chat.messages[i])) return chat.messages[i]; return null; };
+const maxTurn = chat => chat.messages.reduce((a, m) => Math.max(a, m.turn || 0), 0);
+const newMem = () => ({ rev: 0, seq: 0, lastId: 0, coveredId: 0, turn: 0, state: '', entries: [], chronicle: [], log: [] });
+const touch = chat => { chat.updatedAt = now(); };
+const saveSettings = () => DB.put('kv', { id: 'settings', data: S.settings });
+async function saveChat(chat) { if (S.chats.includes(chat)) await DB.put('chats', chat); }
+
+function chatCtx(chat) {
+  const chars = (chat.charIds || []).map(getChar).filter(Boolean);
+  const user = chat.userName || S.settings.persona.name || 'あなた';
+  return {
+    chars, user, world: getWorld(chat.worldId), plot: getPlot(chat.plotId),
+    char: chars.map(c => c.name).join('、') || 'キャラクター',
+    userDesc: chat.userDesc ?? S.settings.persona.desc,
+  };
+}
+function macros(s, ctx) {
+  return String(s ?? '').replace(/\{\{char\}\}|<BOT>/gi, () => ctx.char).replace(/\{\{user\}\}|<USER>/gi, () => ctx.user);
+}
+
+/* ---------- icons ---------- */
+const IP = {
+  back: '<path d="m15 18-6-6 6-6"/>', left: '<path d="m15 18-6-6 6-6"/>', right: '<path d="m9 18 6-6-6-6"/>',
+  send: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+  stop: '<rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" stroke="none"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>', x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+  pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  layers: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>',
+  route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
+  chat: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  user: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+  sliders: '<path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+  forward: '<path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  note: '<path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/>',
+  play: '<path d="m6 3 14 9-14 9z"/>',
+};
+const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IP[n] || ''}</svg>`;
+
+function avatarHTML(c, size = 40) {
+  if (c?.avatar) return `<img class="av" src="${esc(c.avatar)}" alt="" style="width:${size}px;height:${size}px">`;
+  const name = c?.name || '?';
+  let h = 0; for (const ch of name) h = (h * 31 + ch.codePointAt(0)) % 360;
+  return `<span class="av" style="width:${size}px;height:${size}px;background:hsl(${h} 38% 36%);font-size:${Math.round(size * 0.42)}px">${esc([...name][0])}</span>`;
+}
+
+/* ---------- text formatting ---------- */
+function fmt(text, caret = false) {
+  let s = String(text || '').replace(/\r/g, '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<b>$1</b>')
+    .replace(/\*([^*\n]+?)\*/g, '<span class=act>$1</span>')
+    .replace(/「[^「」\n]*」|『[^『』\n]*』|"[^"\n]*"|“[^”\n]*”/g, m => `<span class=q>${m}</span>`);
+  const ps = s.split(/\n{2,}/);
+  if (caret) ps[ps.length - 1] += '<span class=caret></span>';
+  return ps.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+}
+const TYPING = '<p><span class="typing"><i></i><i></i><i></i></span></p>';
+
+/* =====================================================================
+   LLM providers
+   ===================================================================== */
+class ApiError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
+
+async function httpErr(res) {
+  let t = '';
+  try { t = await res.text(); } catch {}
+  let msg = t;
+  try { const j = JSON.parse(t); const e = Array.isArray(j) ? j[0]?.error : j.error; msg = e?.message || j.message || t; } catch {}
+  const hint = res.status === 401 || res.status === 403 ? '（APIキーが無効か権限がありません）'
+    : res.status === 429 ? '（レート制限または残高不足）'
+    : res.status === 529 || res.status === 503 ? '（サーバー混雑中）' : '';
+  return new ApiError(res.status, `HTTP ${res.status}${hint}: ${String(msg).slice(0, 400)}`);
+}
+
+async function* sseEvents(res) {
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, i).replace(/\r$/, '');
+      buf = buf.slice(i + 1);
+      if (!line.startsWith('data:')) continue;
+      const d = line.slice(5).trim();
+      if (!d || d === '[DONE]') continue;
+      try { yield JSON.parse(d); } catch {}
+    }
+  }
+}
+
+// 400系で弾かれたオプションを外して再送する（モデルごとの対応差を吸収）
+async function withAdapt(body, attempt, adapters) {
+  const used = new Set();
+  for (;;) {
+    try { return await attempt(body); } catch (e) {
+      if (e.status !== 400 && e.status !== 422) throw e;
+      const i = adapters.findIndex((a, k) => !used.has(k) && a.test(body, e.message || ''));
+      if (i < 0) throw e;
+      used.add(i);
+      adapters[i].apply(body);
+    }
+  }
+}
+
+function llmCfg(role) {
+  const s = S.settings;
+  let provider = s.provider, model = s.models[provider], effort = s.effort;
+  if (role === 'mem') {
+    if (s.mem.provider) { provider = s.mem.provider; model = s.mem.model || s.models[provider]; }
+    else if (s.mem.model) model = s.mem.model;
+    effort = s.mem.effort;
+  }
+  return { provider, model: (model || '').trim(), key: (s.keys[provider] || '').trim(), effort };
+}
+
+async function callLLM(o) {
+  const cfg = llmCfg(o.role || 'main');
+  if (cfg.provider === 'mock') return callMock(o);
+  if (!cfg.key && cfg.provider !== 'custom') throw new Error(`${PROVIDERS[cfg.provider].label} のAPIキーが未設定です（設定タブ → API）`);
+  if (!cfg.model) throw new Error('モデルが未設定です（設定タブ → API）');
+  const fn = cfg.provider === 'anthropic' ? callAnthropic : cfg.provider === 'gemini' ? callGemini : callOpenAI;
+  let started = false;
+  const opts = { ...o, onText: o.onText && (t => { started = true; o.onText(t); }) };
+  for (let attempt = 0; ; attempt++) {
+    try { return await fn(cfg, opts); } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      const retryable = [429, 500, 502, 503, 504, 529].includes(e.status);
+      if (retryable && !started && attempt < 2) { await sleep(attempt ? 4000 : 1500); continue; }
+      if (e instanceof TypeError) throw new Error('通信エラー: ' + e.message + '（ネットワーク、またはURL/CORSを確認してください）');
+      throw e;
+    }
+  }
+}
+
+async function callAnthropic(cfg, o) {
+  const m = cfg.model;
+  const body = {
+    model: m, max_tokens: o.maxTokens || 4000,
+    messages: o.messages.map(x => ({ role: x.role, content: x.cache ? [{ type: 'text', text: x.content, cache_control: { type: 'ephemeral' } }] : x.content })),
+  };
+  const sys = (o.system || []).filter(b => b.text && b.text.trim())
+    .map(b => (b.cache ? { type: 'text', text: b.text, cache_control: { type: 'ephemeral' } } : { type: 'text', text: b.text }));
+  if (sys.length) body.system = sys;
+  if (o.stream) body.stream = true;
+  // 新世代モデルは temperature 非対応
+  if (!/opus-5|sonnet-5|fable|mythos|opus-4-[78]/.test(m) && o.temperature != null) body.temperature = clamp(o.temperature, 0, 1);
+  const oc = {};
+  if (cfg.effort && /opus-5|sonnet-5|fable|mythos|opus-4-[5-8]|sonnet-4-6/.test(m)) oc.effort = cfg.effort;
+  if (o.schema) oc.format = { type: 'json_schema', schema: o.schema };
+  if (Object.keys(oc).length) body.output_config = oc;
+  if (/^claude-(opus-5|fable-5-1)$/.test(m)) body.fallbacks = 'default';
+
+  const attempt = async b => {
+    const headers = {
+      'content-type': 'application/json', 'x-api-key': cfg.key,
+      'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true',
+    };
+    if (b.fallbacks) headers['anthropic-beta'] = 'server-side-fallback-2026-07-01';
+    const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers, body: JSON.stringify(b), signal: o.signal });
+    if (!res.ok) throw await httpErr(res);
+    if (!b.stream) {
+      const j = await res.json();
+      return { text: (j.content || []).filter(c => c.type === 'text').map(c => c.text).join(''), stop: j.stop_reason, usage: j.usage };
+    }
+    let text = '', stop = null, usage = {};
+    for await (const ev of sseEvents(res)) {
+      if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') { text += ev.delta.text; o.onText?.(text); }
+      else if (ev.type === 'message_start') usage = { ...(ev.message?.usage || {}) };
+      else if (ev.type === 'message_delta') { stop = ev.delta?.stop_reason || stop; Object.assign(usage, ev.usage || {}); }
+      else if (ev.type === 'error') throw new ApiError(ev.error?.type === 'overloaded_error' ? 529 : 500, ev.error?.message || 'stream error');
+    }
+    return { text, stop, usage };
+  };
+  const dropOC = (b, k) => { delete b.output_config[k]; if (!Object.keys(b.output_config).length) delete b.output_config; };
+  return withAdapt(body, attempt, [
+    { test: (b, msg) => b.fallbacks && /fallback|beta/i.test(msg), apply: b => delete b.fallbacks },
+    { test: (b, msg) => b.output_config?.format && /format|schema|output_config/i.test(msg), apply: b => dropOC(b, 'format') },
+    { test: (b, msg) => b.output_config?.effort && /effort/i.test(msg), apply: b => dropOC(b, 'effort') },
+    { test: (b, msg) => b.temperature != null && /temperature/i.test(msg), apply: b => delete b.temperature },
+  ]);
+}
+
+async function callOpenAI(cfg, o) {
+  const s = S.settings;
+  const base = cfg.provider === 'openai' ? 'https://api.openai.com/v1'
+    : cfg.provider === 'openrouter' ? 'https://openrouter.ai/api/v1'
+    : (s.customBase || '').trim().replace(/\/+$/, '');
+  if (!base) throw new Error('カスタムのベースURLが未設定です（設定タブ → API）');
+  const sysText = (o.system || []).map(b => b.text).filter(t => t && t.trim()).join('\n\n');
+  const body = {
+    model: cfg.model,
+    messages: [...(sysText ? [{ role: 'system', content: sysText }] : []), ...o.messages.map(x => ({ role: x.role, content: x.content }))],
+  };
+  body[cfg.provider === 'openai' ? 'max_completion_tokens' : 'max_tokens'] = o.maxTokens || 4000;
+  if (o.temperature != null) body.temperature = o.temperature;
+  if (o.schema) body.response_format = { type: 'json_object' };
+  if (o.stream) body.stream = true;
+  const headers = { 'content-type': 'application/json' };
+  if (cfg.key) headers.authorization = 'Bearer ' + cfg.key;
+  if (cfg.provider === 'openrouter') { headers['X-Title'] = 'Memoria'; if (/^https?:/.test(location.origin)) headers['HTTP-Referer'] = location.origin; }
+
+  const attempt = async b => {
+    const res = await fetch(base + '/chat/completions', { method: 'POST', headers, body: JSON.stringify(b), signal: o.signal });
+    if (!res.ok) throw await httpErr(res);
+    if (!b.stream) {
+      const j = await res.json();
+      if (j.error) throw new ApiError(500, j.error.message || 'error');
+      const c = j.choices?.[0];
+      return { text: c?.message?.content || '', stop: c?.finish_reason, usage: j.usage };
+    }
+    let text = '', stop = null, usage = null;
+    for await (const ev of sseEvents(res)) {
+      if (ev.error) throw new ApiError(500, ev.error.message || 'stream error');
+      const c = ev.choices?.[0];
+      if (c?.delta?.content) { text += c.delta.content; o.onText?.(text); }
+      if (c?.finish_reason) stop = c.finish_reason;
+      if (ev.usage) usage = ev.usage;
+    }
+    return { text, stop, usage };
+  };
+  return withAdapt(body, attempt, [
+    { test: (b, m) => 'max_tokens' in b && /max_tokens|max_completion_tokens/i.test(m), apply: b => { b.max_completion_tokens = b.max_tokens; delete b.max_tokens; } },
+    { test: (b, m) => 'max_completion_tokens' in b && /max_completion_tokens/i.test(m), apply: b => { b.max_tokens = b.max_completion_tokens; delete b.max_completion_tokens; } },
+    { test: (b, m) => 'temperature' in b && /temperature/i.test(m), apply: b => delete b.temperature },
+    { test: (b, m) => b.response_format && /response_format|json/i.test(m), apply: b => delete b.response_format },
+  ]);
+}
+
+async function callGemini(cfg, o) {
+  const model = cfg.model.replace(/^models\//, '');
+  const sysText = (o.system || []).map(b => b.text).filter(t => t && t.trim()).join('\n\n');
+  const contents = [];
+  for (const x of o.messages) {
+    const role = x.role === 'assistant' ? 'model' : 'user', last = contents.at(-1);
+    if (last && last.role === role) last.parts[0].text += '\n\n' + x.content;
+    else contents.push({ role, parts: [{ text: x.content }] });
+  }
+  const body = { contents, generationConfig: { maxOutputTokens: o.maxTokens || 4000 } };
+  if (o.temperature != null) body.generationConfig.temperature = o.temperature;
+  if (sysText) body.systemInstruction = { parts: [{ text: sysText }] };
+  if (o.schema) body.generationConfig.responseMimeType = 'application/json';
+  const pick = j => (j.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join('');
+
+  const attempt = async b => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:${o.stream ? 'streamGenerateContent?alt=sse' : 'generateContent'}`;
+    const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': cfg.key }, body: JSON.stringify(b), signal: o.signal });
+    if (!res.ok) throw await httpErr(res);
+    if (!o.stream) {
+      const j = await res.json();
+      if (!j.candidates?.length && j.promptFeedback?.blockReason) throw new ApiError(500, '入力がブロックされました: ' + j.promptFeedback.blockReason);
+      return { text: pick(j), stop: j.candidates?.[0]?.finishReason, usage: j.usageMetadata };
+    }
+    let text = '', stop = null, usage = null;
+    for await (const ev of sseEvents(res)) {
+      if (ev.error) throw new ApiError(500, ev.error.message || 'stream error');
+      if (ev.promptFeedback?.blockReason && !ev.candidates) throw new ApiError(500, '入力がブロックされました: ' + ev.promptFeedback.blockReason);
+      const t = pick(ev);
+      if (t) { text += t; o.onText?.(text); }
+      stop = ev.candidates?.[0]?.finishReason || stop;
+      usage = ev.usageMetadata || usage;
+    }
+    return { text, stop, usage };
+  };
+  return withAdapt(body, attempt, [
+    { test: (b, m) => b.generationConfig.responseMimeType && /mime|json/i.test(m), apply: b => delete b.generationConfig.responseMimeType },
+  ]);
+}
+
+// APIなしで画面と記憶の流れを確かめるためのデモ
+async function callMock(o) {
+  await sleep(250);
+  const lastUser = [...o.messages].reverse().find(m => m.role === 'user')?.content || '';
+  const plain = lastUser.replace(/<context>[\s\S]*?<\/context>/, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const block = (lastUser.match(/<(?:new_log|log)>[^\n]*\n([\s\S]*?)<\/(?:new_log|log)>/) || [])[1];
+  const first = block ? block.split('\n').find(l => l.trim()) || '' : plain;
+  const snip = first.replace(/^\[[^\]]+\]\s*[^:：]+[:：]\s*/, '').slice(0, 36);
+  if (o.kind === 'extract') {
+    return { text: JSON.stringify({
+      state: `- 時刻: 夜\n- 場所: デモの舞台\n- 直近の出来事: ${snip}`,
+      add: snip ? [{ scope: 'world', text: `（デモ）${snip}`, imp: 2, tag: 'event' }] : [], update: [], remove: [],
+    }) };
+  }
+  if (o.kind === 'consolidate') {
+    const d = o.demo || [];
+    return { text: JSON.stringify({ entries: d.slice(-Math.max(1, Math.ceil(d.length * 0.6))).map(e => ({ text: e.text, imp: e.imp, tag: e.tag || 'event', from: [e.id] })) }) };
+  }
+  if (o.kind === 'chronicle' || o.kind === 'compress') return { text: `（デモ要約）${snip || '物語'}……などの出来事があった。` };
+  if (o.kind === 'test') return { text: '接続OK（デモ）' };
+  const reply = `（デモ応答）「${plain.slice(0, 30) || '……'}」\n\n*窓の外で、霧笛が低く鳴った。*\n彼女は少しだけ首をかしげ、あなたの言葉を反芻するように目を伏せる。\n\n「……なるほど。続きを、聞かせてください」\n\n※APIを使わないデモ応答です。設定タブでAPIキーとモデルを設定すると本物のAIが応答します。`;
+  let out = '';
+  for (const ch of reply.match(/[\s\S]{1,3}/g)) {
+    if (o.signal?.aborted) throw new DOMException('aborted', 'AbortError');
+    out += ch;
+    o.onText?.(out);
+    await sleep(18);
+  }
+  return { text: out, stop: 'end_turn' };
+}
+
+async function fetchModels(p) {
+  const s = S.settings, key = (s.keys[p] || '').trim();
+  if (p === 'mock') return ['demo'];
+  if (p === 'anthropic') {
+    const r = await fetch('https://api.anthropic.com/v1/models?limit=100', { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' } });
+    if (!r.ok) throw await httpErr(r);
+    return ((await r.json()).data || []).map(m => m.id);
+  }
+  if (p === 'gemini') {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': key } });
+    if (!r.ok) throw await httpErr(r);
+    return ((await r.json()).models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, ''));
+  }
+  const base = p === 'openai' ? 'https://api.openai.com/v1' : p === 'openrouter' ? 'https://openrouter.ai/api/v1' : (s.customBase || '').trim().replace(/\/+$/, '');
+  if (!base) throw new Error('ベースURLが未設定です');
+  const r = await fetch(base + '/models', { headers: key ? { authorization: 'Bearer ' + key } : {} });
+  if (!r.ok) throw await httpErr(r);
+  return ((await r.json()).data || []).map(m => m.id).sort();
+}
+
+function parseJSON(t) {
+  t = String(t || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+  try { return JSON.parse(t); } catch {}
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch {} }
+  return null;
+}
+
+/* =====================================================================
+   Prompt builder
+   ===================================================================== */
+function charBlock(c, M) {
+  const sec = [['プロフィール・外見', c.description], ['性格', c.personality], ['背景・シナリオ', c.scenario], ['補足設定', c.lore], ['台詞例（口調の参考）', c.examples], ['演技指示', c.charNote]]
+    .filter(([, v]) => v && v.trim()).map(([k, v]) => `【${k}】\n${M(v).trim()}`).join('\n\n');
+  return `<character name="${attr(c.name)}">\n${sec || '（設定なし）'}\n</character>`;
+}
+function scopeLabel(sc, ctx) {
+  if (sc === 'world') return '世界';
+  if (sc === 'user') return ctx.user;
+  return getChar(sc.slice(2))?.name || '（削除されたキャラ）';
+}
+function memoryText(chat, ctx) {
+  const m = chat.mem;
+  const lines = sc => m.entries.filter(e => e.scope === sc).sort((a, b) => a.turn - b.turn)
+    .map(e => `- [${tl(e.turn)}]${e.imp >= 4 ? '【重要】' : ''} ${e.text}`).join('\n');
+  const parts = [];
+  const w = lines('world'); if (w) parts.push(`<world_memory>\n${w}\n</world_memory>`);
+  for (const c of ctx.chars) { const t = lines('c:' + c.id); if (t) parts.push(`<character_memory name="${attr(c.name)}">\n${t}\n</character_memory>`); }
+  const u = lines('user'); if (u) parts.push(`<user_memory name="${attr(ctx.user)}">\n${u}\n</user_memory>`);
+  return (parts.length ? `<memory>\n${parts.join('\n')}\n</memory>` : '<memory>（まだ記憶はありません）</memory>')
+    + `\n<current_state as_of="${tl(m.turn)}">\n${m.state || '（未記録）'}\n</current_state>`;
+}
+function chronicleText(chat) {
+  const c = chat.mem.chronicle;
+  if (!c.length) return '';
+  return `<chronicle>\nこれまでの物語のあらすじ（古い順）:\n${c.map(x => `【${tl(x.from)}〜${tl(x.to)}】${x.text}`).join('\n\n')}\n</chronicle>`;
+}
+
+// 静的（キャッシュ対象）→ 準静的（プロット・あらすじ）→ 履歴 → 最新ターンに記憶と状況を注入
+function buildChatRequest(chat, { end, mode = 'reply' }) {
+  const s = S.settings, ctx = chatCtx(chat), M = t => macros(t, ctx), m = chat.mem;
+  let st = M(s.systemPrompt).trim();
+  if (ctx.world) st += `\n\n<world name="${attr(ctx.world.name)}">\n${M(ctx.world.content).trim()}\n</world>`;
+  if (ctx.chars.length) st += '\n\n' + ctx.chars.map(c => charBlock(c, M)).join('\n\n');
+  st += `\n\n<user_persona name="${attr(ctx.user)}">\n${M(ctx.userDesc || '').trim() || '（特記事項なし）'}\n</user_persona>`;
+  const semi = [];
+  if (ctx.plot) semi.push(`<plot title="${attr(ctx.plot.title)}">\n${M(ctx.plot.content).trim()}\n</plot>`);
+  if (chat.note?.trim()) semi.push(`<author_note>\n${M(chat.note).trim()}\n</author_note>`);
+  const chron = chronicleText(chat);
+  if (chron) semi.push(chron);
+  const semiText = semi.join('\n\n');
+  const dyn = memoryText(chat, ctx);
+  const post = M(s.postPrompt || '').trim();
+
+  let avail = s.context - (estTokens(st) + estTokens(semiText) + estTokens(dyn) + estTokens(post) + 60);
+  const pool = chat.messages.slice(0, end).filter(x => isDialog(x) && x.id > m.coveredId);
+  const picked = [];
+  let histTok = 0;
+  for (let i = pool.length - 1; i >= 0; i--) {
+    const t = estTokens(txt(pool[i])) + 6;
+    if (picked.length >= 2 && avail - t < 0) break;
+    avail -= t; histTok += t;
+    picked.unshift(pool[i]);
+  }
+  const msgs = [];
+  for (const x of picked) {
+    const role = x.role === 'user' ? 'user' : 'assistant', content = txt(x), last = msgs.at(-1);
+    if (last && last.role === role) last.content += '\n\n' + content;
+    else msgs.push({ role, content });
+  }
+  if (!msgs.length || msgs[0].role === 'assistant') msgs.unshift({ role: 'user', content: '（ロールプレイを開始してください）' });
+  if (mode === 'continue') msgs.push({ role: 'user', content: '（直前のあなたの応答の続きを、繰り返さずにそのまま書き継いでください）' });
+  else if (msgs.at(-1).role === 'assistant') msgs.push({ role: 'user', content: `（${ctx.user}の発言を待たずに、物語を自然に先へ進めてください）` });
+  const last = msgs.at(-1);
+  last.content = `<context>\n${dyn}\n</context>\n\n${last.content}${post ? `\n\n<instruction>\n${post}\n</instruction>` : ''}`;
+  if (msgs.length >= 2) msgs[msgs.length - 2].cache = true;
+  return {
+    system: [{ text: st, cache: true }, { text: semiText, cache: true }],
+    messages: msgs,
+    info: { system: estTokens(st) + estTokens(semiText), memory: estTokens(dyn), history: histTok, msgs: picked.length, dropped: pool.length - picked.length },
+  };
+}
+
+/* =====================================================================
+   Memory engine
+   - 毎ターン: 確定したやり取りから事実を抽出し、キャラ/世界/ユーザー別の記憶帳に積む
+   - 容量超過: その記憶帳だけを要約・統合して一定量に保つ（ピン留めは保護）
+   - 直近ウィンドウから外れた会話: 「あらすじ」に要約して引き継ぐ
+   ===================================================================== */
+const EXTRACT_SYS = `あなたはロールプレイ小説の「記憶係」です。新しい会話ログを読み、物語の一貫性を保つための記憶データベースを更新します。出力はJSONのみです。
+
+## 記憶の区分 (scope)
+- "world": 世界・場所・組織・NPC・社会的な出来事・世界のルールについて判明した事実
+- "user": {{user}}自身について判明した事実（素性・能力・所持品・負傷・重要な発言）
+- キャラクター名（{{chars}} のいずれかをそのまま書く）: そのキャラクター自身の状態・感情の変化・関係性・約束・秘密、そのキャラが知ったこと／知らないこと
+
+## ルール
+1. add: 新しく確定した事実だけを追加する。既存記憶や静的設定と同じ内容は追加しない。
+2. update: 既存記憶の内容が変化した（関係の進展、状態の変化、所持品の移動、真相の判明など）場合、そのIDの文を最新の内容に書き換える。
+3. remove: 完全に誤り・無効になった記憶のIDのみ。迷ったら残す。「固定」の記憶は変更しない。
+4. 1項目＝1つの事実。主語を明記した簡潔な文（目安80字以内）。代名詞や「さっき」などの相対表現は使わない。
+5. 物語中で確定したことだけを書く。推測・予想・比喩は書かない。キャラの嘘は「〜と主張した」と書く。
+6. 誰が何を知っているかを区別する（例:「リーネは{{user}}の正体を知らない」）。
+7. imp（重要度1〜5）: 5=物語の根幹（正体・誓い・死・重大な秘密） 4=関係性や目的の大きな変化・重要な約束 3=今後参照されうる出来事や設定 2=細部 1=些細
+8. tag: event(出来事) / relation(関係) / promise(約束) / secret(秘密) / status(状態) / lore(設定) / item(所持品)
+9. state: 最新の「現在の状況」を丸ごと書き直す。箇条書きで、日時・時間帯／現在地／その場にいる人物と様子（服装・負傷・感情）／重要な所持品／進行中の目的・未解決の事項。{{stateBudget}}字以内。
+10. 追加するものがなければ空配列にする。
+
+出力形式:
+{"state":"...","add":[{"scope":"...","text":"...","imp":3,"tag":"event"}],"update":[{"id":"m12","text":"...","imp":4}],"remove":["m3"]}`;
+
+const CONS_SYS = `あなたはロールプレイ小説の記憶を整理する編集者です。重要な情報を失わずに記憶を統合・圧縮します。出力はJSONのみです。`;
+const CHRON_SYS = `あなたはロールプレイ小説のあらすじ編集者です。後から物語を続ける作者が読むための要約を書きます。
+- 時系列で「誰が・どこで・何をして・どうなったか」を簡潔に。
+- 重要な台詞・約束・伏線・秘密の開示、関係や感情の転機は必ず残す。
+- {{user}}と各キャラクターの名前を明記し、代名詞に頼らない。
+- 前置き・見出し・記号は不要。要約本文のみを出力する。`;
+
+function extractSchema(names) {
+  return {
+    type: 'object', additionalProperties: false, required: ['state', 'add', 'update', 'remove'],
+    properties: {
+      state: { type: 'string' },
+      add: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['scope', 'text', 'imp', 'tag'], properties: {
+        scope: { type: 'string', enum: [...new Set(['world', 'user', ...names])] }, text: { type: 'string' }, imp: { type: 'integer' }, tag: { type: 'string', enum: TAG_KEYS } } } },
+      update: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['id', 'text', 'imp'], properties: {
+        id: { type: 'string' }, text: { type: 'string' }, imp: { type: 'integer' } } } },
+      remove: { type: 'array', items: { type: 'string' } },
+    },
+  };
+}
+const CONS_SCHEMA = {
+  type: 'object', additionalProperties: false, required: ['entries'],
+  properties: { entries: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['text', 'imp', 'tag', 'from'], properties: {
+    text: { type: 'string' }, imp: { type: 'integer' }, tag: { type: 'string', enum: TAG_KEYS }, from: { type: 'array', items: { type: 'string' } } } } } },
+};
+
+const clampImp = v => clamp(Math.round(Number(v) || 3), 1, 5);
+const scopeBudget = sc => { const b = S.settings.mem.budgets; return sc === 'world' ? b.world : sc === 'user' ? b.user : b.char; };
+const scopeChars = (chat, sc) => chat.mem.entries.filter(e => e.scope === sc).reduce((a, e) => a + e.text.length, 0);
+const entryNum = e => Number(String(e.id).replace(/\D/g, '')) || 0;
+
+function memLog(chat, text, err = false) {
+  chat.mem.log.push({ t: now(), text, err });
+  if (chat.mem.log.length > 80) chat.mem.log.splice(0, chat.mem.log.length - 80);
+}
+function logLines(chat, msgs, ctx) {
+  const aiName = ctx.chars.map(c => c.name).join('・') || 'AI';
+  return msgs.map(x => `[${tl(x.turn)}] ${x.role === 'user' ? ctx.user : aiName}: ${txt(x)}`).join('\n\n');
+}
+function resolveScope(s, ctx) {
+  s = String(s || '').trim();
+  const low = s.toLowerCase();
+  if (!s || low === 'world' || s === '世界') return 'world';
+  if (low === 'user' || s === '{{user}}' || s === ctx.user) return 'user';
+  const c = ctx.chars.find(c => c.name === s) || ctx.chars.find(c => s.includes(c.name) || (s.length > 1 && c.name.includes(s)));
+  return c ? 'c:' + c.id : 'world';
+}
+function pushSnap(chat, at) {
+  const d = clone(chat.mem);
+  d.log = [];
+  const last = chat.snaps.at(-1);
+  if (last && last.at === at) last.data = d;
+  else chat.snaps.push({ at, data: d });
+  while (chat.snaps.length > 15) chat.snaps.shift();
+}
+// msgId 以降を消したとき、その直前時点の記憶へ戻す
+function restoreMemoryBefore(chat, msgId) {
+  const m = chat.mem;
+  if (m.lastId < msgId) return 'none';
+  const snap = chat.snaps.filter(s => s.at <= msgId).at(-1);
+  if (!snap) { m.rev++; return 'fail'; }
+  const log = m.log, rev = m.rev + 1;
+  chat.mem = clone(snap.data);
+  chat.mem.rev = rev;
+  chat.mem.log = log;
+  chat.snaps = chat.snaps.filter(s => s.at < snap.at);
+  memLog(chat, `巻き戻しに合わせて記憶を${tl(chat.mem.turn)}時点へ復元しました`);
+  return 'ok';
+}
+
+function queueMemory(chat, uptoId, opts = {}) {
+  const prev = S.memJobs[chat.id] || Promise.resolve();
+  const job = prev.catch(() => {}).then(() => memoryJob(chat, uptoId, opts))
+    .catch(e => { memLog(chat, '記憶更新エラー: ' + e.message, true); flashMem(chat, '記憶の更新に失敗しました', true); saveChat(chat); })
+    .finally(() => { if (S.memJobs[chat.id] === job) delete S.memJobs[chat.id]; memUI(chat); });
+  S.memJobs[chat.id] = job;
+  memUI(chat);
+  return job;
+}
+function commitMemory(chat, uptoId) {
+  if (S.settings.mem.auto && uptoId > chat.mem.lastId) queueMemory(chat, uptoId);
+}
+
+async function memoryJob(chat, uptoId, opts = {}) {
+  const tot = { add: 0, upd: 0, del: 0 };
+  const alive = () => S.chats.includes(chat);
+  for (let guard = 0; guard < 300; guard++) {
+    const pending = chat.messages.filter(x => isDialog(x) && x.id > chat.mem.lastId && x.id <= uptoId);
+    if (!pending.length) break;
+    const batch = pending.slice(0, MEM_BATCH), rev = chat.mem.rev;
+    pushSnap(chat, batch[0].id);
+    const res = await extractFacts(chat, batch);
+    if (!alive()) return;
+    if (chat.mem.rev !== rev || !batch.every(b => chat.messages.includes(b))) { memLog(chat, '会話が変更されたため、今回の抽出結果を破棄しました'); return; }
+    const r = applyExtraction(chat, res, batch);
+    tot.add += r.add; tot.upd += r.upd; tot.del += r.del;
+    chat.mem.lastId = batch.at(-1).id;
+    chat.mem.turn = Math.max(chat.mem.turn, batch.at(-1).turn);
+    await saveChat(chat);
+    memUI(chat);
+    await maintain(chat);
+  }
+  if (opts.consolidateScope) await consolidate(chat, opts.consolidateScope, true);
+  else await maintain(chat);
+  if (tot.add || tot.upd || tot.del) flashMem(chat, `記憶 +${tot.add}${tot.upd ? `・更新${tot.upd}` : ''}${tot.del ? `・削除${tot.del}` : ''}`);
+}
+
+async function maintain(chat) {
+  try {
+    const scopes = [...new Set(chat.mem.entries.map(e => e.scope))].filter(sc => scopeChars(chat, sc) > scopeBudget(sc));
+    for (const sc of scopes) { if (!S.chats.includes(chat)) return; await consolidate(chat, sc, false); }
+    await updateChronicle(chat);
+  } catch (e) {
+    memLog(chat, '整理処理エラー: ' + e.message, true);
+  }
+}
+
+async function extractFacts(chat, batch) {
+  const s = S.settings, ctx = chatCtx(chat), m = chat.mem, M = t => macros(t, ctx);
+  const names = ctx.chars.map(c => c.name);
+  const prev = chat.messages.slice(0, chat.messages.indexOf(batch[0])).filter(isDialog).slice(-2);
+  const existing = m.entries.slice().sort((a, b) => a.turn - b.turn || entryNum(a) - entryNum(b))
+    .map(e => `[${e.id}] (${scopeLabel(e.scope, ctx)} ★${e.imp} ${tl(e.turn)}${e.pinned ? ' 固定' : ''}) ${e.text}`).join('\n');
+  const statics = [
+    ctx.world ? `【世界設定: ${ctx.world.name}】\n${M(ctx.world.content).slice(0, 2000)}` : '',
+    ...ctx.chars.map(c => `【${c.name}】\n${M([c.description, c.personality, c.scenario].filter(Boolean).join('\n')).slice(0, 800)}`),
+  ].filter(Boolean).join('\n\n');
+  const sys = M(EXTRACT_SYS.replaceAll('{{chars}}', names.join('、') || '（なし）').replaceAll('{{stateBudget}}', String(s.mem.budgets.state)));
+  const user = `登場キャラクター: ${names.join('、') || '（なし）'}\nユーザーの名前: ${ctx.user}\n\n`
+    + (statics ? `<static_settings>（既に設定済み。重複して記憶しない）\n${statics}\n</static_settings>\n\n` : '')
+    + `<existing_memory>\n${existing || '（なし）'}\n</existing_memory>\n\n<current_state>\n${m.state || '（未記録）'}\n</current_state>\n\n`
+    + (prev.length ? `<previous_context>（参考のみ・抽出対象外）\n${logLines(chat, prev, ctx)}\n</previous_context>\n\n` : '')
+    + `<new_log>（ここから抽出する）\n${logLines(chat, batch, ctx)}\n</new_log>`;
+  const call = content => callLLM({ role: 'mem', kind: 'extract', system: [{ text: sys, cache: true }], messages: [{ role: 'user', content }], maxTokens: 8000, schema: extractSchema(names), temperature: 0.2 });
+  let j = parseJSON((await call(user)).text);
+  if (!j) j = parseJSON((await call(user + '\n\n※出力は有効なJSONオブジェクトのみ。前置きやコードブロックは付けない。')).text);
+  if (!j) throw new Error('記憶抽出の結果をJSONとして読み取れませんでした');
+  return j;
+}
+
+function applyExtraction(chat, res, batch) {
+  const m = chat.mem, ctx = chatCtx(chat), turn = batch.at(-1).turn;
+  const r = { add: 0, upd: 0, del: 0 };
+  if (typeof res.state === 'string' && res.state.trim()) m.state = res.state.trim();
+  for (const a of Array.isArray(res.add) ? res.add : []) {
+    const text = String(a?.text || '').trim();
+    if (!text) continue;
+    const scope = resolveScope(a.scope, ctx);
+    if (m.entries.some(e => e.scope === scope && e.text === text)) continue;
+    m.entries.push({ id: 'm' + (++m.seq), scope, text, imp: clampImp(a.imp), tag: TAG_KEYS.includes(a.tag) ? a.tag : '', turn, src: 'auto' });
+    r.add++;
+  }
+  for (const u of Array.isArray(res.update) ? res.update : []) {
+    const e = m.entries.find(e => e.id === u?.id);
+    const text = String(u?.text || '').trim();
+    if (!e || e.pinned || !text) continue;
+    if (e.text !== text || e.imp !== clampImp(u.imp)) { e.text = text; e.imp = clampImp(u.imp); e.turn = turn; r.upd++; }
+  }
+  for (const id of Array.isArray(res.remove) ? res.remove : []) {
+    const i = m.entries.findIndex(e => e.id === id);
+    if (i >= 0 && !m.entries[i].pinned) { m.entries.splice(i, 1); r.del++; }
+  }
+  memLog(chat, `${tl(batch[0].turn)}〜${tl(turn)} を記憶: 追加${r.add}・更新${r.upd}・削除${r.del}`);
+  return r;
+}
+
+async function consolidate(chat, scope, force) {
+  const ctx = chatCtx(chat), m = chat.mem, rev = m.rev;
+  const budget = scopeBudget(scope);
+  const items = m.entries.filter(e => e.scope === scope && !e.pinned);
+  const pinnedChars = m.entries.filter(e => e.scope === scope && e.pinned).reduce((a, e) => a + e.text.length, 0);
+  const cur = items.reduce((a, e) => a + e.text.length, 0);
+  if (items.length < 3 || cur < 200) return;
+  if (!force && cur + pinnedChars <= budget) return;
+  const target = Math.max(150, Math.floor(Math.min(budget, cur + pinnedChars) * 0.7) - pinnedChars);
+  const label = scopeLabel(scope, ctx);
+  const list = items.slice().sort((a, b) => a.turn - b.turn).map(e => `[${e.id}] ★${e.imp} ${tl(e.turn)} ${e.text}`).join('\n');
+  const prompt = `次は「${label}」についての記憶一覧です（合計${cur}字）。重要な情報を失わずに、合計${target}字以内に整理・統合してください。
+
+ルール:
+- ★4〜5の記憶は内容を保ったまま残す（文の短縮は可）。
+- 関連する記憶は1つにまとめる。古く些細な記憶は要約するか削除する。
+- 同じ事柄で新旧が矛盾する場合は新しいターンの内容を正とする。
+- 各項目は主語を明記した簡潔な文にする。
+- from には統合元のIDを列挙する。
+
+<memories>
+${list}
+</memories>
+
+出力形式: {"entries":[{"text":"...","imp":3,"tag":"event","from":["m1","m4"]}]}`;
+  const res = await callLLM({ role: 'mem', kind: 'consolidate', demo: items, system: [{ text: macros(CONS_SYS, ctx) }], messages: [{ role: 'user', content: macros(prompt, ctx) }], maxTokens: 8000, schema: CONS_SCHEMA, temperature: 0.3 });
+  if (chat.mem.rev !== rev || !S.chats.includes(chat)) return;
+  const out = (parseJSON(res.text)?.entries || []).filter(e => e && String(e.text || '').trim());
+  if (!out.length) throw new Error(`${label}の記憶の圧縮結果が空でした`);
+  const newChars = out.reduce((a, e) => a + String(e.text).trim().length, 0);
+  if (newChars >= cur) { memLog(chat, `${label}: 圧縮しても短くならなかったため見送りました`); return; }
+  const byId = new Map(items.map(e => [e.id, e]));
+  chat.mem.entries = chat.mem.entries.filter(e => !byId.has(e.id));
+  for (const e of out) {
+    const src = (Array.isArray(e.from) ? e.from : []).map(id => byId.get(id)).filter(Boolean);
+    chat.mem.entries.push({ id: 'm' + (++chat.mem.seq), scope, text: String(e.text).trim(), imp: clampImp(e.imp), tag: TAG_KEYS.includes(e.tag) ? e.tag : '', turn: src.length ? Math.max(...src.map(x => x.turn)) : chat.mem.turn, src: 'merged' });
+  }
+  memLog(chat, `${label}の記憶を整理: ${items.length}件 ${cur}字 → ${out.length}件 ${newChars}字`);
+  await saveChat(chat);
+  memUI(chat);
+}
+
+async function updateChronicle(chat) {
+  const s = S.settings;
+  for (let guard = 0; guard < 60; guard++) {
+    const m = chat.mem;
+    const raw = chat.messages.filter(x => isDialog(x) && x.id > m.coveredId);
+    const rawTok = raw.reduce((a, x) => a + estTokens(txt(x)), 0);
+    const over = raw.length > s.mem.recent + s.mem.chunk || (rawTok > s.context * 0.6 && raw.length > 8);
+    if (!over) break;
+    const chunk = raw.slice(0, Math.max(2, Math.min(s.mem.chunk, raw.length - 6)));
+    if (chunk.at(-1).id > m.lastId) break; // 事実抽出が済んでから要約する
+    const rev = m.rev;
+    const text = await summarizeChunk(chat, chunk);
+    if (chat.mem.rev !== rev || !S.chats.includes(chat) || !chunk.every(c => chat.messages.includes(c))) return;
+    chat.mem.chronicle.push({ id: uid(), from: chunk[0].turn, to: chunk.at(-1).turn, text });
+    chat.mem.coveredId = chunk.at(-1).id;
+    memLog(chat, `あらすじに追加: ${tl(chunk[0].turn)}〜${tl(chunk.at(-1).turn)}（${text.length}字）`);
+    await saveChat(chat);
+    memUI(chat);
+  }
+  const total = chat.mem.chronicle.reduce((a, c) => a + c.text.length, 0);
+  if (total > s.mem.budgets.chronicle && chat.mem.chronicle.length >= 2) await compressChronicle(chat, total);
+}
+
+async function summarizeChunk(chat, chunk) {
+  const ctx = chatCtx(chat), log = logLines(chat, chunk, ctx);
+  const n = clamp(Math.round(log.length * 0.12), 150, 600);
+  const prev = chat.mem.chronicle.at(-1)?.text || '';
+  const content = (prev ? `<previous_summary>（直前のあらすじ・参考）\n${prev}\n</previous_summary>\n\n` : '')
+    + `以下のロールプレイログ（${tl(chunk[0].turn)}〜${tl(chunk.at(-1).turn)}）のあらすじを${n}字以内で書いてください。\n\n<log>\n${log}\n</log>`;
+  const res = await callLLM({ role: 'mem', kind: 'chronicle', system: [{ text: macros(CHRON_SYS, ctx) }], messages: [{ role: 'user', content }], maxTokens: 4000, temperature: 0.3 });
+  const text = (res.text || '').trim();
+  if (!text) throw new Error('あらすじの生成結果が空でした');
+  return text;
+}
+
+async function compressChronicle(chat, total) {
+  const ctx = chatCtx(chat), m = chat.mem, rev = m.rev;
+  let acc = 0, k = 0;
+  while (k < m.chronicle.length && (acc < total / 2 || k < 2)) acc += m.chronicle[k++].text.length;
+  const olds = m.chronicle.slice(0, k);
+  const n = Math.floor(S.settings.mem.budgets.chronicle * 0.35);
+  const content = `以下は物語のあらすじの連続した断片です。これらを1つの「前史」として${n}字以内に統合してください。重要な出来事・約束・関係の変化・伏線を優先して残し、時系列を保ってください。\n\n${olds.map(c => `【${tl(c.from)}〜${tl(c.to)}】${c.text}`).join('\n\n')}`;
+  const res = await callLLM({ role: 'mem', kind: 'compress', system: [{ text: macros(CHRON_SYS, ctx) }], messages: [{ role: 'user', content }], maxTokens: 4000, temperature: 0.3 });
+  if (chat.mem.rev !== rev || !S.chats.includes(chat)) return;
+  const text = (res.text || '').trim();
+  if (!text || text.length >= acc) return;
+  const idx = chat.mem.chronicle.indexOf(olds[0]);
+  if (idx !== 0 || !olds.every(o => chat.mem.chronicle.includes(o))) return;
+  chat.mem.chronicle.splice(0, k, { id: uid(), from: olds[0].from, to: olds.at(-1).to, text, merged: true });
+  memLog(chat, `あらすじを統合: ${k}件 ${acc}字 → ${text.length}字`);
+  await saveChat(chat);
+}
+
+/* =====================================================================
+   Generation
+   ===================================================================== */
+async function generate(chat, { mode = 'reply', regenMsg = null } = {}) {
+  if (S.gen) { toast('生成中です'); return; }
+  const s = S.settings;
+  let target, end, base = '';
+  if (regenMsg) {
+    target = regenMsg;
+    end = chat.messages.indexOf(target);
+    target.swipes.push('');
+    target.sw = target.swipes.length - 1;
+  } else if (mode === 'continue') {
+    target = lastDialog(chat);
+    if (!target || target.role !== 'ai') { toast('続きを書かせる応答がありません'); return; }
+    end = chat.messages.length;
+    base = txt(target);
+  } else {
+    target = { id: ++chat.seq, role: 'ai', swipes: [''], sw: 0, turn: maxTurn(chat), t: now() };
+    chat.messages.push(target);
+    end = chat.messages.length - 1;
+  }
+  const idx = target.sw;
+  const join = base && /[。．.!?！？」』）)…―〜♪]$/.test(base.trimEnd()) ? '\n\n' : '';
+  const setText = t => { target.swipes[idx] = base ? base.trimEnd() + join + (join ? t.replace(/^\s+/, '') : t) : t.replace(/^\s+/, ''); };
+  const ctrl = new AbortController();
+  S.gen = { chatId: chat.id, msgId: target.id, ctrl };
+  if (curChatId() === chat.id) { renderMessages(chat, { keep: true }); scrollBottom(); updateComposer(); }
+  let ok = false;
+  try {
+    const req = buildChatRequest(chat, { end, mode });
+    S.lastPrompt[chat.id] = req;
+    const res = await callLLM({
+      role: 'main', kind: 'chat', system: req.system, messages: req.messages, maxTokens: s.maxTokens, temperature: s.temperature,
+      stream: s.streaming, signal: ctrl.signal, onText: t => { setText(t); paintStreaming(chat, target); },
+    });
+    const out = String(res.text || '').replace(/<context>[\s\S]*?<\/context>/g, '').replace(/^\s*<\/?(context|instruction)>\s*/g, '');
+    setText(out);
+    if (!out.trim()) {
+      throw new Error(res.stop === 'refusal' ? 'モデルが応答を辞退しました（refusal）。表現を変えるか、別のモデルでお試しください。'
+        : /max_tokens|length|MAX_TOKENS/.test(res.stop || '') ? '最大出力トークンに達し、本文が空でした。設定で最大出力トークンを増やしてください。'
+        : '空の応答が返りました。');
+    }
+    if (/max_tokens|length|MAX_TOKENS/.test(res.stop || '')) toast('最大出力トークンで途中終了しました（「続き」で続行できます）', 'warn', 4000);
+    ok = true;
+  } catch (e) {
+    if (e.name === 'AbortError') ok = txt(target).trim().length > (base ? base.trim().length : 0);
+    else toast(e.message, 'err', 9000);
+  }
+  if (!ok) {
+    if (regenMsg) { target.swipes.splice(idx, 1); target.sw = Math.max(0, target.swipes.length - 1); }
+    else if (mode === 'continue') target.swipes[idx] = base;
+    else chat.messages.splice(chat.messages.indexOf(target), 1);
+  }
+  S.gen = null;
+  touch(chat);
+  await saveChat(chat);
+  if (curChatId() === chat.id) { renderMessages(chat, { keep: true }); updateComposer(); }
+}
+
+async function send() {
+  const chat = curChat();
+  if (!chat || S.gen) return;
+  const ta = $('#input'), text = ta.value.trim();
+  if (!text) { aiTurn(chat); return; }
+  // 新しい発言を送った時点で、それまでのやり取りは「確定」→ 記憶へ
+  const boundary = chat.messages.at(-1)?.id || 0;
+  commitMemory(chat, boundary);
+  chat.messages.push({ id: ++chat.seq, role: 'user', swipes: [text], sw: 0, turn: maxTurn(chat) + 1, t: now() });
+  ta.value = '';
+  S.drafts[chat.id] = '';
+  autosize(ta);
+  touch(chat);
+  await saveChat(chat);
+  generate(chat, { mode: 'reply' });
+}
+function aiTurn(chat) {
+  const last = lastDialog(chat);
+  if (!last) { toast('まず最初のメッセージを書いてください'); return; }
+  if (last.role === 'ai') commitMemory(chat, last.id);
+  generate(chat, { mode: 'reply' });
+}
+
+/* =====================================================================
+   UI helpers
+   ===================================================================== */
+function toast(msg, kind = '', ms = 2600) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, ms);
+}
+function openSheet({ id = '', title = '', html = '', full = false, data = {}, onClose }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'sheet-wrap';
+  wrap.dataset.sheet = id;
+  Object.assign(wrap.dataset, data);
+  wrap.innerHTML = `<div class="sheet-backdrop" data-act="closeSheet"></div><div class="sheet${full ? ' full' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-head"><h2>${esc(title)}</h2><button class="icon-btn" data-act="closeSheet" aria-label="閉じる">${ic('x')}</button></div><div class="sheet-body">${html}</div></div>`;
+  wrap._onClose = onClose;
+  $('#sheets').appendChild(wrap);
+  return wrap;
+}
+function closeSheet(wrap) {
+  wrap = wrap || $$('#sheets .sheet-wrap:not(.closing)').at(-1);
+  if (!wrap || wrap.classList.contains('closing')) return;
+  wrap.classList.add('closing');
+  wrap._onClose?.();
+  setTimeout(() => wrap.remove(), 180);
+}
+function closeAllSheets() { $$('#sheets .sheet-wrap').forEach(w => { w._onClose?.(); w.remove(); }); }
+const sheetById = id => $(`#sheets .sheet-wrap[data-sheet="${id}"]:not(.closing)`);
+function setSheetBody(id, html, top = false) {
+  const w = sheetById(id);
+  if (!w) return;
+  const b = $('.sheet-body', w), st = b.scrollTop;
+  b.innerHTML = html;
+  b.scrollTop = top ? 0 : st;
+}
+function autosize(ta) { if (!ta) return; ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 170) + 'px'; }
+function scrollBottom() { const sc = $('#msgs'); if (sc) sc.scrollTop = sc.scrollHeight; }
+async function copyText(s) {
+  try { await navigator.clipboard.writeText(s); } catch {
+    const ta = document.createElement('textarea');
+    ta.value = s; ta.style.cssText = 'position:fixed;opacity:0;top:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  }
+}
+async function saveFile(name, text, type = 'application/json') {
+  const blob = new Blob([text], { type });
+  if (/iPhone|iPad|Android/i.test(navigator.userAgent) && navigator.canShare) {
+    const file = new File([blob], name, { type });
+    if (navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+function fileToAvatar(file, size = 320) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'), g = c.getContext('2d'), s = Math.min(img.width, img.height);
+      c.width = c.height = size;
+      const sx = (img.width - s) / 2, sy = img.height > img.width ? (img.height - s) * 0.15 : (img.height - s) / 2;
+      g.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', 0.86));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('画像を読み込めませんでした')); };
+    img.src = url;
+  });
+}
+function applyUI() {
+  const u = S.settings.ui;
+  const dark = u.theme === 'auto' ? matchMedia('(prefers-color-scheme: dark)').matches : u.theme !== 'light';
+  const root = document.documentElement;
+  root.dataset.theme = dark ? 'dark' : 'light';
+  root.dataset.font = u.font;
+  root.style.setProperty('--fs', clamp(Number(u.fs) || 16, 12, 24) + 'px');
+  $('meta[name=theme-color]').content = dark ? '#0d0e12' : '#f6f4f0';
+}
+// iOS のキーボード表示時も入力欄が隠れないよう、表示領域に合わせる
+function fitViewport() {
+  const vv = window.visualViewport, app = $('#app');
+  const h = vv ? vv.height : innerHeight, top = vv ? vv.offsetTop : 0;
+  app.style.height = h + 'px';
+  app.style.transform = top ? `translateY(${top}px)` : '';
+  document.documentElement.classList.toggle('kb', !!vv && innerHeight - vv.height > 120);
+}
+function makeIcon() {
+  const c = document.createElement('canvas'), g = c.getContext('2d');
+  c.width = c.height = 180;
+  const gr = g.createLinearGradient(0, 0, 180, 180);
+  gr.addColorStop(0, '#3a2a6a'); gr.addColorStop(1, '#0d0e12');
+  g.fillStyle = gr; g.fillRect(0, 0, 180, 180);
+  g.strokeStyle = '#b69cff'; g.lineWidth = 9; g.lineJoin = 'round'; g.lineCap = 'round';
+  const layer = y => { g.beginPath(); g.moveTo(40, y); g.lineTo(90, y + 25); g.lineTo(140, y); g.stroke(); };
+  g.beginPath(); g.moveTo(90, 38); g.lineTo(140, 63); g.lineTo(90, 88); g.lineTo(40, 63); g.closePath(); g.stroke();
+  layer(90); layer(117);
+  $('#touchIcon').href = c.toDataURL('image/png');
+}
+
+/* =====================================================================
+   Views
+   ===================================================================== */
+const VIEWS = {}, MOUNT = {};
+
+function go(v, p = {}) { S.stack.push({ v, p }); render(); }
+function back() { if (S.stack.length > 1) S.stack.pop(); render(); }
+function render() {
+  const top = S.stack.at(-1);
+  const key = `${top.v}:${top.p.id || ''}:${top.v === 'home' ? S.tab : ''}`;
+  const el = $('#view'), oldSc = $('.scroll', el);
+  const keep = S.lastKey === key && oldSc ? oldSc.scrollTop : null;
+  el.className = 'view v-' + top.v;
+  el.innerHTML = VIEWS[top.v](top.p);
+  S.lastKey = key;
+  MOUNT[top.v]?.(top.p, el);
+  if (keep != null && top.v !== 'chat') { const sc = $('.scroll', el); if (sc) sc.scrollTop = keep; }
+}
+
+/* ---- home ---- */
+const TABS = [['chats', 'チャット', 'chat'], ['chars', 'キャラ', 'user'], ['worlds', '世界', 'globe'], ['plots', 'プロット', 'route'], ['settings', '設定', 'sliders']];
+VIEWS.home = () => {
+  const t = S.tab;
+  const titles = { chats: '<span class="brand">Memoria</span>', chars: 'キャラクター', worlds: '世界設定', plots: 'プロット', settings: '設定' };
+  const actions = {
+    chats: `<button class="icon-btn" data-act="newChat" aria-label="新しいチャット">${ic('plus')}</button>`,
+    chars: `<button class="icon-btn" data-act="importChar" aria-label="読み込み">${ic('upload')}</button><button class="icon-btn" data-act="newChar" aria-label="新規">${ic('plus')}</button>`,
+    worlds: `<button class="icon-btn" data-act="importWorld" aria-label="読み込み">${ic('upload')}</button><button class="icon-btn" data-act="newWorld" aria-label="新規">${ic('plus')}</button>`,
+    plots: `<button class="icon-btn" data-act="newPlot" aria-label="新規">${ic('plus')}</button>`,
+    settings: '',
+  }[t];
+  const body = { chats: tabChats, chars: tabChars, worlds: tabWorlds, plots: tabPlots, settings: tabSettings }[t]();
+  return `<header class="topbar"><h1 class="title">${titles[t]}</h1><div class="grow"></div>${actions}</header>
+  <main class="scroll">${body}</main>
+  <nav class="tabbar">${TABS.map(([k, l, i]) => `<button class="tab ${k === t ? 'on' : ''}" data-act="tab" data-tab="${k}">${ic(i)}<span>${l}</span></button>`).join('')}</nav>`;
+};
+MOUNT.home = () => {
+  const el = $('#storageInfo');
+  if (el && navigator.storage?.estimate) navigator.storage.estimate().then(e => {
+    el.textContent = `使用中のストレージ: 約${(e.usage / 1048576).toFixed(1)}MB ・ キャラ${S.chars.length} / 世界${S.worlds.length} / プロット${S.plots.length} / チャット${S.chats.length}`;
+  }).catch(() => {});
+};
+function emptyBlock(title, text, buttons) {
+  return `<div class="empty"><h2>${title}</h2><p>${text}</p><div class="btn-col">${buttons}</div></div>`;
+}
+function tabChats() {
+  if (!S.chats.length) {
+    if (!S.chars.length) return `<div class="welcome"><div class="logo">${ic('layers')}</div><h2>Memoria へようこそ</h2>
+      <p>ターンごとに事実を積み重ねる「記憶」を持った<br>AIロールプレイチャットです。</p>
+      <ol class="steps"><li><b>APIを設定</b><span>設定タブでプロバイダ・APIキー・モデルを入力</span></li>
+      <li><b>キャラ・世界・プロットを用意</b><span>自作、サンプル、SillyTavernのカードから</span></li>
+      <li><b>チャット開始</b><span>記憶は毎ターン自動で積み上がり、整理されます</span></li></ol>
+      <div class="btn-col"><button class="btn primary" data-act="loadSample">サンプルを読み込む</button><button class="btn" data-act="tab" data-tab="settings">APIを設定する</button><button class="btn ghost" data-act="useDemo">APIなしでデモを試す</button></div></div>`;
+    return emptyBlock('チャットはまだありません', 'キャラクターと、必要なら世界設定・プロットを選んで物語を始めましょう。', `<button class="btn primary" data-act="newChat">${ic('plus', 'sm')}新しいチャット</button>`);
+  }
+  const list = S.chats.slice().sort((a, b) => b.updatedAt - a.updatedAt);
+  return `<div class="list">${list.map(c => {
+    const chars = c.charIds.map(getChar).filter(Boolean), last = lastDialog(c);
+    const plot = getPlot(c.plotId);
+    return `<button class="row" data-act="openChat" data-id="${c.id}">${avatarHTML(chars[0], 50)}<div class="row-main"><div class="row-title">${esc(c.title)}</div><div class="row-sub">${plot ? `<span style="color:var(--accent)">${esc(plot.title)}</span> · ` : ''}${esc(last ? txt(last).replace(/\s+/g, ' ').slice(0, 60) : '')}</div></div><div class="row-meta">${relTime(c.updatedAt)}<br><span class="pill">${tl(maxTurn(c))}</span></div></button>`;
+  }).join('')}</div>`;
+}
+function tabChars() {
+  if (!S.chars.length) return emptyBlock('キャラクターがいません', '新しく作るか、SillyTavern のキャラクターカード（PNG / JSON）を読み込めます。', `<button class="btn primary" data-act="newChar">${ic('plus', 'sm')}キャラクターを作成</button><button class="btn" data-act="importChar">${ic('upload', 'sm')}カードを読み込む</button><button class="btn ghost" data-act="loadSample">サンプルを読み込む</button>`);
+  return `<div class="grid">${S.chars.map(c => `<button class="char-card" data-act="charMenu" data-id="${c.id}">${avatarHTML(c, 72)}<div class="cc-name">${esc(c.name)}</div><div class="cc-desc">${esc((c.description || c.personality || '').replace(/\s+/g, ' ').slice(0, 60))}</div></button>`).join('')}</div>`;
+}
+function tabWorlds() {
+  if (!S.worlds.length) return emptyBlock('世界設定はまだありません', '世界観・地理・勢力などを書いておくと、キーワード発火なしで常にAIへ渡されます。', `<button class="btn primary" data-act="newWorld">${ic('plus', 'sm')}世界設定を作成</button><button class="btn" data-act="importWorld">${ic('upload', 'sm')}ロアブック（JSON）を読み込む</button>`);
+  return `<div class="list">${S.worlds.map(w => `<button class="row" data-act="editWorld" data-id="${w.id}"><span class="row-ic">${ic('globe')}</span><div class="row-main"><div class="row-title">${esc(w.name)}</div><div class="row-sub">${esc((w.content || '').replace(/\s+/g, ' ').slice(0, 80))}</div></div><div class="row-meta">${(w.content || '').length.toLocaleString()}字</div></button>`).join('')}</div>`;
+}
+function tabPlots() {
+  if (!S.plots.length) return emptyBlock('プロットはまだありません', '状況・目的・展開の方向性を書いたプロットを用意しておくと、チャット中にワンタップで切り替えられます。', `<button class="btn primary" data-act="newPlot">${ic('plus', 'sm')}プロットを作成</button>`);
+  return `<div class="list">${S.plots.map(p => `<button class="row" data-act="editPlot" data-id="${p.id}"><span class="row-ic">${ic('route')}</span><div class="row-main"><div class="row-title">${esc(p.title)}</div><div class="row-sub">${esc((p.content || '').replace(/\s+/g, ' ').slice(0, 80))}</div></div></button>`).join('')}</div>`;
+}
+function tabSettings() {
+  const s = S.settings, p = s.provider, mp = s.mem.provider;
+  const provOpts = (sel, same) => (same ? `<option value="" ${!sel ? 'selected' : ''}>メインと同じ</option>` : '')
+    + Object.entries(PROVIDERS).map(([k, v]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${v.label}</option>`).join('');
+  const keyField = prov => prov === 'mock' ? '' : `<label class="field"><span>${PROVIDERS[prov].label} のAPIキー</span><div class="inline"><input type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-set="keys.${prov}" value="${esc(s.keys[prov] || '')}" placeholder="${PROVIDERS[prov].keyHint}"><button class="btn sm" data-act="toggleKey">表示</button></div></label>`;
+  const effortOpts = sel => [['', '指定しない'], ['low', 'low（速い）'], ['medium', 'medium'], ['high', 'high（じっくり）']]
+    .map(([v, l]) => `<option value="${v}" ${sel === v ? 'selected' : ''}>${l}</option>`).join('');
+  const num = (path, label, o = {}) => `<label class="field"><span>${label}</span><input type="number" inputmode="${o.dec ? 'decimal' : 'numeric'}" data-set="${path}" data-num="1" value="${getPath(s, path)}"${o.step ? ` step="${o.step}"` : ''}${o.min != null ? ` min="${o.min}"` : ''}>${o.hint ? `<div class="hint">${o.hint}</div>` : ''}</label>`;
+  const dl = (id, prov) => `<datalist id="${id}">${(PROVIDERS[prov].models || []).map(m => `<option value="${m}">`).join('')}</datalist>`;
+  const sel = (path, opts, cur, rer) => `<select data-set="${path}"${rer ? ' data-rerender="1"' : ''}>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  return `
+<section class="card"><h3>API</h3>
+  <label class="field"><span>プロバイダ</span><select data-set="provider" data-rerender="1">${provOpts(p)}</select></label>
+  ${keyField(p)}
+  ${p === 'custom' ? `<label class="field"><span>ベースURL</span><input data-set="customBase" value="${esc(s.customBase)}" placeholder="https://example.com/v1" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url"><div class="hint">OpenAI互換の /chat/completions を持つエンドポイント（DeepSeek・ローカルLLMなど）。ブラウザからの接続（CORS）を許可している必要があります。</div></label>` : ''}
+  <label class="field"><span>モデル</span><div class="inline"><input data-set="models.${p}" value="${esc(s.models[p] || '')}" list="dl-main" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="モデルID"><button class="btn sm" data-act="pickModel" data-p="${p}" data-path="models.${p}">一覧</button></div></label>
+  ${dl('dl-main', p)}
+  <div class="btn-row"><button class="btn sm" data-act="testApi" data-role="main">接続テスト</button></div>
+  <p class="hint">APIキーはこの端末のブラウザ内にだけ保存され、選んだAPIへ直接送信されます。</p>
+</section>
+<section class="card"><h3>生成</h3>
+  <div class="grid2">${num('maxTokens', '最大出力トークン', { min: 256 })}${num('temperature', '温度', { step: 0.05, dec: true, min: 0 })}</div>
+  <label class="field"><span>思考の深さ（effort）</span><select data-set="effort">${effortOpts(s.effort)}</select><div class="hint">Claude の新しいモデルで有効です。ロールプレイは low が速くておすすめ。温度は Claude Opus 5 / Sonnet 5 などでは使われません。</div></label>
+  ${num('context', '入力の上限目安（トークン）', { min: 4000, hint: '設定・記憶・履歴を合わせた送信量の上限。超える分は古い履歴から省かれます（省いた分もあらすじで補われます）。' })}
+  <label class="switch"><span>ストリーミング表示</span><input type="checkbox" data-set="streaming" ${s.streaming ? 'checked' : ''}></label>
+</section>
+<section class="card"><h3>記憶エンジン</h3>
+  <label class="switch"><span>毎ターン自動で記憶を更新</span><input type="checkbox" data-set="mem.auto" ${s.mem.auto ? 'checked' : ''}></label>
+  <label class="field"><span>記憶処理に使うプロバイダ</span><select data-set="mem.provider" data-rerender="1">${provOpts(mp, true)}</select></label>
+  ${mp && mp !== p ? keyField(mp) : ''}
+  <label class="field"><span>記憶処理に使うモデル</span><div class="inline"><input data-set="mem.model" value="${esc(s.mem.model)}" list="dl-mem" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="空欄＝メインと同じ"><button class="btn sm" data-act="pickModel" data-p="${mp || p}" data-path="mem.model">一覧</button></div><div class="hint">毎ターン1回の「事実の抽出」と、ときどきの整理・要約に使います。安価で速いモデル（例: claude-haiku-4-5）にすると費用を抑えられます。</div></label>
+  ${dl('dl-mem', mp || p)}
+  <label class="field"><span>記憶処理の effort</span><select data-set="mem.effort">${effortOpts(s.mem.effort)}</select></label>
+  <div class="grid2">${num('mem.recent', '原文で送る直近の件数', { min: 6 })}${num('mem.chunk', 'あらすじ化の単位（件）', { min: 4 })}</div>
+  <div class="lbl" style="margin-top:8px">記憶の容量（字）— 超えると自動で統合・圧縮</div>
+  <div class="grid2">${num('mem.budgets.char', 'キャラ記憶（1人あたり）', { min: 300 })}${num('mem.budgets.world', '世界記憶', { min: 300 })}${num('mem.budgets.user', 'ユーザー記憶', { min: 200 })}${num('mem.budgets.chronicle', 'あらすじ', { min: 500 })}${num('mem.budgets.state', '現在の状況', { min: 200 })}</div>
+  <div class="btn-row"><button class="btn sm" data-act="testApi" data-role="mem">記憶モデルを接続テスト</button></div>
+</section>
+<section class="card"><h3>プロンプト</h3>
+  <label class="field"><span>システムプロンプト</span><textarea rows="10" data-set="systemPrompt">${esc(s.systemPrompt)}</textarea><div class="hint">{{char}} と {{user}} が使えます。</div></label>
+  <div class="btn-row"><button class="btn sm" data-act="resetSystem">既定に戻す</button></div>
+  <label class="field"><span>毎ターンの追加指示（任意）</span><textarea rows="3" data-set="postPrompt" placeholder="例: 400〜700字で書く。{{user}}の行動は描写しない。">${esc(s.postPrompt)}</textarea></label>
+</section>
+<section class="card"><h3>あなた（既定のペルソナ）</h3>
+  <label class="field"><span>名前</span><input data-set="persona.name" value="${esc(s.persona.name)}"></label>
+  <label class="field"><span>設定</span><textarea rows="3" data-set="persona.desc" placeholder="外見・立場・性格など">${esc(s.persona.desc)}</textarea></label>
+</section>
+<section class="card"><h3>表示</h3>
+  <label class="field"><span>テーマ</span>${sel('ui.theme', [['dark', 'ダーク'], ['light', 'ライト'], ['auto', '端末に合わせる']], s.ui.theme)}</label>
+  <div class="grid2"><label class="field"><span>本文フォント</span>${sel('ui.font', [['gothic', 'ゴシック'], ['serif', '明朝']], s.ui.font)}</label>${num('ui.fs', '文字サイズ（px）', { min: 12 })}</div>
+</section>
+<section class="card"><h3>データ</h3>
+  <p class="hint" id="storageInfo">&nbsp;</p>
+  <div class="btn-row"><button class="btn sm" data-act="exportAll">${ic('download', 'sm')}バックアップを書き出す</button><button class="btn sm" data-act="importBackup">${ic('upload', 'sm')}バックアップを読み込む</button></div>
+  <label class="switch"><span>書き出しにAPIキーを含める</span><input type="checkbox" id="expKeys"></label>
+  <div class="btn-row"><button class="btn sm" data-act="loadSample">サンプルを追加</button><button class="btn sm danger" data-act="wipeAll">全データを削除</button></div>
+  <p class="hint">iPhone の Safari は、しばらく開かないサイトのデータを消すことがあります。「ホーム画面に追加」して使い、ときどきバックアップを書き出してください。</p>
+</section>
+<p class="foot">Memoria 1.0</p>`;
+}
+
+/* ---- editors ---- */
+function field(f, label, val, o = {}) {
+  const hint = o.hint ? `<div class="hint">${o.hint}</div>` : '';
+  if (o.input) return `<label class="field"><span>${label}</span><input data-f="${f}" value="${esc(val)}" placeholder="${esc(o.ph || '')}">${hint}</label>`;
+  return `<label class="field"><span>${label}</span><textarea data-f="${f}" rows="${o.rows || 4}" placeholder="${esc(o.ph || '')}">${esc(val)}</textarea>${hint}</label>`;
+}
+const editorHead = (title, act) => `<header class="topbar"><button class="icon-btn" data-act="back" aria-label="戻る">${ic('back')}</button><h1 class="title">${title}</h1><div class="grow"></div><button class="btn primary sm" data-act="${act}">保存</button></header>`;
+function readForm() { $$('#view [data-f]').forEach(el => { S.draft[el.dataset.f] = el.value; }); }
+
+VIEWS.editChar = () => {
+  const c = S.draft;
+  return editorHead(c._new ? '新規キャラクター' : 'キャラクター編集', 'saveChar') + `<main class="scroll form">
+  <div class="avatar-edit"><button class="av-pick" data-act="pickAvatar">${avatarHTML(c.name || c.avatar ? c : { name: '+' }, 96)}<span>${c.avatar ? '画像を変更' : '画像を設定'}</span></button>${c.avatar ? '<button class="btn sm ghost" data-act="clearAvatar">画像を外す</button>' : ''}</div>
+  ${field('name', '名前', c.name, { input: true, ph: '例: リーネ' })}
+  ${field('description', 'プロフィール・外見', c.description, { rows: 5 })}
+  ${field('personality', '性格', c.personality, { rows: 3 })}
+  ${field('scenario', '背景・シナリオ', c.scenario, { rows: 4 })}
+  ${field('firstMessage', '最初のメッセージ', c.firstMessage, { rows: 6, hint: 'チャット開始時の最初の発言。{{user}} と {{char}} が使えます。' })}
+  ${field('altGreetingsText', '別パターンの最初のメッセージ（任意）', c.altGreetingsText, { rows: 3, hint: '複数ある場合は「---」だけの行で区切ります。開始時に左右の矢印で選べます。' })}
+  ${field('examples', '台詞例（口調の参考）', c.examples, { rows: 4 })}
+  ${field('lore', '補足設定（常に参照）', c.lore, { rows: 4 })}
+  ${field('charNote', 'このキャラ専用の演技指示', c.charNote, { rows: 3 })}
+  ${c._new ? '' : `<div class="btn-row"><button class="btn sm danger" data-act="deleteChar" data-id="${c.id}">このキャラクターを削除</button></div>`}
+  </main>`;
+};
+VIEWS.editWorld = () => {
+  const w = S.draft;
+  return editorHead(w._new ? '新規世界設定' : '世界設定の編集', 'saveWorld') + `<main class="scroll form">
+  ${field('name', '名前', w.name, { input: true, ph: '例: 霧の港町ヴェルナ' })}
+  ${field('content', '世界設定', w.content, { rows: 18, hint: '地理・勢力・歴史・魔法や技術・社会のルールなど。キーワード発火なしで常にAIへ渡されます（長いほど毎回の送信量が増えます）。' })}
+  ${w._new ? '' : `<div class="btn-row"><button class="btn sm danger" data-act="deleteWorld" data-id="${w.id}">この世界設定を削除</button></div>`}
+  </main>`;
+};
+VIEWS.editPlot = () => {
+  const p = S.draft;
+  return editorHead(p._new ? '新規プロット' : 'プロットの編集', 'savePlot') + `<main class="scroll form">
+  ${field('title', 'タイトル', p.title, { input: true, ph: '例: 霧夜の依頼' })}
+  ${field('content', 'プロット内容', p.content, { rows: 10, hint: '状況・目的・展開の方向性・雰囲気など。チャット中にワンタップで切り替えられ、記憶はそのまま引き継がれます。' })}
+  ${field('opening', '導入文（任意）', p.opening, { rows: 5, hint: 'このプロットで新しいチャットを始めるとき、キャラの最初のメッセージの代わりに使われます。' })}
+  ${p._new ? '' : `<div class="btn-row"><button class="btn sm danger" data-act="deletePlot" data-id="${p.id}">このプロットを削除</button></div>`}
+  </main>`;
+};
+function charDraft(id) {
+  const c = id ? clone(getChar(id)) : { id: uid(), name: '', description: '', personality: '', scenario: '', firstMessage: '', altGreetings: [], examples: '', lore: '', charNote: '', avatar: '', createdAt: now(), _new: true };
+  c.altGreetingsText = (c.altGreetings || []).join('\n---\n');
+  return c;
+}
+
+/* ---- chat ---- */
+VIEWS.chat = p => {
+  const chat = getChat(p.id);
+  if (!chat) return '';
+  const ctx = chatCtx(chat);
+  return `<header class="topbar">
+    <button class="icon-btn" data-act="back" aria-label="戻る">${ic('back')}</button>
+    <button class="chat-head" data-act="chatSettings">${avatarHTML(ctx.chars[0], 36)}<div class="ch-text"><div class="ch-title">${esc(chat.title)}</div><div class="ch-sub">${ic('route', 'xs')}<span>${esc(ctx.plot ? ctx.plot.title : 'プロットなし')}</span></div></div></button>
+    <button class="icon-btn" data-act="plotSheet" aria-label="プロット切替">${ic('route')}</button>
+    <button class="icon-btn mem-btn" id="memBtn" data-act="memory" aria-label="記憶">${ic('layers')}<i class="dot"></i></button>
+  </header>
+  <div class="mem-flash" id="memFlash"></div>
+  <main class="scroll msgs" id="msgs"></main>
+  <footer class="composer">
+    <button class="icon-btn" data-act="composerMenu" aria-label="メニュー">${ic('plus')}</button>
+    <textarea id="input" rows="1" placeholder="${esc(ctx.user)}として書く…"></textarea>
+    <button class="send-btn" id="sendBtn" data-act="send" aria-label="送信">${ic('send')}</button>
+  </footer>`;
+};
+MOUNT.chat = p => {
+  const chat = getChat(p.id);
+  if (!chat) { S.stack.pop(); render(); return; }
+  renderMessages(chat);
+  const ta = $('#input');
+  ta.value = S.drafts[chat.id] || '';
+  autosize(ta);
+  ta.addEventListener('input', () => { autosize(ta); S.drafts[chat.id] = ta.value; });
+  ta.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+    if (e.ctrlKey || e.metaKey || (FINE && !e.shiftKey)) { e.preventDefault(); send(); }
+  });
+  ta.addEventListener('focus', () => setTimeout(scrollBottom, 350));
+  $('#sendBtn').addEventListener('pointerdown', e => e.preventDefault());
+  updateComposer();
+  $('#memBtn').classList.toggle('busy', !!S.memJobs[chat.id]);
+};
+
+function msgHTML(chat, x, ctx, lastD) {
+  if (x.role === 'sys') return `<div class="divider"><span>${ic('route', 'xs')}${esc(txt(x))}</span></div>`;
+  const covered = x.id <= chat.mem.coveredId, processed = x.id <= chat.mem.lastId;
+  const streaming = S.gen && S.gen.chatId === chat.id && S.gen.msgId === x.id;
+  const body = streaming ? (txt(x) ? fmt(txt(x), true) : TYPING) : fmt(txt(x));
+  const meta = `${tl(x.turn)}${processed ? ' · <span class="mk">記憶済</span>' : ''}`;
+  if (x.role === 'user') return `<div class="msg user${covered ? ' covered' : ''}" data-id="${x.id}"><div class="bubble" data-act="msgTap"><div class="body">${body}</div></div><div class="meta">${meta}</div></div>`;
+  const isLast = lastD && lastD.id === x.id && !streaming;
+  const swipe = isLast ? `<div class="swipe"><button class="icon-btn" data-act="swipePrev" data-id="${x.id}" ${x.sw === 0 ? 'disabled' : ''} aria-label="前の候補">${ic('left', 'sm')}</button><span>${x.sw + 1}/${x.swipes.length}</span><button class="icon-btn" data-act="swipeNext" data-id="${x.id}" aria-label="次の候補">${ic('right', 'sm')}</button><span class="grow"></span><button class="icon-btn" data-act="contMsg" aria-label="続きを書かせる">${ic('forward', 'sm')}</button><button class="icon-btn" data-act="regen" data-id="${x.id}" aria-label="再生成">${ic('refresh', 'sm')}</button></div>` : '';
+  return `<div class="msg ai${covered ? ' covered' : ''}" data-id="${x.id}">${avatarHTML(ctx.chars[0], 36)}<div class="ai-main"><div class="name">${esc(ctx.chars.map(c => c.name).join('・') || 'AI')}<span class="meta">${meta}</span></div><div class="body" data-act="msgTap">${body}</div>${swipe}</div></div>`;
+}
+function renderMessages(chat, { keep = false } = {}) {
+  const sc = $('#msgs');
+  if (!sc) return;
+  const fromBottom = sc.scrollHeight - sc.scrollTop;
+  const ctx = chatCtx(chat), all = chat.messages, n = S.showN[chat.id] || 80;
+  const start = Math.max(0, all.length - n), lastD = lastDialog(chat);
+  let html = start > 0 ? `<button class="btn sm ghost more-btn" data-act="showMore">以前のメッセージを表示（残り${start}件）</button>` : '';
+  if (!all.length) html += `<div class="empty-s">最初のメッセージを書いて、物語を始めましょう。</div>`;
+  for (let i = start; i < all.length; i++) {
+    const x = all[i];
+    html += msgHTML(chat, x, ctx, lastD);
+    if (chat.mem.coveredId && x.id <= chat.mem.coveredId && !(all[i + 1] && all[i + 1].id <= chat.mem.coveredId))
+      html += `<div class="divider accent"><span>${ic('layers', 'xs')}ここまでは「あらすじ」に要約して引き継ぎ</span></div>`;
+  }
+  sc.innerHTML = html;
+  sc.scrollTop = keep ? sc.scrollHeight - fromBottom : sc.scrollHeight;
+}
+let paintQueued = false;
+function paintStreaming(chat, msg) {
+  if (paintQueued) return;
+  paintQueued = true;
+  requestAnimationFrame(() => {
+    paintQueued = false;
+    if (curChatId() !== chat.id || S.gen?.msgId !== msg.id) return;
+    const el = $(`#msgs .msg[data-id="${msg.id}"] .body`), sc = $('#msgs');
+    if (!el || !sc) return;
+    const near = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 140;
+    el.innerHTML = fmt(txt(msg), true);
+    if (near) sc.scrollTop = sc.scrollHeight;
+  });
+}
+function updateComposer() {
+  const b = $('#sendBtn');
+  if (!b) return;
+  const g = !!(S.gen && S.gen.chatId === curChatId());
+  b.classList.toggle('stop', g);
+  b.dataset.act = g ? 'stop' : 'send';
+  b.setAttribute('aria-label', g ? '停止' : '送信');
+  b.innerHTML = g ? ic('stop') : ic('send');
+}
+function flashMem(chat, text, err = false) {
+  if (curChatId() !== chat.id) return;
+  const el = $('#memFlash');
+  if (!el) return;
+  el.innerHTML = `${ic('layers', 'xs')}${esc(text)}`;
+  el.classList.toggle('err', err);
+  el.classList.add('on');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('on'), 2800);
+}
+function memUI(chat) {
+  if (curChatId() === chat.id) {
+    $('#memBtn')?.classList.toggle('busy', !!S.memJobs[chat.id]);
+    if (!S.gen) renderMessages(chat, { keep: true });
+  }
+  const w = sheetById('memory');
+  if (w && w.dataset.chat === chat.id) {
+    const st = $('#memStatus', w);
+    if (st) st.innerHTML = memStatusHTML(chat);
+    const a = document.activeElement;
+    const typing = a && w.contains(a) && /TEXTAREA|INPUT|SELECT/.test(a.tagName);
+    if (!typing && !S.memEditing) setSheetBody('memory', memoryHTML(chat));
+  }
+}
+
+/* ---- sheets ---- */
+function openNewChat(preId) {
+  if (!S.chars.length) { toast('先にキャラクターを作成するか、サンプルを読み込んでください', 'warn', 3500); return; }
+  const sel = new Set([preId || S.chars[0].id]);
+  openSheet({ id: 'newchat', title: '新しいチャット', html: `
+    <div class="lbl">キャラクター（複数可）</div>
+    <div class="pick-list">${S.chars.map(c => `<label class="pick"><input type="checkbox" name="nc-char" value="${c.id}" ${sel.has(c.id) ? 'checked' : ''}>${avatarHTML(c, 36)}<span>${esc(c.name)}</span></label>`).join('')}</div>
+    <label class="field"><span>世界設定</span><select id="nc-world"><option value="">なし</option>${S.worlds.map((w, i) => `<option value="${w.id}" ${S.worlds.length === 1 && i === 0 ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select></label>
+    <label class="field"><span>プロット</span><select id="nc-plot"><option value="">なし</option>${S.plots.map(p => `<option value="${p.id}">${esc(p.title)}</option>`).join('')}</select></label>
+    <label class="field"><span>あなたの名前</span><input id="nc-user" value="${esc(S.settings.persona.name)}"></label>
+    <label class="field"><span>タイトル（任意）</span><input id="nc-title" placeholder="空欄なら自動"></label>
+    <button class="btn primary block" data-act="startChat">はじめる</button>` });
+}
+function createChat({ charIds, worldId, plotId, userName, title }) {
+  const chat = { id: uid(), title: '', charIds, worldId, plotId, userName, userDesc: S.settings.persona.desc, note: '', messages: [], seq: 0, createdAt: now(), updatedAt: now(), mem: newMem(), snaps: [] };
+  const ctx = chatCtx(chat), plot = ctx.plot, c0 = ctx.chars[0];
+  chat.title = title || `${ctx.chars.map(c => c.name).join('・')}${plot ? ' · ' + plot.title : ''}`;
+  const greets = plot?.opening?.trim() ? [plot.opening] : [c0?.firstMessage, ...(c0?.altGreetings || [])].filter(g => g && g.trim());
+  if (greets.length) chat.messages.push({ id: ++chat.seq, role: 'ai', swipes: greets.map(g => macros(g, ctx).trim()), sw: 0, turn: 0, t: now() });
+  return chat;
+}
+function openCharMenu(id) {
+  const c = getChar(id);
+  if (!c) return;
+  openSheet({ id: 'charmenu', title: c.name, html: `<div class="menu">
+    <button data-act="newChat" data-char="${id}">${ic('chat')}このキャラと新しいチャット</button>
+    <button data-act="editChar" data-id="${id}">${ic('edit')}編集</button>
+    <button data-act="dupChar" data-id="${id}">${ic('copy')}複製</button>
+    <button data-act="exportChar" data-id="${id}">${ic('download')}書き出し（SillyTavern互換JSON）</button>
+    <button class="danger" data-act="deleteChar" data-id="${id}">${ic('trash')}削除</button></div>` });
+}
+function openChatSettings(chat) {
+  openSheet({ id: 'chatset', title: 'チャット設定', data: { chat: chat.id }, html: `
+    <label class="field"><span>タイトル</span><input id="cs-title" value="${esc(chat.title)}"></label>
+    <div class="lbl">キャラクター</div>
+    <div class="pick-list">${S.chars.map(c => `<label class="pick"><input type="checkbox" name="cs-char" value="${c.id}" ${chat.charIds.includes(c.id) ? 'checked' : ''}>${avatarHTML(c, 32)}<span>${esc(c.name)}</span></label>`).join('')}</div>
+    <label class="field"><span>世界設定</span><select id="cs-world"><option value="">なし</option>${S.worlds.map(w => `<option value="${w.id}" ${chat.worldId === w.id ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select></label>
+    <label class="field"><span>あなたの名前</span><input id="cs-user" value="${esc(chat.userName)}"></label>
+    <label class="field"><span>あなたの設定（このチャット用）</span><textarea id="cs-udesc" rows="3">${esc(chat.userDesc || '')}</textarea></label>
+    <label class="field"><span>作者メモ（毎ターン参照される演出指示）</span><textarea id="cs-note" rows="3" placeholder="例: リーネ視点の三人称で。雨と灯りの描写を多めに。">${esc(chat.note || '')}</textarea></label>
+    <button class="btn primary block" data-act="saveChatSettings">保存</button>
+    <div class="btn-row"><button class="btn sm" data-act="exportChat">${ic('download', 'sm')}このチャットを書き出す</button><button class="btn sm danger" data-act="deleteChat">${ic('trash', 'sm')}チャットを削除</button></div>` });
+}
+function openPlotSheet(chat) {
+  const row = (id, title, sub) => `<button class="plot-opt ${(chat.plotId || '') === id ? 'on' : ''}" data-act="setPlot" data-id="${id}"><span class="radio"></span><span class="po-main"><b>${esc(title)}</b><small>${esc(sub)}</small></span></button>`;
+  openSheet({ id: 'plots', title: 'プロットを切り替え', data: { chat: chat.id }, html: `
+    ${row('', 'なし', 'プロット指示を使わない')}
+    ${S.plots.map(p => row(p.id, p.title, (p.content || '').replace(/\s+/g, ' ').slice(0, 70))).join('')}
+    <div class="btn-row"><button class="btn sm" data-act="newPlot">${ic('plus', 'sm')}新しいプロット</button>${chat.plotId && getPlot(chat.plotId) ? `<button class="btn sm" data-act="editPlot" data-id="${chat.plotId}">${ic('edit', 'sm')}現在のプロットを編集</button>` : ''}</div>
+    <p class="hint">切り替えても会話と記憶はそのまま引き継がれ、次の応答から新しいプロットが反映されます。</p>` });
+}
+function openMsgMenu(chat, msg) {
+  const isLastAi = msg.role === 'ai' && lastDialog(chat)?.id === msg.id;
+  openSheet({ id: 'msgmenu', title: msg.role === 'user' ? 'あなたのメッセージ' : 'AIのメッセージ', data: { chat: chat.id, msg: msg.id }, html: `
+    <div class="msg-preview">${esc(txt(msg).slice(0, 200))}</div>
+    <div class="menu">
+      <button data-act="mCopy">${ic('copy')}コピー</button>
+      <button data-act="mEdit">${ic('edit')}編集</button>
+      ${isLastAi ? `<button data-act="regen">${ic('refresh')}再生成（別の候補を作る）</button><button data-act="contMsg">${ic('forward')}続きを書かせる</button>` : ''}
+      <button data-act="mDelete">${ic('trash')}このメッセージだけ削除</button>
+      <button class="danger" data-act="mRewind">${ic('undo')}ここから下をすべて削除（巻き戻し）<small>記憶もこの時点まで巻き戻します</small></button>
+    </div>` });
+}
+
+/* ---- memory panel ---- */
+function memScopes(chat, ctx) {
+  const ids = ctx.chars.map(c => 'c:' + c.id);
+  for (const e of chat.mem.entries) if (e.scope.startsWith('c:') && !ids.includes(e.scope)) ids.push(e.scope);
+  return [...ids, 'world', 'user'];
+}
+function memStatusHTML(chat) {
+  const m = chat.mem, busy = !!S.memJobs[chat.id];
+  const pending = chat.messages.filter(x => isDialog(x) && x.id > m.lastId).length;
+  return `<div class="mem-status"><span>${busy ? '<span class="spin"></span>記憶を更新中…' : `${tl(m.turn)}まで記憶済み`}</span><span>未処理 ${pending}件</span><span class="grow"></span><button class="btn sm" data-act="memUpdateNow" ${busy ? 'disabled' : ''}>${ic('refresh', 'sm')}今すぐ更新</button></div>`;
+}
+function memoryHTML(chat) {
+  const ctx = chatCtx(chat), m = chat.mem, scopes = memScopes(chat, ctx);
+  if (!['state', 'chron', 'log', ...scopes].includes(S.memTab)) S.memTab = 'state';
+  const tab = S.memTab, count = sc => m.entries.filter(e => e.scope === sc).length;
+  const tabs = [['state', '現在の状況', ''], ...scopes.map(sc => [sc, scopeLabel(sc, ctx), count(sc)]), ['chron', 'あらすじ', m.chronicle.length], ['log', 'ログ', '']];
+  return `<div id="memStatus">${memStatusHTML(chat)}</div>
+    <div class="seg">${tabs.map(([k, l, n]) => `<button class="${k === tab ? 'on' : ''}" data-act="memTab" data-tab="${k}">${esc(l)}${n !== '' ? `<span class="n">${n}</span>` : ''}</button>`).join('')}</div>
+    <div class="mem-pane">${memPaneHTML(chat, tab, ctx)}</div>`;
+}
+function meterHTML(used, budget, extra = '') {
+  const pct = Math.min(100, Math.round(used / Math.max(1, budget) * 100));
+  return `<div class="meter-row"><span>${used.toLocaleString()} / ${budget.toLocaleString()}字</span><span>${extra}</span></div><div class="meter ${used > budget ? 'over' : ''}"><i style="width:${pct}%"></i></div>${used > budget ? '<p class="hint warn">容量を超えています。次の更新時に自動で統合・圧縮されます。</p>' : ''}`;
+}
+function impSel(id, cur = 3) { return `<select id="${id}">${[5, 4, 3, 2, 1].map(i => `<option value="${i}" ${i === cur ? 'selected' : ''}>重要度 ${i}</option>`).join('')}</select>`; }
+function memEntryHTML(e) {
+  if (S.memEditing === e.id) return `<div class="mem-e editing"><textarea id="memEditText" rows="3">${esc(e.text)}</textarea><div class="inline">${impSel('memEditImp', e.imp)}<button class="btn sm" data-act="memCancelEdit">取消</button><button class="btn sm primary" data-act="memSaveEdit" data-eid="${e.id}">保存</button></div></div>`;
+  const src = e.src === 'manual' ? '<span class="tag">手動</span>' : e.src === 'merged' ? '<span class="tag">統合</span>' : '';
+  return `<div class="mem-e ${e.pinned ? 'pinned' : ''}"><div class="mem-text">${esc(e.text)}</div><div class="mem-meta"><span class="imp" title="重要度">${'★'.repeat(e.imp)}<span class="off">${'★'.repeat(5 - e.imp)}</span></span><span>${tl(e.turn)}</span>${e.tag ? `<span class="tag">${TAGS[e.tag] || esc(e.tag)}</span>` : ''}${src}<span class="grow"></span><button class="icon-btn pin-b" data-act="memPin" data-eid="${e.id}" aria-label="${e.pinned ? '固定を解除' : '固定（圧縮・削除から保護）'}">${ic('pin', 'sm')}</button><button class="icon-btn" data-act="memEdit" data-eid="${e.id}" aria-label="編集">${ic('edit', 'sm')}</button><button class="icon-btn" data-act="memDel" data-eid="${e.id}" aria-label="削除">${ic('trash', 'sm')}</button></div></div>`;
+}
+function promptStatsHTML(chat) {
+  let r;
+  try { r = buildChatRequest(chat, { end: chat.messages.length, mode: 'reply' }); } catch { return ''; }
+  const i = r.info, cap = S.settings.context, tot = i.system + i.memory + i.history;
+  const bar = (label, v, cls) => `<div class="stat"><span>${label}</span><div class="meter"><i class="${cls}" style="width:${Math.min(100, Math.round(v / Math.max(tot, cap) * 100))}%"></i></div><b>${v.toLocaleString()}</b></div>`;
+  return bar('設定・プロット・あらすじ', i.system, '') + bar('記憶・現在の状況', i.memory, 'c2') + bar(`直近の会話（${i.msgs}件）`, i.history, 'c3')
+    + `<p class="hint">合計 約${tot.toLocaleString()} / 上限 ${cap.toLocaleString()} トークン（概算）${i.dropped ? ` ・ 上限のため${i.dropped}件を省略中` : ''}</p>`;
+}
+function memPaneHTML(chat, tab, ctx) {
+  const m = chat.mem, s = S.settings;
+  if (tab === 'state') return `<p class="note-box">毎ターン自動で書き直される「いま」の状況です。場所・時刻・その場の人物・所持品などを常に正しく保ち、AIへ毎回渡されます。</p>
+    <textarea id="memState" rows="9" placeholder="まだ記録されていません。会話が進むと自動で記入されます。">${esc(m.state)}</textarea>
+    <div class="btn-row end"><button class="btn sm primary" data-act="memSaveState">状況を保存</button></div>
+    <div class="lbl" style="margin-top:16px">次に送信されるプロンプトの内訳</div>${promptStatsHTML(chat)}`;
+  if (tab === 'chron') {
+    const used = m.chronicle.reduce((a, c) => a + c.text.length, 0);
+    const coveredTurn = chat.messages.find(x => x.id === m.coveredId)?.turn;
+    return `<p class="note-box">${m.coveredId ? `${tl(coveredTurn || 0)}までの会話はここに要約され、原文はAIへ送られません（画面上には残ります）。` : 'まだ要約はありません。'}直近の約${s.mem.recent}件は常に原文のまま送られます。</p>
+      ${meterHTML(used, s.mem.budgets.chronicle, `${m.chronicle.length}件`)}
+      ${m.chronicle.length ? m.chronicle.map(c => S.memEditing === c.id
+        ? `<div class="mem-e editing"><div class="mem-meta"><b>${tl(c.from)}〜${tl(c.to)}</b></div><textarea id="memEditText" rows="6">${esc(c.text)}</textarea><div class="inline"><span class="grow"></span><button class="btn sm" data-act="memCancelEdit">取消</button><button class="btn sm primary" data-act="chronSave" data-eid="${c.id}">保存</button></div></div>`
+        : `<div class="mem-e"><div class="mem-meta"><b style="color:var(--text2)">${tl(c.from)}〜${tl(c.to)}</b>${c.merged ? '<span class="tag">前史</span>' : ''}<span class="grow"></span><button class="icon-btn" data-act="chronEdit" data-eid="${c.id}" aria-label="編集">${ic('edit', 'sm')}</button><button class="icon-btn" data-act="chronDel" data-eid="${c.id}" aria-label="削除">${ic('trash', 'sm')}</button></div><div class="mem-text">${esc(c.text)}</div></div>`).join('')
+        : '<p class="empty-s">会話が長くなると、古い部分から自動であらすじ化されます。</p>'}`;
+  }
+  if (tab === 'log') {
+    const r = S.lastPrompt[chat.id];
+    const pt = r ? r.system.filter(b => b.text).map(b => '■ SYSTEM\n' + b.text).join('\n\n') + '\n\n' + r.messages.map(x => `■ ${x.role.toUpperCase()}\n${x.content}`).join('\n\n') : '（この起動中はまだ送信していません）';
+    return `<details><summary>最後に送信したプロンプトを見る</summary><pre class="prompt">${esc(pt)}</pre></details>
+      <div class="btn-row"><button class="btn sm" data-act="memRebuild">${ic('refresh', 'sm')}全ログから記憶を作り直す</button><button class="btn sm danger" data-act="memReset">記憶項目をすべて消す</button></div>
+      <div class="lbl">処理ログ</div>
+      ${m.log.length ? m.log.slice().reverse().map(l => `<div class="logline ${l.err ? 'err' : ''}"><span class="meta">${hhmm(l.t)}</span>　${esc(l.text)}</div>`).join('') : '<p class="empty-s">ログはまだありません</p>'}`;
+  }
+  const sc = tab, budget = scopeBudget(sc);
+  const list = m.entries.filter(e => e.scope === sc).sort((a, b) => a.turn - b.turn || entryNum(a) - entryNum(b));
+  const used = list.reduce((a, e) => a + e.text.length, 0);
+  const desc = sc === 'world' ? '世界・場所・組織・NPC・出来事について積み重なった事実です。'
+    : sc === 'user' ? `${esc(ctx.user)}について判明した事実です。`
+    : `${esc(scopeLabel(sc, ctx))}が体験したこと・感じたこと・関係・約束・秘密の記憶です。`;
+  return `<p class="note-box">${desc}キーワード発火ではなく、毎回すべてAIへ渡されます。📌で固定すると自動の圧縮・削除から保護されます。</p>
+    ${meterHTML(used, budget, `${list.length}件`)}
+    <div class="mem-add"><textarea id="memNew" rows="2" placeholder="記憶を手動で追加…"></textarea><div class="inline">${impSel('memNewImp', 3)}<button class="btn sm primary" data-act="memAdd" data-scope="${sc}">追加</button></div></div>
+    <div>${list.length ? list.map(memEntryHTML).join('') : '<p class="empty-s">まだ記憶はありません。会話が進むと自動で積み重なります。</p>'}</div>
+    <div class="btn-row"><button class="btn sm" data-act="memConsolidate" data-scope="${sc}" ${list.filter(e => !e.pinned).length < 3 ? 'disabled' : ''}>今すぐ整理・圧縮</button></div>`;
+}
+function memSheetChat(t) { const w = t.closest('.sheet-wrap') || sheetById('memory'); return getChat(w?.dataset.chat) || curChat(); }
+function refreshMem(top = false) { const w = sheetById('memory'); if (w) setSheetBody('memory', memoryHTML(getChat(w.dataset.chat)), top); }
+
+/* ---- import / export ---- */
+function pngText(buf) {
+  const v = new DataView(buf), u8 = new Uint8Array(buf), out = {}, dec = new TextDecoder('latin1');
+  if (u8.length < 8 || v.getUint32(0) !== 0x89504e47) return out;
+  let p = 8;
+  while (p + 8 <= u8.length) {
+    const len = v.getUint32(p), type = dec.decode(u8.subarray(p + 4, p + 8)), data = u8.subarray(p + 8, p + 8 + len);
+    if (type === 'tEXt') { const z = data.indexOf(0); out[dec.decode(data.subarray(0, z))] = dec.decode(data.subarray(z + 1)); }
+    else if (type === 'iTXt') {
+      const z = data.indexOf(0), key = dec.decode(data.subarray(0, z));
+      if (!data[z + 1]) { let q = data.indexOf(0, z + 3) + 1; q = data.indexOf(0, q) + 1; out[key] = new TextDecoder().decode(data.subarray(q)); }
+    }
+    if (type === 'IEND') break;
+    p += 12 + len;
+  }
+  return out;
+}
+function bookText(entries) {
+  return (entries || []).filter(e => e && e.enabled !== false && !e.disable && (e.content || '').trim())
+    .map(e => `■ ${e.comment || e.name || [].concat(e.keys || e.key || []).join(' / ') || '項目'}\n${e.content.trim()}`).join('\n\n');
+}
+function cardToChar(j) {
+  const d = j.data && typeof j.data === 'object' ? j.data : j;
+  const mx = d.extensions?.memoria || {};
+  return {
+    id: uid(), name: d.name || '名無し', description: d.description || '', personality: d.personality || '', scenario: d.scenario || '',
+    firstMessage: d.first_mes || '', altGreetings: d.alternate_greetings || [], examples: d.mes_example || '',
+    charNote: mx.charNote ?? [d.system_prompt, d.post_history_instructions].filter(Boolean).join('\n').replace(/\{\{original\}\}/g, '').trim(),
+    lore: mx.lore ?? bookText(d.character_book?.entries), avatar: '', createdAt: now(),
+  };
+}
+function charToCard(c) {
+  return { spec: 'chara_card_v2', spec_version: '2.0', data: {
+    name: c.name, description: c.description, personality: c.personality, scenario: c.scenario, first_mes: c.firstMessage,
+    mes_example: c.examples, alternate_greetings: c.altGreetings || [], system_prompt: c.charNote, post_history_instructions: '',
+    creator_notes: 'Exported from Memoria', tags: [], creator: '', character_version: '', extensions: { memoria: { lore: c.lore, charNote: c.charNote } },
+  } };
+}
+function lorebookToWorld(j, fname) {
+  if (j.app === 'memoria-world' && j.world) return { ...j.world, id: uid() };
+  let entries = j.entries ? (Array.isArray(j.entries) ? j.entries : Object.values(j.entries)) : Array.isArray(j) ? j : [];
+  if (!entries.length && j.data?.character_book) entries = j.data.character_book.entries || [];
+  entries = entries.slice().sort((a, b) => (a.order ?? a.insertion_order ?? 0) - (b.order ?? b.insertion_order ?? 0));
+  const content = bookText(entries);
+  if (!content) throw new Error('ロアブックの項目が見つかりませんでした');
+  return { id: uid(), name: j.name || fname.replace(/\.json$/i, ''), content, createdAt: now() };
+}
+function pick(kind, accept) { const i = $('#filePick'); i.value = ''; i.accept = accept; S.pickKind = kind; i.click(); }
+async function handleFile(kind, f) {
+  if (kind === 'avatar') { S.draft.avatar = await fileToAvatar(f); render(); return; }
+  if (kind === 'char') {
+    let card, avatar = '';
+    if (/\.png$/i.test(f.name) || f.type === 'image/png') {
+      const t = pngText(await f.arrayBuffer()), b64 = t.chara || t.ccv3;
+      if (!b64) throw new Error('この画像にはキャラクター情報が含まれていません');
+      card = JSON.parse(b64utf8(b64));
+      avatar = await fileToAvatar(f);
+    } else card = JSON.parse(await f.text());
+    const c = cardToChar(card);
+    c.avatar = avatar;
+    S.chars.push(c);
+    await DB.put('chars', c);
+    toast(`「${c.name}」を読み込みました`, 'ok');
+    render();
+    return;
+  }
+  const j = JSON.parse(await f.text());
+  if (kind === 'world') {
+    const w = lorebookToWorld(j, f.name);
+    S.worlds.push(w);
+    await DB.put('worlds', w);
+    toast(`世界設定「${w.name}」を読み込みました（${w.content.length.toLocaleString()}字）`, 'ok', 3500);
+    render();
+    return;
+  }
+  if (kind === 'backup') {
+    if (j.app !== 'memoria') throw new Error('Memoria のバックアップファイルではありません');
+    const n = ['chars', 'worlds', 'plots', 'chats'].map(k => (j[k] || []).length);
+    if (!confirm(`キャラ${n[0]}・世界${n[1]}・プロット${n[2]}・チャット${n[3]}件を読み込みます。同じIDのデータは上書きされます。よろしいですか？`)) return;
+    for (const k of ['chars', 'worlds', 'plots', 'chats']) {
+      for (const item of j[k] || []) {
+        if (k === 'chats') { item.mem = deepMerge(newMem(), item.mem || {}); item.snaps ||= []; }
+        const i = S[k].findIndex(x => x.id === item.id);
+        if (i >= 0) S[k][i] = item; else S[k].push(item);
+        await DB.put(k, item);
+      }
+    }
+    if (j.settings && confirm('設定も読み込みますか？（APIキーが含まれていない場合は現在のキーを残します）')) {
+      const keys = S.settings.keys;
+      S.settings = deepMerge(DEFAULTS, j.settings);
+      for (const p of Object.keys(keys)) if (!S.settings.keys[p]) S.settings.keys[p] = keys[p];
+      await saveSettings();
+      applyUI();
+    }
+    toast('バックアップを読み込みました', 'ok');
+    render();
+  }
+}
+async function loadSample() {
+  const w = { id: uid(), name: '霧の港町ヴェルナ', createdAt: now(), content: `【概要】
+大陸西端の港町ヴェルナ。一年の大半を海霧に包まれ、霧の濃い夜には「記憶を喰う霧精」が出ると噂される。
+
+【社会】
+- 港を治めるのは商会連合。表向きは自治都市だが、裏では密輸組合「灰の手」が力を持つ。
+- 魔法は「刻印術」のみ。金属板に紋を刻み、触れた者の体温で発動する。高価で庶民には縁遠い。
+- 衛兵隊は商会連合の私兵に近く、賄賂がものを言う。
+
+【場所】
+- 灯台通り: 古書店や酒場が並ぶ坂道。夜はランプの灯りだけが頼り。
+- 第三埠頭: 倉庫街。夜間は立ち入り禁止で、「灰の手」の荷がひそかに出入りする。
+- 旧灯台: 二十年前に灯が消えたまま放置されている。
+
+【迷信】
+- 霧の濃い夜に本名を名乗ると、霧精に記憶を奪われる。` };
+  const c = { id: uid(), name: 'リーネ', avatar: '', createdAt: now(), altGreetings: [], lore: '', charNote: '',
+    description: '灯台通りの古書店「栞と錨」の店主代理。19歳。灰色がかった銀髪を低い位置でひとつに結び、丸眼鏡をかけている。指先にはいつもインクの染み。',
+    personality: '物静かで観察眼が鋭い。本の話になると早口になる。人を信用するまで時間がかかるが、一度信じた相手には誠実。嘘をつくのが下手で、動揺すると眼鏡を押し上げる癖がある。',
+    scenario: '三年前に失踪した師匠（店主エドガー）の行方を、ひとりで探し続けている。店に残された、暗号めいた書き込みのある航海日誌が唯一の手掛かり。',
+    firstMessage: `閉店間際の「栞と錨」に、扉の鈴がからん、と鳴った。
+霧を連れて入ってきた{{user}}に、カウンターの奥で帳簿をつけていた少女が顔を上げる。丸眼鏡の奥の灰色の瞳が、濡れた外套から足元まで、静かに{{user}}を測った。
+
+「……いらっしゃいませ。もう閉めるところでしたけど」
+
+彼女はペンを置き、少しだけ声を落とす。
+
+「こんな霧の夜に古書店を訪ねる人は、たいてい何か探し物をしている人です。――あなたは、何を？」`,
+    examples: `「この本、装丁は新しいですけど中身は写本です。紙の繊維が違うので」\n「……別に、心配なんてしていません。ただ、あなたがいないと帳簿が合わないだけです」` };
+  const plots = [
+    { title: '霧夜の依頼', content: '導入編。{{user}}は師匠エドガーの失踪に関わる何かを知っている人物として、リーネと出会う。互いに探り合いながら、航海日誌の最初の暗号を解く。展開はゆっくり、信頼関係の構築を重視する。雰囲気は静かなミステリー。', opening: '' },
+    { title: '第三埠頭の影', content: '密輸組合「灰の手」が動き出す。夜の倉庫街への潜入、追跡、息を殺す緊張感のある展開にする。危険が迫り、リーネが{{user}}を頼らざるを得ない場面を作る。', opening: '' },
+    { title: '日常：雨の日の古書店', content: '事件から離れた穏やかな一日。店番、常連客とのやりとり、紅茶、何気ない会話を通して、リーネの素顔や過去を少しずつ見せる。事件は進展させない。', opening: '' },
+  ].map(p => ({ id: uid(), createdAt: now(), ...p }));
+  S.worlds.push(w); S.chars.push(c); S.plots.push(...plots);
+  await Promise.all([DB.put('worlds', w), DB.put('chars', c), ...plots.map(p => DB.put('plots', p))]);
+  toast('サンプル（世界設定・キャラクター・プロット3件）を追加しました', 'ok', 3500);
+  render();
+}
+
+/* =====================================================================
+   Actions
+   ===================================================================== */
+const ACT = {
+  back: () => back(),
+  tab: t => { closeAllSheets(); S.tab = t.dataset.tab; S.stack = [{ v: 'home', p: {} }]; render(); },
+  closeSheet: t => closeSheet(t.closest('.sheet-wrap')),
+  useDemo: () => { S.settings.provider = 'mock'; saveSettings(); toast('デモモードにしました（設定タブでいつでも変更できます）', 'ok', 3500); loadSample(); },
+  loadSample: () => loadSample(),
+  showMore: () => { const c = curChat(); S.showN[c.id] = (S.showN[c.id] || 80) + 80; renderMessages(c, { keep: true }); },
+
+  // chats
+  newChat: t => { closeAllSheets(); openNewChat(t.dataset.char); },
+  openChat: t => go('chat', { id: t.dataset.id }),
+  startChat: async t => {
+    const w = t.closest('.sheet-wrap');
+    const charIds = $$('input[name=nc-char]:checked', w).map(i => i.value);
+    if (!charIds.length) return toast('キャラクターを選んでください', 'warn');
+    const chat = createChat({ charIds, worldId: $('#nc-world', w).value, plotId: $('#nc-plot', w).value, userName: $('#nc-user', w).value.trim() || S.settings.persona.name || 'あなた', title: $('#nc-title', w).value.trim() });
+    S.chats.push(chat);
+    await DB.put('chats', chat);
+    closeAllSheets();
+    S.stack = [{ v: 'home', p: {} }];
+    S.tab = 'chats';
+    go('chat', { id: chat.id });
+  },
+  chatSettings: () => { closeAllSheets(); const c = curChat(); if (c) openChatSettings(c); },
+  saveChatSettings: async t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat);
+    const ids = $$('input[name=cs-char]:checked', w).map(i => i.value);
+    if (!ids.length) return toast('キャラクターを1人以上選んでください', 'warn');
+    chat.title = $('#cs-title', w).value.trim() || chat.title;
+    chat.charIds = ids;
+    chat.worldId = $('#cs-world', w).value;
+    chat.userName = $('#cs-user', w).value.trim() || chat.userName;
+    chat.userDesc = $('#cs-udesc', w).value;
+    chat.note = $('#cs-note', w).value;
+    touch(chat);
+    await saveChat(chat);
+    closeSheet(w);
+    render();
+    toast('保存しました', 'ok');
+  },
+  deleteChat: async t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat);
+    if (!confirm(`「${chat.title}」を削除します。記憶も含めて元に戻せません。よろしいですか？`)) return;
+    if (S.gen?.chatId === chat.id) S.gen.ctrl.abort();
+    S.chats = S.chats.filter(c => c !== chat);
+    await DB.del('chats', chat.id);
+    closeAllSheets();
+    S.stack = [{ v: 'home', p: {} }];
+    render();
+    toast('削除しました');
+  },
+  exportChat: t => { const chat = getChat(t.closest('.sheet-wrap').dataset.chat); saveFile(`memoria-chat-${chat.title.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40)}-${ymd()}.json`, JSON.stringify({ app: 'memoria', version: 1, chats: [chat] })); },
+  plotSheet: () => { closeAllSheets(); const c = curChat(); if (c) openPlotSheet(c); },
+  setPlot: async t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat), id = t.dataset.id;
+    closeSheet(w);
+    if ((chat.plotId || '') === id) return;
+    chat.plotId = id;
+    const p = getPlot(id);
+    chat.messages.push({ id: ++chat.seq, role: 'sys', swipes: [p ? `プロット「${p.title}」に切り替え` : 'プロットを解除'], sw: 0, turn: maxTurn(chat), t: now() });
+    touch(chat);
+    await saveChat(chat);
+    render();
+    toast(p ? `プロット「${p.title}」に切り替えました` : 'プロットを解除しました', 'ok');
+  },
+
+  // composer & messages
+  send: () => send(),
+  stop: () => S.gen?.ctrl.abort(),
+  composerMenu: () => {
+    const chat = curChat();
+    if (!chat) return;
+    openSheet({ id: 'cmenu', title: 'メニュー', data: { chat: chat.id }, html: `<div class="menu">
+      <button data-act="aiTurnBtn">${ic('play')}AIに物語を進めてもらう<small>自分は発言せずに次の展開へ（空欄で送信と同じ）</small></button>
+      <button data-act="contMsg">${ic('forward')}最後の応答の続きを書かせる</button>
+      <button data-act="plotSheet">${ic('route')}プロットを切り替える</button>
+      <button data-act="chatSettings">${ic('note')}作者メモ・チャット設定</button>
+      <button data-act="memUpdateNow">${ic('refresh')}記憶を今すぐ更新する</button>
+      <button data-act="memory">${ic('layers')}記憶パネルを開く</button></div>` });
+  },
+  aiTurnBtn: t => { closeSheet(t.closest('.sheet-wrap')); const c = curChat(); if (c) aiTurn(c); },
+  msgTap: t => {
+    if (String(window.getSelection?.() || '').length) return;
+    const chat = curChat(), msg = chat?.messages.find(m => m.id === Number(t.closest('.msg').dataset.id));
+    if (msg) openMsgMenu(chat, msg);
+  },
+  swipePrev: t => {
+    const chat = curChat(), msg = chat.messages.find(m => m.id === Number(t.dataset.id));
+    if (!msg || S.gen || msg.sw === 0) return;
+    msg.sw--; saveChat(chat); renderMessages(chat, { keep: true });
+  },
+  swipeNext: t => {
+    const chat = curChat(), msg = chat.messages.find(m => m.id === Number(t.dataset.id));
+    if (!msg || S.gen) return;
+    if (msg.sw < msg.swipes.length - 1) { msg.sw++; saveChat(chat); renderMessages(chat, { keep: true }); }
+    else generate(chat, { regenMsg: msg });
+  },
+  regen: t => {
+    const w = t.closest('.sheet-wrap'), chat = curChat();
+    if (w) closeSheet(w);
+    const msg = lastDialog(chat);
+    if (msg?.role === 'ai') generate(chat, { regenMsg: msg });
+  },
+  contMsg: t => { const w = t.closest('.sheet-wrap'); if (w) closeSheet(w); const c = curChat(); if (c) generate(c, { mode: 'continue' }); },
+  mCopy: async t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat), msg = chat.messages.find(m => m.id === Number(w.dataset.msg));
+    closeSheet(w);
+    await copyText(txt(msg));
+    toast('コピーしました', 'ok', 1500);
+  },
+  mEdit: t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat), msg = chat.messages.find(m => m.id === Number(w.dataset.msg));
+    closeSheet(w);
+    openSheet({ id: 'edit', title: 'メッセージを編集', data: { chat: chat.id, msg: msg.id }, html: `<textarea id="editText" class="edit-area">${esc(txt(msg))}</textarea>
+      ${msg.id <= chat.mem.lastId ? '<p class="hint">このメッセージは記憶に反映済みです。内容を大きく変えたときは、記憶パネルで該当する記憶も直してください。</p>' : ''}
+      <div class="btn-row end"><button class="btn" data-act="closeSheet">キャンセル</button><button class="btn primary" data-act="mSaveEdit">保存</button></div>` });
+  },
+  mSaveEdit: async t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat), msg = chat.messages.find(m => m.id === Number(w.dataset.msg));
+    if (!msg) return closeSheet(w);
+    msg.swipes[msg.sw] = $('#editText', w).value;
+    touch(chat);
+    await saveChat(chat);
+    closeSheet(w);
+    renderMessages(chat, { keep: true });
+  },
+  mDelete: async t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat), msg = chat.messages.find(m => m.id === Number(w.dataset.msg));
+    closeSheet(w);
+    if (!msg) return;
+    if (S.gen?.chatId === chat.id) return toast('生成中は削除できません', 'warn');
+    chat.messages.splice(chat.messages.indexOf(msg), 1);
+    touch(chat);
+    await saveChat(chat);
+    renderMessages(chat, { keep: true });
+    toast(msg.id <= chat.mem.lastId ? '削除しました（記憶に反映済みの内容は残っています）' : '削除しました', '', 3000);
+  },
+  mRewind: async t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat), msg = chat.messages.find(m => m.id === Number(w.dataset.msg));
+    closeSheet(w);
+    if (!msg) return;
+    if (S.gen?.chatId === chat.id) return toast('生成中は操作できません', 'warn');
+    const i = chat.messages.indexOf(msg), n = chat.messages.length - i;
+    if (!confirm(`このメッセージ以降の${n}件を削除して巻き戻します。よろしいですか？`)) return;
+    const r = restoreMemoryBefore(chat, msg.id);
+    chat.messages.splice(i);
+    if (msg.role === 'user') { S.drafts[chat.id] = txt(msg); const ta = $('#input'); if (ta) { ta.value = txt(msg); autosize(ta); } }
+    touch(chat);
+    await saveChat(chat);
+    renderMessages(chat);
+    toast(r === 'ok' ? '巻き戻しました（記憶もこの時点へ復元）' : r === 'fail' ? '巻き戻しました。※古すぎるため記憶は戻せませんでした。記憶パネルで確認してください。' : '巻き戻しました', r === 'fail' ? 'warn' : 'ok', 4000);
+  },
+
+  // memory panel
+  memory: () => {
+    closeAllSheets();
+    const chat = curChat();
+    if (!chat) return;
+    S.memEditing = null;
+    openSheet({ id: 'memory', title: '記憶', full: true, data: { chat: chat.id }, html: memoryHTML(chat), onClose: () => { S.memEditing = null; } });
+  },
+  memTab: t => { S.memTab = t.dataset.tab; S.memEditing = null; refreshMem(true); },
+  memUpdateNow: t => {
+    const chat = memSheetChat(t);
+    const w = t.closest('.sheet-wrap');
+    if (w && w.dataset.sheet !== 'memory') closeSheet(w);
+    const last = chat?.messages.at(-1);
+    if (!last) return toast('まだメッセージがありません');
+    if (S.gen?.chatId === chat.id) return toast('生成が終わってから実行してください', 'warn');
+    queueMemory(chat, last.id);
+    toast('記憶を更新しています…', '', 1800);
+  },
+  memPin: async t => { const chat = memSheetChat(t), e = chat.mem.entries.find(x => x.id === t.dataset.eid); if (!e) return; e.pinned = !e.pinned; await saveChat(chat); refreshMem(); toast(e.pinned ? '固定しました（自動の圧縮・削除から保護）' : '固定を解除しました', '', 2000); },
+  memEdit: t => { S.memEditing = t.dataset.eid; refreshMem(); $('#memEditText')?.focus(); },
+  memCancelEdit: () => { S.memEditing = null; refreshMem(); },
+  memSaveEdit: async t => {
+    const chat = memSheetChat(t), e = chat.mem.entries.find(x => x.id === t.dataset.eid), text = $('#memEditText').value.trim();
+    if (e && text) { e.text = text; e.imp = clampImp($('#memEditImp').value); if (e.src === 'auto') e.src = 'manual'; await saveChat(chat); }
+    S.memEditing = null;
+    refreshMem();
+  },
+  memDel: async t => {
+    const chat = memSheetChat(t), e = chat.mem.entries.find(x => x.id === t.dataset.eid);
+    if (!e || !confirm(`この記憶を削除しますか？\n\n${e.text}`)) return;
+    chat.mem.entries = chat.mem.entries.filter(x => x !== e);
+    await saveChat(chat);
+    refreshMem();
+  },
+  memAdd: async t => {
+    const chat = memSheetChat(t), text = $('#memNew').value.trim();
+    if (!text) return toast('内容を入力してください', 'warn');
+    chat.mem.entries.push({ id: 'm' + (++chat.mem.seq), scope: t.dataset.scope, text, imp: clampImp($('#memNewImp').value), tag: '', turn: chat.mem.turn, src: 'manual' });
+    await saveChat(chat);
+    refreshMem();
+    toast('記憶を追加しました', 'ok', 1500);
+  },
+  memSaveState: async t => { const chat = memSheetChat(t); chat.mem.state = $('#memState').value.trim(); await saveChat(chat); toast('現在の状況を保存しました', 'ok', 1500); },
+  memConsolidate: t => {
+    const chat = memSheetChat(t);
+    queueMemory(chat, chat.mem.lastId, { consolidateScope: t.dataset.scope });
+    toast('整理・圧縮しています…', '', 1800);
+  },
+  chronEdit: t => { S.memEditing = t.dataset.eid; refreshMem(); $('#memEditText')?.focus(); },
+  chronSave: async t => {
+    const chat = memSheetChat(t), c = chat.mem.chronicle.find(x => x.id === t.dataset.eid), text = $('#memEditText').value.trim();
+    if (c && text) { c.text = text; await saveChat(chat); }
+    S.memEditing = null;
+    refreshMem();
+  },
+  chronDel: async t => {
+    const chat = memSheetChat(t), c = chat.mem.chronicle.find(x => x.id === t.dataset.eid);
+    if (!c || !confirm('このあらすじを削除しますか？ 該当期間の出来事はAIに伝わらなくなります。')) return;
+    chat.mem.chronicle = chat.mem.chronicle.filter(x => x !== c);
+    await saveChat(chat);
+    refreshMem();
+  },
+  memRebuild: async t => {
+    const chat = memSheetChat(t), n = chat.messages.filter(isDialog).length;
+    if (!confirm(`全${n}件のメッセージから記憶とあらすじを作り直します。APIを約${Math.ceil(n / MEM_BATCH)}回以上呼び出すため費用と時間がかかります。続けますか？`)) return;
+    const log = chat.mem.log, rev = chat.mem.rev + 1;
+    chat.mem = newMem();
+    chat.mem.rev = rev;
+    chat.mem.log = log;
+    chat.snaps = [];
+    memLog(chat, '記憶の作り直しを開始しました');
+    await saveChat(chat);
+    refreshMem();
+    const last = chat.messages.at(-1);
+    if (last) queueMemory(chat, last.id);
+  },
+  memReset: async t => {
+    const chat = memSheetChat(t);
+    if (!confirm('記憶項目と「現在の状況」をすべて消します（あらすじは残ります）。よろしいですか？')) return;
+    chat.mem.entries = [];
+    chat.mem.state = '';
+    chat.mem.rev++;
+    chat.mem.lastId = Math.max(chat.mem.lastId, chat.messages.at(-1)?.id || 0);
+    memLog(chat, '記憶項目をすべて消去しました');
+    await saveChat(chat);
+    refreshMem();
+  },
+
+  // characters
+  charMenu: t => openCharMenu(t.dataset.id),
+  newChar: () => { closeAllSheets(); S.draft = charDraft(); go('editChar'); },
+  editChar: t => { closeAllSheets(); S.draft = charDraft(t.dataset.id); go('editChar', { id: t.dataset.id }); },
+  pickAvatar: () => { readForm(); pick('avatar', 'image/*'); },
+  clearAvatar: () => { readForm(); S.draft.avatar = ''; render(); },
+  saveChar: async () => {
+    readForm();
+    const d = S.draft;
+    if (!d.name.trim()) return toast('名前を入力してください', 'warn');
+    const c = { ...d, name: d.name.trim(), altGreetings: (d.altGreetingsText || '').split(/\n\s*-{3,}\s*\n/).map(x => x.trim()).filter(Boolean), updatedAt: now() };
+    delete c.altGreetingsText; delete c._new;
+    const i = S.chars.findIndex(x => x.id === c.id);
+    if (i >= 0) S.chars[i] = c; else S.chars.push(c);
+    await DB.put('chars', c);
+    toast('保存しました', 'ok', 1500);
+    back();
+  },
+  dupChar: async t => {
+    closeAllSheets();
+    const c = { ...clone(getChar(t.dataset.id)), id: uid(), createdAt: now() };
+    c.name += '（コピー）';
+    S.chars.push(c);
+    await DB.put('chars', c);
+    render();
+  },
+  exportChar: t => { closeAllSheets(); const c = getChar(t.dataset.id); saveFile(`${c.name}.json`, JSON.stringify(charToCard(c), null, 2)); },
+  deleteChar: async t => {
+    const c = getChar(t.dataset.id);
+    if (!c || !confirm(`「${c.name}」を削除しますか？（このキャラを使ったチャットは残ります）`)) return;
+    closeAllSheets();
+    S.chars = S.chars.filter(x => x !== c);
+    await DB.del('chars', c.id);
+    if (S.stack.at(-1).v === 'editChar') S.stack.pop();
+    render();
+  },
+  importChar: () => pick('char', '.json,.png,image/png,application/json'),
+
+  // worlds
+  newWorld: () => { S.draft = { id: uid(), name: '', content: '', createdAt: now(), _new: true }; go('editWorld'); },
+  editWorld: t => { S.draft = clone(getWorld(t.dataset.id)); go('editWorld', { id: t.dataset.id }); },
+  saveWorld: async () => {
+    readForm();
+    const w = { ...S.draft, name: S.draft.name.trim(), updatedAt: now() };
+    if (!w.name) return toast('名前を入力してください', 'warn');
+    delete w._new;
+    const i = S.worlds.findIndex(x => x.id === w.id);
+    if (i >= 0) S.worlds[i] = w; else S.worlds.push(w);
+    await DB.put('worlds', w);
+    toast('保存しました', 'ok', 1500);
+    back();
+  },
+  deleteWorld: async t => {
+    const w = getWorld(t.dataset.id);
+    if (!w || !confirm(`「${w.name}」を削除しますか？`)) return;
+    S.worlds = S.worlds.filter(x => x !== w);
+    await DB.del('worlds', w.id);
+    back();
+  },
+  importWorld: () => pick('world', '.json,application/json'),
+
+  // plots
+  newPlot: () => { closeAllSheets(); S.draft = { id: uid(), title: '', content: '', opening: '', createdAt: now(), _new: true }; go('editPlot'); },
+  editPlot: t => { closeAllSheets(); S.draft = clone(getPlot(t.dataset.id)); go('editPlot', { id: t.dataset.id }); },
+  savePlot: async () => {
+    readForm();
+    const p = { ...S.draft, title: S.draft.title.trim(), updatedAt: now() };
+    if (!p.title) return toast('タイトルを入力してください', 'warn');
+    delete p._new;
+    const i = S.plots.findIndex(x => x.id === p.id);
+    if (i >= 0) S.plots[i] = p; else S.plots.push(p);
+    await DB.put('plots', p);
+    toast('保存しました', 'ok', 1500);
+    back();
+  },
+  deletePlot: async t => {
+    const p = getPlot(t.dataset.id);
+    if (!p || !confirm(`「${p.title}」を削除しますか？`)) return;
+    S.plots = S.plots.filter(x => x !== p);
+    await DB.del('plots', p.id);
+    back();
+  },
+
+  // settings
+  toggleKey: t => { const i = t.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; t.textContent = i.type === 'password' ? '表示' : '隠す'; },
+  pickModel: async t => {
+    const p = t.dataset.p, path = t.dataset.path;
+    toast('モデル一覧を取得中…', '', 1500);
+    let list;
+    try { list = await fetchModels(p); } catch (e) { return toast('取得に失敗しました: ' + e.message, 'err', 7000); }
+    if (!list.length) return toast('モデルが見つかりませんでした', 'warn');
+    const w = openSheet({ id: 'models', title: `モデルを選択（${list.length}件）`, html: `<input id="modelFilter" placeholder="絞り込み…" autocapitalize="off" autocorrect="off" spellcheck="false"><div class="menu model-list" style="margin-top:8px">${list.map(m => `<button data-act="chooseModel" data-m="${esc(m)}" data-path="${path}">${esc(m)}</button>`).join('')}</div>` });
+    $('#modelFilter', w).addEventListener('input', e => { const q = e.target.value.toLowerCase(); $$('.model-list button', w).forEach(b => { b.hidden = !b.dataset.m.toLowerCase().includes(q); }); });
+  },
+  chooseModel: t => { setPath(S.settings, t.dataset.path, t.dataset.m); saveSettings(); closeSheet(t.closest('.sheet-wrap')); render(); toast('モデル: ' + t.dataset.m, 'ok', 1500); },
+  testApi: async t => {
+    const role = t.dataset.role, cfg = llmCfg(role);
+    toast(`接続テスト中…（${cfg.model || 'モデル未設定'}）`, '', 1800);
+    try {
+      const r = await callLLM({ role, kind: 'test', system: [{ text: 'You are a connection test.' }], messages: [{ role: 'user', content: '「接続OK」とだけ返答してください。' }], maxTokens: 1024 });
+      toast(`成功: ${(r.text || '（空の応答）').trim().slice(0, 60)}`, 'ok', 4000);
+    } catch (e) { toast('失敗: ' + e.message, 'err', 9000); }
+  },
+  resetSystem: () => { if (!confirm('システムプロンプトを既定に戻しますか？')) return; S.settings.systemPrompt = DEFAULT_SYSTEM; saveSettings(); render(); },
+  exportAll: () => {
+    const withKeys = $('#expKeys')?.checked;
+    const settings = clone(S.settings);
+    if (!withKeys) settings.keys = {};
+    saveFile(`memoria-backup-${ymd()}.json`, JSON.stringify({ app: 'memoria', version: 1, exportedAt: new Date().toISOString(), settings, chars: S.chars, worlds: S.worlds, plots: S.plots, chats: S.chats }));
+  },
+  importBackup: () => pick('backup', '.json,application/json'),
+  wipeAll: async () => {
+    if (!confirm('すべてのキャラ・世界設定・プロット・チャット・設定を削除します。元に戻せません。')) return;
+    if (!confirm('本当に削除しますか？（先にバックアップを書き出すことをおすすめします）')) return;
+    for (const s of ['kv', 'chars', 'worlds', 'plots', 'chats']) await DB.clear(s);
+    location.reload();
+  },
+};
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (!t || t.disabled) return;
+  const fn = ACT[t.dataset.act];
+  if (!fn) return;
+  e.preventDefault();
+  Promise.resolve(fn(t, e)).catch(err => { console.error(err); toast(err.message || String(err), 'err', 6000); });
+});
+document.addEventListener('change', e => {
+  const el = e.target.closest('[data-set]');
+  if (!el) return;
+  let v;
+  if (el.type === 'checkbox') v = el.checked;
+  else if (el.dataset.num) { if (el.value === '' || isNaN(Number(el.value))) return; v = Number(el.value); }
+  else v = el.value;
+  setPath(S.settings, el.dataset.set, v);
+  saveSettings();
+  applyUI();
+  if (el.dataset.rerender) render();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#sheets .sheet-wrap')) closeSheet(); });
+$('#filePick').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try { await handleFile(S.pickKind, f); } catch (err) { toast('読み込みに失敗しました: ' + err.message, 'err', 6000); }
+});
+window.visualViewport?.addEventListener('resize', fitViewport);
+window.visualViewport?.addEventListener('scroll', fitViewport);
+addEventListener('resize', fitViewport);
+addEventListener('beforeunload', e => { if (S.gen || Object.keys(S.memJobs).length) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------- init ---------- */
+(async function init() {
+  fitViewport();
+  makeIcon();
+  try { await DB.open(); } catch (e) {
+    document.body.innerHTML = '<p style="padding:32px;color:#eee;font-family:sans-serif">ストレージ（IndexedDB）を開けませんでした。プライベートブラウズを解除するか、別のブラウザでお試しください。</p>';
+    return;
+  }
+  const st = await DB.get('kv', 'settings');
+  S.settings = deepMerge(DEFAULTS, st?.data || {});
+  [S.chars, S.worlds, S.plots, S.chats] = await Promise.all(['chars', 'worlds', 'plots', 'chats'].map(s => DB.all(s)));
+  for (const c of S.chats) { c.mem = deepMerge(newMem(), c.mem || {}); c.snaps ||= []; }
+  const byCreated = (a, b) => (a.createdAt || 0) - (b.createdAt || 0);
+  S.chars.sort(byCreated); S.worlds.sort(byCreated); S.plots.sort(byCreated);
+  applyUI();
+  render();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyUI);
+  navigator.storage?.persist?.().catch(() => {});
+})();
+</script>
+</body>
+</html>
