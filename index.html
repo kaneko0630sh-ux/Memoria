@@ -7,27 +7,27 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Memoria">
-<meta name="theme-color" content="#0d0e12">
+<meta name="theme-color" content="#111114">
 <meta name="format-detection" content="telephone=no">
 <title>Memoria</title>
 <link rel="apple-touch-icon" id="touchIcon">
 <style>
 :root{
-  --bg:#0d0e12;--bg-elev:#15171d;--bg-elev2:#1d2029;--line:#252932;--line2:#323744;
-  --text:#ebe8e3;--text2:#a7a9b1;--text3:#6c707c;
-  --accent:#b69cff;--accent-ink:#150e28;--accent-soft:rgba(182,156,255,.13);
-  --user-bg:#262038;--danger:#ff6b7a;--ok:#6fd3a0;--warn:#f0c060;
-  --quote:#f1d7a2;--act:#9aa0ae;--c2:#6fc3d3;--c3:#8f96a8;
+  --bg:#111114;--bg-elev:#1b1c21;--bg-elev2:#26272d;--line:#25262c;--line2:#34353c;
+  --text:#f1f0f3;--text2:#a9a9b3;--text3:#6c6d77;
+  --accent:#7c4dff;--accent-hi:#a58bff;--accent-ink:#fff;--accent-soft:rgba(124,77,255,.16);
+  --bubble:#26272d;--user-bg:#6441e6;--narr:#a3a3ad;
+  --danger:#ff6b7a;--ok:#6fd3a0;--warn:#f0c060;--c2:#6fc3d3;--c3:#8f96a8;
   --font:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;
   --font-serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
   --fs:16px;--sat:env(safe-area-inset-top);--sab:env(safe-area-inset-bottom);
   color-scheme:dark;
 }
 :root[data-theme=light]{
-  --bg:#f6f4f0;--bg-elev:#fff;--bg-elev2:#efece6;--line:#e4e0d8;--line2:#d5d0c6;
-  --text:#1d1b19;--text2:#5d5a55;--text3:#98938b;
-  --accent:#6d4ed8;--accent-ink:#fff;--accent-soft:rgba(109,78,216,.1);
-  --user-bg:#ebe5fb;--quote:#8a5a00;--act:#6b6f7a;--c2:#2b8a9c;--c3:#7a8196;
+  --bg:#f5f4f8;--bg-elev:#fff;--bg-elev2:#ecebf2;--line:#e4e2ea;--line2:#d6d3de;
+  --text:#1c1b20;--text2:#5d5b66;--text3:#9795a0;
+  --accent:#6a3ff0;--accent-hi:#6a3ff0;--accent-soft:rgba(106,63,240,.1);
+  --bubble:#ecebf2;--user-bg:#6a3ff0;--narr:#6d6b76;--c2:#2b8a9c;--c3:#7a8196;
   color-scheme:light;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -41,17 +41,16 @@ input,textarea,select{font:inherit;font-size:16px;color:var(--text)}
 @media (min-width:800px){#app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
 .view{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
 .topbar{display:flex;align-items:center;gap:4px;padding:calc(var(--sat) + 6px) 8px 6px;min-height:calc(var(--sat) + 56px);background:var(--bg);border-bottom:1px solid var(--line);flex:none;z-index:2}
-.topbar .title{font-size:20px;font-weight:700;margin:0 8px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brand{font-family:var(--font-serif);letter-spacing:.08em}
+.topbar .title{font-size:19px;font-weight:800;margin:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .grow{flex:1}
 .scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .ic{width:22px;height:22px;flex:none}
 .ic.sm{width:18px;height:18px}
 .ic.xs{width:13px;height:13px}
-.icon-btn{width:42px;height:42px;display:inline-grid;place-items:center;border:0;background:none;color:var(--text2);border-radius:12px;flex:none;position:relative;padding:0}
+.icon-btn{width:42px;height:42px;display:inline-grid;place-items:center;border:0;background:none;color:var(--text);border-radius:12px;flex:none;position:relative;padding:0}
 .icon-btn:active{background:var(--bg-elev2)}
 .icon-btn:disabled{opacity:.3}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--bg-elev2);color:var(--text);font-size:15px;font-weight:600;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--bg-elev2);color:var(--text);font-size:15px;font-weight:700;white-space:nowrap}
 .btn.sm{min-height:36px;padding:0 12px;font-size:14px;border-radius:10px}
 .btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink)}
 .btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent);background:transparent}
@@ -63,47 +62,68 @@ input,textarea,select{font:inherit;font-size:16px;color:var(--text)}
 .btn-row.end{justify-content:flex-end}
 .btn-col{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:22px auto 0}
 /* tabbar */
-.tabbar{display:flex;flex:none;border-top:1px solid var(--line);background:var(--bg);padding:4px 4px calc(var(--sab) + 2px)}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0 4px;border:0;background:none;color:var(--text3);font-size:10.5px;font-weight:600}
-.tab.on{color:var(--accent)}
+.tabbar{display:flex;flex:none;border-top:1px solid var(--line);background:var(--bg);padding:6px 4px calc(var(--sab) + 2px)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;border:0;background:none;color:var(--text3);font-size:11px;font-weight:700}
+.tab .ic{width:24px;height:24px}
+.tab.on{color:var(--text)}
 .kb .tabbar{display:none}
+/* home */
+.home-head{display:flex;align-items:center;gap:16px;padding:calc(var(--sat) + 12px) 12px 4px 18px;flex:none}
+.ht{font-size:24px;font-weight:800;border:0;background:none;padding:0;color:var(--text3)}
+.ht.on{color:var(--text)}
+.search-row{padding:6px 16px 2px;flex:none}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 10px;scrollbar-width:none;flex:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:6px 14px;border-radius:999px;border:0;background:none;color:var(--text3);font-size:15px;font-weight:700}
+.chip.on{background:var(--accent);color:#fff}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 14px 28px}
+.scard{display:flex;flex-direction:column;border:0;padding:0;border-radius:16px;overflow:hidden;background:var(--bg-elev);text-align:left;min-width:0}
+.sc-img{position:relative;aspect-ratio:3/4;background:var(--bg-elev2)}
+.sc-img img{width:100%;height:100%;object-fit:cover;display:block}
+.sc-img::after{content:'';position:absolute;inset:auto 0 0 0;height:42%;background:linear-gradient(transparent,var(--bg-elev))}
+.cover-ph{width:100%;height:100%;display:grid;place-items:center;font-weight:800;color:rgba(255,255,255,.9)}
+.sc-badge{position:absolute;top:8px;left:8px;z-index:1;display:flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:12.5px;font-weight:600}
+.sc-rank{position:absolute;bottom:34px;left:10px;z-index:2;font-size:34px;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6);font-style:italic}
+.sc-body{padding:0 12px 12px;margin-top:-30px;position:relative;z-index:1}
+.sc-title{font-weight:800;font-size:16px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-desc{font-size:13px;color:var(--text2);line-height:1.45;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sc-tags{font-size:12.5px;color:var(--text3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-cont{font-size:12.5px;color:var(--accent-hi);margin-top:3px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* lists */
 .list{padding:4px 0 24px}
 .row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;border:0;background:none;text-align:left}
 .row:active{background:var(--bg-elev)}
 .row-main{flex:1;min-width:0}
-.row-title{font-weight:650;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-title{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row-sub{font-size:13.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .row-meta{font-size:12px;color:var(--text3);text-align:right;flex:none;line-height:1.6}
-.row-ic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
-.pill{display:inline-block;padding:0 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:700}
+.thumb-sq{width:52px;height:52px;border-radius:12px;overflow:hidden;flex:none;background:var(--bg-elev2)}
+.thumb-sq img,.thumb-sq .cover-ph{width:100%;height:100%;object-fit:cover}
+.pill{display:inline-block;padding:0 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-hi);font-size:11px;font-weight:700}
 .av{border-radius:50%;object-fit:cover;flex:none;display:inline-grid;place-items:center;font-weight:700;color:#fff;overflow:hidden;background:var(--bg-elev2)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:14px 14px 28px}
-.char-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 12px 14px;border-radius:16px;background:var(--bg-elev);border:1px solid var(--line);text-align:center;min-width:0}
-.char-card:active{background:var(--bg-elev2)}
-.cc-name{font-weight:700;margin-top:4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cc-desc{font-size:12.5px;color:var(--text2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5}
 .empty,.welcome{padding:36px 24px 40px;text-align:center;color:var(--text2)}
 .empty h2,.welcome h2{color:var(--text);font-size:20px;margin:12px 0 8px}
 .empty p{margin:0 auto;max-width:360px;font-size:14.5px}
-.logo{width:64px;height:64px;border-radius:18px;margin:0 auto;display:grid;place-items:center;background:linear-gradient(145deg,#3a2a6a,#15171d);color:var(--accent)}
+.logo{width:64px;height:64px;border-radius:18px;margin:0 auto;display:grid;place-items:center;background:linear-gradient(145deg,#4a2fb0,#15161b);color:#fff}
 .logo .ic{width:32px;height:32px}
 .steps{text-align:left;max-width:360px;margin:22px auto 0;padding:0;list-style:none;counter-reset:s}
 .steps li{counter-increment:s;display:grid;grid-template-columns:28px 1fr;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
-.steps li::before{content:counter(s);grid-row:span 2;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:13px;font-weight:700}
+.steps li::before{content:counter(s);grid-row:span 2;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent-hi);display:grid;place-items:center;font-size:13px;font-weight:700}
 .steps b{color:var(--text);font-size:15px}
 .steps span{font-size:13px}
 .empty-s{color:var(--text3);font-size:14px;text-align:center;padding:24px 8px}
+.sec-h{font-size:13px;color:var(--text2);font-weight:700;padding:14px 16px 4px}
+.create-top{padding:16px}
 /* forms */
-.form{padding:4px 16px 40px}
+.form{padding:4px 16px 48px}
 .card{background:var(--bg-elev);border:1px solid var(--line);border-radius:16px;padding:4px 16px 8px;margin:14px}
 .card h3{font-size:12px;letter-spacing:.1em;color:var(--text3);margin:14px 0 2px;font-weight:700}
 .field{display:block;margin:12px 0}
-.field>span,.lbl{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.field>span,.lbl{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:700}
 .hint{font-size:12px;color:var(--text3);margin:6px 0 0;line-height:1.55}
 .hint.warn{color:var(--warn)}
-input[type=text],input[type=password],input[type=number],input:not([type]),textarea,select{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:11px;padding:10px 12px;outline:none;-webkit-appearance:none;appearance:none}
-.card input[type=text],.card input[type=password],.card input[type=number],.card input:not([type]),.card textarea,.card select{background:var(--bg)}
+input[type=text],input[type=password],input[type=number],input[type=search],input:not([type]),textarea,select{width:100%;background:var(--bg-elev);border:1px solid var(--line2);border-radius:11px;padding:10px 12px;outline:none;-webkit-appearance:none;appearance:none}
+.card input:not([type=checkbox]),.card textarea,.card select{background:var(--bg)}
 textarea{line-height:1.65;resize:vertical;min-height:84px;display:block}
 input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
@@ -115,64 +135,121 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .switch input[type=checkbox]::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .switch input[type=checkbox]:checked{background:var(--accent)}
 .switch input[type=checkbox]:checked::after{transform:translateX(20px)}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none;margin:0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
 .grid2 .field{margin:8px 0}
-.avatar-edit{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 0 4px}
-.av-pick{display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:none;color:var(--accent);font-size:13px;font-weight:600}
 .foot{text-align:center;color:var(--text3);font-size:12px;padding:8px 0 28px}
-input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none;margin:0}
-.pick-list{display:flex;flex-direction:column;gap:2px;margin:0 -6px 8px}
-.pick{display:flex;align-items:center;gap:12px;padding:8px 6px;border-radius:10px}
-.pick span{font-weight:600}
+.cover-edit{display:flex;gap:14px;align-items:flex-end;padding:16px 0 4px}
+.cover-pick{width:120px;aspect-ratio:3/4;border-radius:14px;overflow:hidden;border:1px dashed var(--line2);background:var(--bg-elev);display:grid;place-items:center;color:var(--text3);padding:0;flex:none;font-size:13px}
+.cover-pick img{width:100%;height:100%;object-fit:cover;display:block}
+.ed-sec{font-size:15px;font-weight:800;margin:26px 0 4px;display:flex;align-items:center;gap:8px}
+.ed-sec small{font-weight:500;color:var(--text3);font-size:12px}
+.char-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);width:100%;border-left:0;border-right:0;border-top:0;background:none;text-align:left}
+.av-pick{display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:none;color:var(--accent-hi);font-size:13px;font-weight:700;margin:12px auto 0}
+.profile-card{display:flex;gap:14px;align-items:center;padding:6px 0}
+/* story detail */
+.detail-top{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;gap:2px;padding:calc(var(--sat) + 6px) 8px 6px;pointer-events:none}
+.detail-top .icon-btn{pointer-events:auto;color:#fff;filter:drop-shadow(0 1px 3px rgba(0,0,0,.7))}
+.detail-top .dt-title{flex:1;min-width:0;text-align:center;font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .2s}
+.detail-top.solid{background:var(--bg);border-bottom:1px solid var(--line);pointer-events:auto}
+.detail-top.solid .dt-title{opacity:1}
+.detail-top.solid .icon-btn{color:var(--text);filter:none}
+.hero{position:relative;aspect-ratio:4/5;background:var(--bg-elev2);overflow:hidden}
+.hero img{width:100%;height:100%;object-fit:cover;display:block}
+.hero::after{content:'';position:absolute;inset:auto 0 0 0;height:30%;background:linear-gradient(transparent,var(--bg))}
+.thumbs{display:flex;gap:10px;padding:4px 16px 0;overflow-x:auto;position:relative;z-index:1;margin-top:-26px;scrollbar-width:none}
+.thumb{width:52px;height:64px;border-radius:8px;overflow:hidden;border:2px solid transparent;padding:0;flex:none;background:var(--bg-elev2);opacity:.7}
+.thumb.on{border-color:#fff;opacity:1}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.d-body{padding:14px 16px 24px}
+.d-title{font-size:26px;font-weight:900;margin:6px 0 6px;line-height:1.3}
+.d-desc{margin:0 0 4px;font-size:16px;line-height:1.6;white-space:pre-wrap}
+.d-tags{color:var(--text3);font-size:14.5px}
+.d-stats{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.d-stats>*{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:8px;background:var(--bg-elev2);border:0;font-size:13px;color:var(--text2);font-weight:600}
+.d-body hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+.d-h{font-size:22px;font-weight:900;margin:22px 0 12px}
+.ccard{background:var(--bg-elev);border-radius:16px;padding:16px;margin-bottom:12px}
+.ccard .cc-img{width:132px;aspect-ratio:1;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.ccard .cc-img img{width:100%;height:100%;object-fit:cover;display:block}
+.ccard .cc-n{font-size:19px;font-weight:800;margin-bottom:6px}
+.pre{white-space:pre-wrap;line-height:1.65;color:var(--text2);font-size:15px}
+.clip{max-height:230px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
+.more{display:flex;justify-content:center;width:100%;border:0;background:none;color:var(--text2);padding:6px 0}
+.intro{margin:0 -16px}
+.d-bar{flex:none;display:flex;gap:10px;padding:10px 16px calc(var(--sab) + 10px);background:var(--bg);border-top:1px solid var(--line)}
+.d-bar .fav{width:56px;height:52px;border-radius:12px;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none;opacity:.55}
+.d-bar .fav.on{opacity:1}
+.d-bar .fav.on .ic{fill:currentColor}
+.d-bar .btn{flex:1;min-height:52px;font-size:17px}
 /* chat */
-.chat-head{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:4px 6px;border-radius:12px}
-.chat-head:active{background:var(--bg-elev)}
-.ch-text{min-width:0}
-.ch-title{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
-.ch-sub{font-size:12px;color:var(--accent);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;line-height:1.4}
-.ch-sub span{overflow:hidden;text-overflow:ellipsis}
-.mem-btn .dot{position:absolute;top:9px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:0;transition:opacity .2s}
+.chat-top{gap:6px}
+.ct-title{flex:1;min-width:0;font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
+.mpill{display:flex;align-items:center;gap:2px;height:34px;padding:0 8px 0 13px;border-radius:999px;background:var(--bg-elev2);border:0;font-weight:800;font-size:14px;max-width:150px;flex:none}
+.mpill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mem-btn .dot{position:absolute;top:8px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--accent-hi);opacity:0;transition:opacity .2s}
 .mem-btn.busy .dot{opacity:1;animation:pulse 1s infinite}
-.mem-btn.busy{color:var(--accent)}
 @keyframes pulse{50%{transform:scale(.5);opacity:.4}}
 .mem-flash{position:absolute;top:calc(var(--sat) + 62px);left:50%;transform:translate(-50%,-6px);background:var(--bg-elev2);border:1px solid var(--line2);color:var(--text2);font-size:12.5px;padding:5px 12px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:5;white-space:nowrap;display:flex;align-items:center;gap:6px;max-width:92%}
 .mem-flash.on{opacity:1;transform:translate(-50%,0)}
 .mem-flash.err{color:var(--danger)}
-.msgs{padding:8px 0 20px}
-.msg{padding:9px 16px}
-.msg.ai{display:flex;gap:11px;align-items:flex-start}
-.ai-main{flex:1;min-width:0}
-.msg .name{font-size:13px;font-weight:700;color:var(--text2);margin:5px 0 3px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
-.meta{font-size:11px;color:var(--text3);font-weight:500}
-.meta .mk{color:var(--accent)}
-.body{font-size:var(--fs);line-height:1.85;word-break:break-word;overflow-wrap:anywhere}
-[data-font=serif] .body{font-family:var(--font-serif)}
-.body p{margin:0 0 .75em}
-.body p:last-child{margin-bottom:0}
-.msg.user{display:flex;flex-direction:column;align-items:flex-end}
-.msg.user .bubble{background:var(--user-bg);padding:10px 14px;border-radius:18px 18px 6px 18px;max-width:86%}
-.msg.user .meta{margin:4px 4px 0}
-.q{color:var(--quote)}
-.act{color:var(--act)}
-.msg.covered{opacity:.5}
-.divider{display:flex;align-items:center;gap:10px;margin:12px 16px;color:var(--text3);font-size:12px}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
+.msgs{padding:4px 0 16px}
+.notice{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--text3);font-size:12.5px;padding:12px 16px 2px}
+.divider{display:flex;align-items:center;gap:10px;margin:12px 0;color:var(--text2);font-size:13px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line2)}
 .divider span{display:flex;align-items:center;gap:5px;text-align:center}
-.divider.accent{color:var(--accent)}
-.swipe{display:flex;align-items:center;gap:0;margin:6px 0 0 -8px;color:var(--text3);font-size:12.5px}
-.swipe .icon-btn{width:36px;height:34px}
-.caret{display:inline-block;width:.45em;height:1em;vertical-align:-2px;background:var(--accent);opacity:.75;animation:blink 1s steps(2) infinite;margin-left:2px;border-radius:2px}
+.divider.accent{color:var(--accent-hi);margin:14px 16px;font-size:12px}
+.msg{position:relative}
+.msg.covered{opacity:.5}
+.narr{display:flex;gap:10px;padding:10px 18px 10px 16px;color:var(--narr);font-style:italic;font-size:var(--fs);line-height:1.75}
+.narr>.ic{flex:none;margin-top:5px;color:var(--text3)}
+.narr p{margin:0 0 .9em}
+.narr p:last-child{margin-bottom:0}
+[data-font=serif] .narr,[data-font=serif] .bubble{font-family:var(--font-serif)}
+.say{display:flex;gap:10px;padding:8px 14px;align-items:flex-start}
+.say-main{min-width:0;flex:1}
+.say-name{font-size:13px;color:var(--text2);margin:2px 0 5px}
+.brow{display:flex;align-items:flex-end;gap:6px}
+.bubble.ai{background:var(--bubble);border-radius:6px 20px 20px 20px;padding:12px 16px;max-width:calc(100% - 40px);font-size:var(--fs);line-height:1.75;word-break:break-word;overflow-wrap:anywhere}
+.bubble.ai p{margin:0 0 .95em}
+.bubble.ai p:last-child{margin-bottom:0}
+.bubble.ai p.a{color:var(--narr);font-style:italic}
+.bubble.ai p.d{color:var(--text)}
+.mtag{font-size:11px;color:var(--text3);flex:none;padding-bottom:2px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg.user{display:flex;justify-content:flex-end;align-items:flex-start;gap:8px;padding:8px 12px 8px 40px}
+.u-main{display:flex;flex-direction:column;align-items:flex-end;min-width:0}
+.u-name{font-size:13px;color:var(--accent-hi);margin:2px 2px 5px}
+.bubble.me{background:var(--user-bg);color:#fff;border-radius:20px 6px 20px 20px;padding:11px 16px;font-size:var(--fs);line-height:1.7;word-break:break-word;overflow-wrap:anywhere}
+.bubble.me p{margin:0 0 .6em}
+.bubble.me p:last-child{margin-bottom:0}
+.bubble.me .act{color:rgba(255,255,255,.72);font-style:italic}
+.msg.flash .bubble,.msg.flash .narr{animation:flash 1.6s}
+@keyframes flash{0%,60%{box-shadow:0 0 0 2px var(--accent-hi)}}
+.swipe{display:flex;align-items:center;gap:0;padding:0 12px 4px 60px;color:var(--text3);font-size:12.5px}
+.swipe .icon-btn{width:36px;height:34px;color:var(--text3)}
+.caret{display:inline-block;width:.45em;height:1em;vertical-align:-2px;background:var(--accent-hi);opacity:.8;animation:blink 1s steps(2) infinite;margin-left:2px;border-radius:2px}
 @keyframes blink{50%{opacity:0}}
-.typing{display:inline-flex;gap:5px;padding:8px 0}
+.typing{display:inline-flex;gap:5px;padding:4px 0}
 .typing i{width:7px;height:7px;border-radius:50%;background:var(--text3);animation:bob 1.2s infinite}
 .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
-@keyframes bob{30%{transform:translateY(-5px);background:var(--accent)}}
-.more-btn{display:flex;margin:4px auto 8px}
-.composer{flex:none;display:flex;align-items:flex-end;gap:6px;padding:8px 10px calc(var(--sab) + 8px);border-top:1px solid var(--line);background:var(--bg)}
+@keyframes bob{30%{transform:translateY(-5px);background:var(--accent-hi)}}
+.more-btn{display:flex;margin:8px auto}
+.to-bottom{position:absolute;right:14px;width:44px;height:44px;border-radius:50%;background:var(--bg-elev2);border:1px solid var(--line2);display:grid;place-items:center;color:var(--text);opacity:0;pointer-events:none;transition:opacity .2s;z-index:4;padding:0}
+.to-bottom.on{opacity:1;pointer-events:auto}
+.composer{flex:none;padding:6px 10px calc(var(--sab) + 8px);background:var(--bg);position:relative}
 .kb .composer{padding-bottom:8px}
-.composer textarea{flex:1;min-height:42px;max-height:170px;resize:none;border-radius:21px;padding:9px 16px;background:var(--bg-elev);line-height:1.5}
-.send-btn{width:42px;height:42px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none;padding:0}
-.send-btn.stop{background:var(--danger);color:#fff}
+.comp-row{display:flex;align-items:flex-end;gap:8px}
+.bolt{width:46px;height:46px;border-radius:50%;border:0;background:var(--bg-elev2);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text);flex:none;padding:0}
+.bolt small{font-size:9px;line-height:1.1;color:var(--text2);font-weight:700}
+.in-wrap{flex:1;display:flex;align-items:flex-end;background:var(--bg-elev2);border-radius:23px;min-width:0}
+.in-wrap textarea{flex:1;border:0;background:transparent;border-radius:23px;padding:11px 4px 11px 18px;min-height:46px;max-height:170px;resize:none;line-height:1.5}
+.ast{width:42px;height:46px;border:0;background:none;color:var(--text2);font-size:24px;flex:none;padding:0;line-height:1}
+.send-btn{width:46px;height:46px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none;padding:0}
+.send-btn.stop{background:var(--danger)}
+.choices{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding:2px 0 8px}
+.choices:empty{display:none}
+.choice{border:1px solid var(--accent);background:var(--accent-soft);color:var(--text);border-radius:16px;padding:8px 14px;font-size:14.5px;text-align:left;max-width:92%;line-height:1.5}
+.choice-wait{font-size:12.5px;color:var(--text3);align-self:center}
 /* sheets */
 #sheets{position:absolute;inset:0;pointer-events:none;z-index:40}
 .sheet-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:auto}
@@ -185,36 +262,48 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none
 .sheet-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:4px 18px 20px}
 .sheet-wrap.closing .sheet{animation:down .18s forwards}
 .sheet-wrap.closing .sheet-backdrop{animation:fadeout .18s forwards}
+.sheet-wrap.right{justify-content:flex-end;align-items:stretch}
+.sheet-wrap.right .sheet{width:min(74%,400px);max-height:none;height:100%;border-radius:0;border-top:0;border-left:1px solid var(--line2);animation:slidein .24s cubic-bezier(.2,.8,.2,1);padding-top:var(--sat);background:var(--bg-elev)}
+.sheet-wrap.right.closing .sheet{animation:slideout .18s forwards}
+.sheet-wrap.right .sheet-head{display:none}
+.sheet-wrap.right .sheet-body{display:flex;flex-direction:column;padding:10px 16px 0}
 @keyframes up{from{transform:translateY(100%)}}
 @keyframes down{to{transform:translateY(100%)}}
+@keyframes slidein{from{transform:translateX(100%)}}
+@keyframes slideout{to{transform:translateX(100%)}}
 @keyframes fade{from{opacity:0}}
 @keyframes fadeout{to{opacity:0}}
+.dr-card{display:flex;align-items:center;gap:10px;background:var(--bg-elev2);border-radius:14px;padding:12px 10px 12px 14px;margin:6px 0 10px}
+.dr-card div{flex:1;min-width:0}
+.dr-card small{display:block;color:var(--text3);font-size:11px}
+.dr-card b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+.dmenu button{display:flex;align-items:center;gap:6px;width:100%;padding:13px 0;border:0;background:none;text-align:left;font-size:16px;color:var(--text)}
+.dmenu .dm{flex:1;min-width:0}
+.dmenu small{display:block;color:var(--text3);font-size:12px;margin-top:1px}
+.dmenu .val{color:var(--text3);font-size:14px;white-space:nowrap}
+.dmenu .ic{color:var(--text3)}
+.dmenu hr{border:0;border-top:1px solid var(--line2);margin:8px 0}
+.dr-exit{margin:auto -16px 0;display:flex;align-items:center;gap:10px;border:0;background:var(--bg-elev2);color:var(--text2);padding:18px 18px calc(var(--sab) + 18px);font-size:16px}
 .menu{display:flex;flex-direction:column;gap:2px;margin:0 -8px}
 .menu button{display:flex;align-items:center;gap:14px;padding:12px;border:0;background:none;border-radius:12px;text-align:left;font-size:16px}
 .menu button:active{background:var(--bg-elev2)}
 .menu button .ic{color:var(--text2)}
 .menu button.danger,.menu button.danger .ic{color:var(--danger)}
+.menu button.on{color:var(--accent-hi)}
 .menu small{display:block;color:var(--text3);font-size:12px;font-weight:400}
-.menu[hidden],.menu button[hidden]{display:none}
+.menu button[hidden]{display:none}
 .msg-preview{font-size:13.5px;color:var(--text2);background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .edit-area{min-height:40vh}
-.plot-opt{display:flex;align-items:flex-start;gap:12px;width:100%;padding:12px 10px;border:1px solid var(--line);border-radius:14px;background:var(--bg);text-align:left;margin-bottom:8px}
-.plot-opt.on{border-color:var(--accent);background:var(--accent-soft)}
-.plot-opt .radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--line2);flex:none;margin-top:2px}
-.plot-opt.on .radio{border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--bg-elev);background:var(--accent)}
-.po-main{min-width:0}
-.po-main b{display:block;font-size:15px}
-.po-main small{display:block;color:var(--text2);font-size:12.5px;line-height:1.5;margin-top:2px}
 /* memory */
 .seg{display:flex;gap:6px;overflow-x:auto;padding:4px 18px 12px;margin:0 -18px;scrollbar-width:none}
 .seg::-webkit-scrollbar{display:none}
-.seg button{flex:none;padding:6px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--bg);color:var(--text2);font-size:13.5px;font-weight:600}
-.seg button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.seg button{flex:none;padding:6px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--bg);color:var(--text2);font-size:13.5px;font-weight:700}
+.seg button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-hi)}
 .seg .n{font-size:11px;opacity:.75;margin-left:5px}
 .mem-status{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;font-size:12.5px;color:var(--text2);padding:2px 0 10px}
-.spin{display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid var(--accent);border-right-color:transparent;animation:rot .8s linear infinite;vertical-align:-1px;margin-right:6px}
+.spin{display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid var(--accent-hi);border-right-color:transparent;animation:rot .8s linear infinite;vertical-align:-1px;margin-right:6px}
 @keyframes rot{to{transform:rotate(360deg)}}
-.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:6px 0 4px}
+.meter{height:6px;border-radius:3px;background:var(--line2);overflow:hidden;margin:6px 0 4px}
 .meter>i{display:block;height:100%;background:var(--accent);border-radius:3px}
 .meter>i.c2{background:var(--c2)}.meter>i.c3{background:var(--c3)}
 .meter.over>i{background:var(--warn)}
@@ -229,15 +318,15 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none
 .mem-e.editing{display:flex;flex-direction:column;gap:8px}
 .mem-text{font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
 .mem-meta{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:12px;color:var(--text3);flex-wrap:wrap}
-.mem-meta .icon-btn{width:34px;height:32px}
+.mem-meta .icon-btn{width:34px;height:32px;color:var(--text3)}
 .imp{color:var(--warn);letter-spacing:-1px;font-size:11px}
 .imp .off{color:var(--line2)}
 .tag{padding:0 7px;border-radius:6px;background:var(--bg-elev2);font-size:11px;color:var(--text2)}
-.pinned .pin-b{color:var(--accent)}
+.pinned .pin-b{color:var(--accent-hi)}
 .logline{font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--text2);line-height:1.5}
 .logline.err{color:var(--danger)}
 details{margin:10px 0}
-summary{cursor:pointer;color:var(--text2);font-size:13.5px;font-weight:600;padding:6px 0}
+summary{cursor:pointer;color:var(--text2);font-size:13.5px;font-weight:700;padding:6px 0}
 pre.prompt{white-space:pre-wrap;word-break:break-word;font-size:11.5px;line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;max-height:55vh;overflow:auto;margin:6px 0 0}
 .note-box{background:var(--accent-soft);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--text2);line-height:1.6;margin:4px 0 10px}
 /* toast */
@@ -297,6 +386,7 @@ function hhmm(t) {
   return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 function ymd() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`; }
+const fmtCount = n => (n >= 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, '') + '万' : n.toLocaleString());
 const getPath = (o, p) => p.split('.').reduce((a, k) => a?.[k], o);
 function setPath(o, p, v) { const ks = p.split('.'), last = ks.pop(); let t = o; for (const k of ks) t = t[k] ??= {}; t[last] = v; }
 function deepMerge(base, over) {
@@ -310,15 +400,16 @@ function b64utf8(b64) {
   for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
   return new TextDecoder().decode(u8);
 }
+const modelShort = m => String(m || '').split('/').pop().replace(/^claude-/, '');
 
 /* ---------- storage (IndexedDB) ---------- */
 const DB = {
   db: null,
   open() {
     return new Promise((res, rej) => {
-      const r = indexedDB.open('memoria', 1);
+      const r = indexedDB.open('memoria', 2);
       r.onupgradeneeded = () => {
-        for (const s of ['kv', 'chars', 'worlds', 'plots', 'chats'])
+        for (const s of ['kv', 'chars', 'worlds', 'plots', 'chats', 'stories'])
           if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: 'id' });
       };
       r.onsuccess = () => { this.db = r.result; res(); };
@@ -340,26 +431,72 @@ const DB = {
   clear(s) { return this.tx(s, 'readwrite', st => st.clear()); },
 };
 
-/* ---------- defaults ---------- */
-const DEFAULT_SYSTEM = `あなたは没入型ロールプレイの語り手であり、{{char}}を演じる作家です。{{user}}と共に一つの物語を紡ぎます。
+/* =====================================================================
+   Built-in prompts（ユーザーには表示しない内部設定）
+   ===================================================================== */
+const CORE_RULES = `あなたは没入型ロールプレイの作家であり、登場キャラクター全員とナレーションを担当します。{{user}}と共に一つの物語を紡ぎます。
 
 # 原則
-- {{char}}の性格・口調・価値観・知識の範囲を一貫して守ってください。{{char}}が知り得ないことは知らないものとして振る舞います。
-- {{user}}の台詞・行動・心情を代わりに書かないでください。{{user}}が反応できる余地を残して応答を終えます。
-- <world>・<character>・<chronicle>・<memory>・<current_state> は物語上の確定事実です。矛盾させず、過去の出来事・約束・関係性を自然に踏まえてください。
-- <plot> と <author_note> は物語の方向性の指示です。本文で言及せず、展開の中で自然に反映させます。
-- ユーザーメッセージ冒頭の <context> はシステムが自動で添付する最新の記憶と状況であり、{{user}}の発言ではありません。<current_state> より会話履歴の方が新しい場合は会話履歴を優先します。
+- 各キャラクターの性格・口調・一人称・呼び方・価値観・知識の範囲を一貫して守る。キャラが知り得ないことは知らないものとして振る舞う。
+- <world>・<character>・<chronicle>・<memory>・<current_state> は物語上の確定事実。矛盾させず、過去の出来事・約束・関係性を自然に踏まえる。
+- <plot> と <author_note> は物語の方向性の指示。本文で言及せず、展開の中で自然に反映させる。
+- ユーザーメッセージ冒頭の <context> はシステムが自動で添付する最新の記憶と状況であり、{{user}}の発言ではない。<current_state> より会話履歴の方が新しい場合は会話履歴を優先する。
+- {{user}}のメッセージ中の *…* は{{user}}の行動や状況の描写、それ以外は{{user}}の台詞として受け取る。
+- 物語を能動的に前へ進める。ただし{{user}}の選択を奪わない。`;
 
-# 文体
-- 日本語の小説形式。地の文で情景・所作・表情・五感を描き、台詞は「」で書きます。
-- 同じ言い回しや展開の繰り返しを避け、物語を能動的に前へ進めてください。
-- 応答にはタグや注釈を含めず、物語の本文だけを書きます。`;
+const STYLE_GUIDE = `# 文体（厳守）
+## 基本
+- 三人称。ただし、いま描いている人物の内面に寄り添う自由間接話法で書く。地の文の中に、その人物の本音や独白が地続きで溶け込む（例: 送る。この人は何から何まで／正気じゃない。最高だ）。
+- 一文は短く。体言止めと言い切りでテンポよく畳みかける（例: 場違いだ。／プロだ／戦場だ）。長い説明文を続けない。
+- 段落は1〜3文。地の文・動作の段落の最後の文には句点「。」を付けない。台詞には付けてよい。
+- 抽象語より具体物。地名・店名・ブランド・品物・値段・音・匂い・光・手触りなど、固有で具体的なディテールで情景と境遇を立ち上げる。
+- 感情は説明しない。身体の反応と行動で見せる（例: 爪が食い込むほど強く／声が裏返っている／頬にソファの縫い目の跡がついている）。
+- ときどき、醒めたユーモアや皮肉の一言で落とす（例: もはや個人の駐車場じゃない。小さなディーラーだ／人生が急にバグっている）。
+- 比喩は控えめに、効くところで一つだけ。同じ語彙・言い回し・構文を繰り返さない。
 
+## 台詞
+- 台詞は「」で囲まない。その人物が実際に口にする言葉だけを書く。
+- 口語のリズムを優先する。言いよどみ（…）、言い直し、途切れを自然に使う（例: ちょ…ちょっと待ってください。今…今なんて言いました…？）。
+- 一人称・語尾・相手の呼び方をキャラごとに厳密に守る。
+- 長台詞にしない。台詞と動作を交互に置いて間を作る。
+
+## 構成
+- ナレーション: 場面転換、情景、時間の経過、その場全体の空気、背景となる事実を、カメラを引いた視点で描く。台詞は入れない。
+- キャラクターのブロック: その人物の動作・表情・内心と、その人物の台詞を交互に並べる。「動作→台詞→動作→台詞」が基本のリズム。
+- 1回の応答は、ナレーション0〜2個とキャラクターのブロック1〜3個を組み合わせ、全体で400〜900字程度。
+- 応答の最後は、{{user}}が返したくなる台詞か、小さな動作・余韻で終える。
+
+## 禁止
+- {{user}}の台詞・内心・新しい大きな行動を勝手に書くこと（{{user}}がすでに示した行動の結果を描くのは可）。
+- 「〜と思った」「〜な気持ちになった」式の説明的な感情描写。
+- 箇条書き、見出し、メタ発言、括弧書きの注釈。`;
+
+function formatRules(ctx) {
+  const names = ctx.chars.map(c => c.name);
+  return `# 出力形式（厳守・システムが解析して表示します）
+ブロックごとに見出し行を置き、その下に本文を書く。見出しは【ナレーション】か【キャラクター名】のどちらかだけ。
+
+【ナレーション】
+情景・場面の描写（1段落を1行で書く）
+
+【キャラクター名】
+*その人物の動作・表情・内心の段落*
+その人物の台詞
+*動作の段落*
+台詞
+
+- キャラクター名は ${names.join('、') || '登場人物の名前'} を正確に使う。名前のある脇役が話すときは【その人物の名前】で独立したブロックにする。
+- キャラクターのブロック内では、動作・内心の段落は行頭と行末を必ず * で囲む。台詞は * で囲まず、「」も付けない。
+- 1つのブロックに書くのはその人物の動作と台詞だけ。別の人物が話すときはブロックを分ける。`;
+}
+
+/* ---------- constants ---------- */
 const PROVIDERS = {
   anthropic: { label: 'Anthropic（Claude）', models: ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5', 'claude-fable-5-1', 'claude-opus-4-8'], keyHint: 'sk-ant-...' },
   openai: { label: 'OpenAI', models: [], keyHint: 'sk-...' },
   openrouter: { label: 'OpenRouter', models: [], keyHint: 'sk-or-...' },
   nanogpt: { label: 'NanoGPT', models: ['anthropic/claude-sonnet-5', 'deepseek-chat', 'moonshotai/kimi-k2.6', 'z-ai/glm-5.3-flash'], keyHint: 'NanoGPTのAPIキー' },
+  deepseek: { label: 'DeepSeek', models: ['deepseek-flash', 'deepseek-v4-pro'], keyHint: 'sk-...' },
   gemini: { label: 'Google Gemini', models: ['gemini-2.5-pro', 'gemini-2.5-flash'], keyHint: 'AIza...' },
   custom: { label: 'OpenAI互換（カスタムURL）', models: [], keyHint: '不要なら空欄' },
   mock: { label: 'デモ（APIなし・動作確認用）', models: ['demo'], keyHint: '' },
@@ -367,16 +504,17 @@ const PROVIDERS = {
 
 const DEFAULTS = {
   provider: 'anthropic',
-  keys: { anthropic: '', openai: '', openrouter: '', nanogpt: '', gemini: '', custom: '' },
-  models: { anthropic: 'claude-opus-5', openai: '', openrouter: '', nanogpt: '', gemini: '', custom: '', mock: 'demo' },
+  keys: { anthropic: '', openai: '', openrouter: '', nanogpt: '', deepseek: '', gemini: '', custom: '' },
+  models: { anthropic: 'claude-opus-5', openai: '', openrouter: '', nanogpt: '', deepseek: 'deepseek-flash', gemini: '', custom: '', mock: 'demo' },
+  recentModels: {},
   customBase: '', nanoSub: false,
   maxTokens: 4000, temperature: 1, effort: 'low', streaming: true, context: 48000,
   mem: {
     auto: true, provider: '', model: '', effort: 'medium', recent: 30, chunk: 10,
     budgets: { char: 2000, world: 2500, user: 1200, chronicle: 3500, state: 700 },
   },
-  systemPrompt: DEFAULT_SYSTEM, postPrompt: '',
-  persona: { name: 'あなた', desc: '' },
+  postPrompt: '',
+  persona: { name: 'あなた', desc: '', avatar: '' },
   ui: { theme: 'dark', font: 'gothic', fs: 16 },
 };
 
@@ -386,42 +524,47 @@ const MEM_BATCH = 12;
 
 /* ---------- state ---------- */
 const S = {
-  settings: null, chars: [], worlds: [], plots: [], chats: [],
-  stack: [{ v: 'home', p: {} }], tab: 'chats', gen: null, memJobs: {},
-  memTab: 'state', memEditing: null, drafts: {}, showN: {}, lastPrompt: {}, draft: null, pickKind: null, lastKey: '',
+  settings: null, stories: [], chats: [],
+  stack: [{ v: 'home', p: {} }], tab: 'home', homeSort: 'rec', homeTag: '', homeQ: null, heroIdx: 0, expand: {},
+  gen: null, memJobs: {}, choiceBusy: {},
+  memTab: 'state', memEditing: null, drafts: {}, showN: {}, lastPrompt: {}, draft: null, charDraft: null, pickKind: null, lastKey: '',
 };
-const getChar = id => S.chars.find(x => x.id === id);
-const getWorld = id => S.worlds.find(x => x.id === id);
-const getPlot = id => S.plots.find(x => x.id === id);
+const getStory = id => S.stories.find(x => x.id === id);
 const getChat = id => S.chats.find(x => x.id === id);
+const talksOf = sid => S.chats.filter(c => c.storyId === sid).sort((a, b) => b.updatedAt - a.updatedAt);
 const curChatId = () => { const t = S.stack.at(-1); return t.v === 'chat' ? t.p.id : null; };
 const curChat = () => getChat(curChatId());
 const txt = m => m.swipes[m.sw] ?? '';
 const isDialog = m => m.role === 'user' || m.role === 'ai';
 const lastDialog = chat => { for (let i = chat.messages.length - 1; i >= 0; i--) if (isDialog(chat.messages[i])) return chat.messages[i]; return null; };
 const maxTurn = chat => chat.messages.reduce((a, m) => Math.max(a, m.turn || 0), 0);
+const msgCount = sid => S.chats.filter(c => c.storyId === sid).reduce((a, c) => a + c.messages.filter(isDialog).length, 0);
 const newMem = () => ({ rev: 0, seq: 0, lastId: 0, coveredId: 0, turn: 0, state: '', entries: [], chronicle: [], log: [] });
 const touch = chat => { chat.updatedAt = now(); };
 const saveSettings = () => DB.put('kv', { id: 'settings', data: S.settings });
 async function saveChat(chat) { if (S.chats.includes(chat)) await DB.put('chats', chat); }
+function findChar(id) { for (const st of S.stories) { const c = st.chars.find(c => c.id === id); if (c) return c; } return null; }
 
 function chatCtx(chat) {
-  const chars = (chat.charIds || []).map(getChar).filter(Boolean);
+  const story = getStory(chat.storyId), chars = story?.chars || [];
   const user = chat.userName || S.settings.persona.name || 'あなた';
-  return {
-    chars, user, world: getWorld(chat.worldId), plot: getPlot(chat.plotId),
-    char: chars.map(c => c.name).join('、') || 'キャラクター',
-    userDesc: chat.userDesc ?? S.settings.persona.desc,
-  };
+  return { story, chars, user, char: chars.map(c => c.name).join('、') || 'キャラクター', userDesc: chat.userDesc ?? S.settings.persona.desc ?? '' };
+}
+function storyCtx(story) {
+  return { story, chars: story.chars, user: S.settings.persona.name || 'あなた', char: story.chars.map(c => c.name).join('、') || 'キャラクター', userDesc: S.settings.persona.desc || '' };
 }
 function macros(s, ctx) {
   return String(s ?? '').replace(/\{\{char\}\}|<BOT>/gi, () => ctx.char).replace(/\{\{user\}\}|<USER>/gi, () => ctx.user);
 }
+function charOf(name, chars) {
+  if (!name) return null;
+  return chars.find(c => c.name === name) || chars.find(c => name.length > 1 && (name.includes(c.name) || c.name.includes(name))) || null;
+}
 
 /* ---------- icons ---------- */
 const IP = {
-  back: '<path d="m15 18-6-6 6-6"/>', left: '<path d="m15 18-6-6 6-6"/>', right: '<path d="m9 18 6-6-6-6"/>',
-  send: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+  back: '<path d="m15 18-6-6 6-6"/>', left: '<path d="m15 18-6-6 6-6"/>', right: '<path d="m9 18 6-6-6-6"/>', down: '<path d="m6 9 6 6 6-6"/>',
+  send: '<path d="M8 5.2v13.6L19 12z" fill="currentColor" stroke="none"/>',
   stop: '<rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" stroke="none"/>',
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>', x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
@@ -430,38 +573,119 @@ const IP = {
   refresh: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
   pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
   layers: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>',
-  route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
   chat: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  talk: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/>',
   user: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
-  globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
-  sliders: '<path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/>',
+  home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+  create: '<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+  lines: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/>',
+  dots: '<circle cx="12" cy="5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor" stroke="none"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+  book: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
   forward: '<path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
-  note: '<path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/>',
-  play: '<path d="m6 3 14 9-14 9z"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
 };
 const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IP[n] || ''}</svg>`;
 
+function hueOf(s) { let h = 0; for (const ch of String(s || '?')) h = (h * 31 + ch.codePointAt(0)) % 360; return h; }
 function avatarHTML(c, size = 40) {
   if (c?.avatar) return `<img class="av" src="${esc(c.avatar)}" alt="" style="width:${size}px;height:${size}px">`;
   const name = c?.name || '?';
-  let h = 0; for (const ch of name) h = (h * 31 + ch.codePointAt(0)) % 360;
-  return `<span class="av" style="width:${size}px;height:${size}px;background:hsl(${h} 38% 36%);font-size:${Math.round(size * 0.42)}px">${esc([...name][0])}</span>`;
+  return `<span class="av" style="width:${size}px;height:${size}px;background:hsl(${hueOf(name)} 38% 36%);font-size:${Math.round(size * 0.42)}px">${esc([...name][0])}</span>`;
+}
+function coverHTML(st, fs = 56) {
+  if (st?.cover) return `<img src="${esc(st.cover)}" alt="">`;
+  const av = st?.chars?.find(c => c.avatar)?.avatar;
+  if (av) return `<img src="${esc(av)}" alt="">`;
+  const h = hueOf(st?.title);
+  return `<div class="cover-ph" style="background:linear-gradient(160deg,hsl(${h} 45% 34%),hsl(${(h + 40) % 360} 40% 14%));font-size:${fs}px">${esc([...(st?.title || '?')][0])}</div>`;
 }
 
-/* ---------- text formatting ---------- */
-function fmt(text, caret = false) {
+/* ---------- message parsing & rendering ---------- */
+// ユーザー発言: *…* を行動として斜体
+function fmt(text) {
   let s = String(text || '').replace(/\r/g, '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-  s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<b>$1</b>')
-    .replace(/\*([^*\n]+?)\*/g, '<span class=act>$1</span>')
-    .replace(/「[^「」\n]*」|『[^『』\n]*』|"[^"\n]*"|“[^”\n]*”/g, m => `<span class=q>${m}</span>`);
-  const ps = s.split(/\n{2,}/);
-  if (caret) ps[ps.length - 1] += '<span class=caret></span>';
-  return ps.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+  s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<b>$1</b>').replace(/\*([^*\n]+?)\*/g, '<span class=act>$1</span>');
+  return s.split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
 }
-const TYPING = '<p><span class="typing"><i></i><i></i><i></i></span></p>';
+const TYPING = '<span class="typing"><i></i><i></i><i></i></span>';
+const NARR_RE = /^(ナレーション|ナレーター|地の文|情景|描写|narration|narrator)$/i;
+function stripQ(s) { s = s.trim(); const m = s.match(/^[「『“"]([\s\S]*)[」』”"]$/); return m ? m[1] : s; }
+
+// AIの出力を「ナレーション」「キャラのブロック（動作 a / 台詞 d）」に分解
+function parseBlocks(text, chars) {
+  const lines = String(text || '').replace(/\r/g, '').split('\n');
+  const headered = lines.some(l => /^\s*【[^】]{1,30}】/.test(l));
+  const main = chars[0]?.name || '';
+  const blocks = [];
+  let cur = null, inStar = false;
+  const open = (type, speaker) => { cur = { type, speaker, paras: [] }; blocks.push(cur); };
+  const addTo = (type, speaker, k, t) => { if (!cur || cur.type !== type || cur.speaker !== speaker) open(type, speaker); cur.paras.push({ k, t }); };
+  const place = (isAct, t) => {
+    t = t.trim();
+    if (!t) return;
+    if (headered) {
+      if (!cur) open('narr', '');
+      if (cur.type === 'narr') cur.paras.push({ k: 'n', t });
+      else cur.paras.push(isAct ? { k: 'a', t } : { k: 'd', t: stripQ(t) });
+    } else if (!isAct && /^[「『“"]/.test(t)) addTo('char', cur?.type === 'char' ? cur.speaker : main, 'd', stripQ(t));
+    else addTo('narr', '', 'n', t);
+  };
+  const handle = line => {
+    let m;
+    if ((m = line.match(/^【([^】]{1,30})】\s*(.*)$/))) {
+      const n = m[1].trim();
+      if (NARR_RE.test(n)) open('narr', ''); else open('char', n);
+      inStar = false;
+      if (m[2]) handle(m[2]);
+      return;
+    }
+    if (!inStar && !/^[*＊]/.test(line) && (m = line.match(/^([^\s:：「」『』*＊【】()（）]{1,20})\s*[:：]\s*(.+)$/)) && (!headered || charOf(m[1], chars))) {
+      if (!(cur && cur.type === 'char' && cur.speaker === m[1])) open('char', m[1]);
+      const rest = m[2].trim();
+      if (/^[*＊][\s\S]*[*＊]$/.test(rest)) cur.paras.push({ k: 'a', t: rest.replace(/^[*＊]+|[*＊]+$/g, '') });
+      else cur.paras.push({ k: 'd', t: stripQ(rest) });
+      return;
+    }
+    let isAct = false, t = line;
+    if (inStar) {
+      isAct = true;
+      if (/[*＊]$/.test(t)) { inStar = false; t = t.replace(/[*＊]+$/, ''); }
+    } else if (/^[*＊]/.test(t)) {
+      isAct = true;
+      t = t.replace(/^[*＊]+/, '');
+      const mm = t.match(/^([^*＊]*)[*＊]+\s*(.*)$/);
+      if (mm) { t = mm[1]; if (mm[2]) { place(true, t); handle(mm[2]); return; } } else inStar = true;
+    }
+    place(isAct, t);
+  };
+  for (const raw of lines) { const l = raw.trim(); if (l) handle(l); }
+  return blocks.filter(b => b.paras.length);
+}
+function paraHTML(t) { return esc(t).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>'); }
+function blocksHTML(blocks, ctx, { tag = '', caret = false, tap = true } = {}) {
+  const ta = tap ? ' data-act="msgTap"' : '';
+  return blocks.map((b, i) => {
+    const last = i === blocks.length - 1;
+    const ps = b.paras.map((p, j) => `<p class="${p.k}">${paraHTML(p.t)}${caret && last && j === b.paras.length - 1 ? '<span class="caret"></span>' : ''}</p>`).join('');
+    if (b.type === 'narr') return `<div class="narr"${ta}>${ic('lines', 'sm')}<div class="narr-t">${ps}</div></div>`;
+    const c = charOf(b.speaker, ctx.chars);
+    return `<div class="say">${avatarHTML(c || { name: b.speaker }, 40)}<div class="say-main"><div class="say-name">${esc(b.speaker)}</div><div class="brow"><div class="bubble ai"${ta}>${ps}</div>${tag ? `<span class="mtag">${esc(tag)}</span>` : ''}</div></div></div>`;
+  }).join('');
+}
+function plainText(text) { return String(text || '').replace(/【[^】]*】/g, ' ').replace(/[*＊]/g, '').replace(/\s+/g, ' ').trim(); }
+function lastLine(text) {
+  const ls = String(text || '').split('\n').map(l => l.replace(/【[^】]*】|[*＊]/g, '').trim()).filter(Boolean);
+  return (ls.at(-1) || '').slice(0, 70);
+}
 
 /* =====================================================================
    LLM providers
@@ -526,8 +750,8 @@ function llmCfg(role) {
 async function callLLM(o) {
   const cfg = llmCfg(o.role || 'main');
   if (cfg.provider === 'mock') return callMock(o);
-  if (!cfg.key && cfg.provider !== 'custom') throw new Error(`${PROVIDERS[cfg.provider].label} のAPIキーが未設定です（設定タブ → API）`);
-  if (!cfg.model) throw new Error('モデルが未設定です（設定タブ → API）');
+  if (!cfg.key && cfg.provider !== 'custom') throw new Error(`${PROVIDERS[cfg.provider].label} のAPIキーが未設定です（マイページ → API）`);
+  if (!cfg.model) throw new Error('モデルが未設定です（マイページ → API）');
   const fn = cfg.provider === 'anthropic' ? callAnthropic : cfg.provider === 'gemini' ? callGemini : callOpenAI;
   let started = false;
   const opts = { ...o, onText: o.onText && (t => { started = true; o.onText(t); }) };
@@ -595,12 +819,13 @@ function openaiBase(p) {
   if (p === 'openai') return 'https://api.openai.com/v1';
   if (p === 'openrouter') return 'https://openrouter.ai/api/v1';
   if (p === 'nanogpt') return s.nanoSub ? 'https://nano-gpt.com/api/subscription/v1' : 'https://nano-gpt.com/api/v1';
+  if (p === 'deepseek') return 'https://api.deepseek.com';
   return (s.customBase || '').trim().replace(/\/+$/, '');
 }
 
 async function callOpenAI(cfg, o) {
   const base = openaiBase(cfg.provider);
-  if (!base) throw new Error('カスタムのベースURLが未設定です（設定タブ → API）');
+  if (!base) throw new Error('カスタムのベースURLが未設定です（マイページ → API）');
   const sysText = (o.system || []).map(b => b.text).filter(t => t && t.trim()).join('\n\n');
   const body = {
     model: cfg.model,
@@ -689,8 +914,8 @@ async function callMock(o) {
   const lastUser = [...o.messages].reverse().find(m => m.role === 'user')?.content || '';
   const plain = lastUser.replace(/<context>[\s\S]*?<\/context>/, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
   const block = (lastUser.match(/<(?:new_log|log)>[^\n]*\n([\s\S]*?)<\/(?:new_log|log)>/) || [])[1];
-  const first = block ? block.split('\n').find(l => l.trim()) || '' : plain;
-  const snip = first.replace(/^\[[^\]]+\]\s*[^:：]+[:：]\s*/, '').slice(0, 36);
+  const first = block ? block.split('\n').find(l => /^\[/.test(l.trim())) || '' : plain;
+  const snip = plainText(first.replace(/^\[[^\]]+\]\s*[^:：]+[:：]\s*/, '')).slice(0, 36);
   if (o.kind === 'extract') {
     return { text: JSON.stringify({
       state: `- 時刻: 夜\n- 場所: デモの舞台\n- 直近の出来事: ${snip}`,
@@ -702,14 +927,17 @@ async function callMock(o) {
     return { text: JSON.stringify({ entries: d.slice(-Math.max(1, Math.ceil(d.length * 0.6))).map(e => ({ text: e.text, imp: e.imp, tag: e.tag || 'event', from: [e.id] })) }) };
   }
   if (o.kind === 'chronicle' || o.kind === 'compress') return { text: `（デモ要約）${snip || '物語'}……などの出来事があった。` };
+  if (o.kind === 'choices') return { text: JSON.stringify({ choices: ['「それで、君はどうしたい？」', '*黙って隣に座る*', '「……少し、歩かないか」'] }) };
   if (o.kind === 'test') return { text: '接続OK（デモ）' };
-  const reply = `（デモ応答）「${plain.slice(0, 30) || '……'}」\n\n*窓の外で、霧笛が低く鳴った。*\n彼女は少しだけ首をかしげ、あなたの言葉を反芻するように目を伏せる。\n\n「……なるほど。続きを、聞かせてください」\n\n※APIを使わないデモ応答です。設定タブでAPIキーとモデルを設定すると本物のAIが応答します。`;
+  const name = o.demoName || 'キャラクター';
+  const said = plainText(plain).slice(0, 24) || '……';
+  const reply = `【ナレーション】\n窓の外で、霧笛が低く鳴った。店の古い柱時計が、少し遅れて十時を打つ\n【${name}】\n*言葉を反芻するように、少しだけ首をかしげた。${said}。頭の中で、その一言が何度も跳ね返る*\n……本気で言ってます？\n*カウンターに置いた指先が、とん、と一度だけ鳴った。迷っている。自分でもわかるくらい*\nいいですよ。続き、聞かせてください。\n【ナレーション】\nこれはAPIを使わないデモ応答。マイページでAPIキーとモデルを設定すると、本物のAIが物語を紡ぐ`;
   let out = '';
   for (const ch of reply.match(/[\s\S]{1,3}/g)) {
     if (o.signal?.aborted) throw new DOMException('aborted', 'AbortError');
     out += ch;
     o.onText?.(out);
-    await sleep(18);
+    await sleep(16);
   }
   return { text: out, stop: 'end_turn' };
 }
@@ -746,14 +974,15 @@ function parseJSON(t) {
    Prompt builder
    ===================================================================== */
 function charBlock(c, M) {
-  const sec = [['プロフィール・外見', c.description], ['性格', c.personality], ['背景・シナリオ', c.scenario], ['補足設定', c.lore], ['台詞例（口調の参考）', c.examples], ['演技指示', c.charNote]]
+  const sec = [['プロフィール・外見', c.profile], ['性格', c.personality], ['口調・台詞例', c.examples], ['補足・演技指示', c.note]]
     .filter(([, v]) => v && v.trim()).map(([k, v]) => `【${k}】\n${M(v).trim()}`).join('\n\n');
   return `<character name="${attr(c.name)}">\n${sec || '（設定なし）'}\n</character>`;
 }
 function scopeLabel(sc, ctx) {
   if (sc === 'world') return '世界';
   if (sc === 'user') return ctx.user;
-  return getChar(sc.slice(2))?.name || '（削除されたキャラ）';
+  const id = sc.slice(2);
+  return ctx.chars.find(c => c.id === id)?.name || findChar(id)?.name || '（削除されたキャラ）';
 }
 function memoryText(chat, ctx) {
   const m = chat.mem;
@@ -772,15 +1001,16 @@ function chronicleText(chat) {
   return `<chronicle>\nこれまでの物語のあらすじ（古い順）:\n${c.map(x => `【${tl(x.from)}〜${tl(x.to)}】${x.text}`).join('\n\n')}\n</chronicle>`;
 }
 
-// 静的（キャッシュ対象）→ 準静的（プロット・あらすじ）→ 履歴 → 最新ターンに記憶と状況を注入
+// 静的（キャッシュ対象）→ 準静的（作者メモ・あらすじ）→ 履歴 → 最新ターンに記憶と状況を注入
 function buildChatRequest(chat, { end, mode = 'reply' }) {
-  const s = S.settings, ctx = chatCtx(chat), M = t => macros(t, ctx), m = chat.mem;
-  let st = M(s.systemPrompt).trim();
-  if (ctx.world) st += `\n\n<world name="${attr(ctx.world.name)}">\n${M(ctx.world.content).trim()}\n</world>`;
+  const s = S.settings, ctx = chatCtx(chat), M = t => macros(t, ctx), m = chat.mem, st0 = ctx.story;
+  let st = M(CORE_RULES) + '\n\n' + M(STYLE_GUIDE) + '\n\n' + M(formatRules(ctx));
+  if (st0?.world?.trim()) st += `\n\n<world>\n${M(st0.world).trim()}\n</world>`;
   if (ctx.chars.length) st += '\n\n' + ctx.chars.map(c => charBlock(c, M)).join('\n\n');
-  st += `\n\n<user_persona name="${attr(ctx.user)}">\n${M(ctx.userDesc || '').trim() || '（特記事項なし）'}\n</user_persona>`;
+  const role = st0?.userRole?.trim() ? `\n【この物語での役柄】\n${M(st0.userRole).trim()}` : '';
+  st += `\n\n<user_persona name="${attr(ctx.user)}">\n${M(ctx.userDesc || '').trim() || '（特記事項なし）'}${role}\n</user_persona>`;
+  if (st0?.direction?.trim()) st += `\n\n<plot title="${attr(st0.title)}">\n${M(st0.direction).trim()}\n</plot>`;
   const semi = [];
-  if (ctx.plot) semi.push(`<plot title="${attr(ctx.plot.title)}">\n${M(ctx.plot.content).trim()}\n</plot>`);
   if (chat.note?.trim()) semi.push(`<author_note>\n${M(chat.note).trim()}\n</author_note>`);
   const chron = chronicleText(chat);
   if (chron) semi.push(chron);
@@ -805,7 +1035,7 @@ function buildChatRequest(chat, { end, mode = 'reply' }) {
     else msgs.push({ role, content });
   }
   if (!msgs.length || msgs[0].role === 'assistant') msgs.unshift({ role: 'user', content: '（ロールプレイを開始してください）' });
-  if (mode === 'continue') msgs.push({ role: 'user', content: '（直前のあなたの応答の続きを、繰り返さずにそのまま書き継いでください）' });
+  if (mode === 'continue') msgs.push({ role: 'user', content: '（直前のあなたの応答の続きを、繰り返さずにそのまま書き継いでください。出力形式は同じ）' });
   else if (msgs.at(-1).role === 'assistant') msgs.push({ role: 'user', content: `（${ctx.user}の発言を待たずに、物語を自然に先へ進めてください）` });
   const last = msgs.at(-1);
   last.content = `<context>\n${dyn}\n</context>\n\n${last.content}${post ? `\n\n<instruction>\n${post}\n</instruction>` : ''}`;
@@ -851,6 +1081,7 @@ const CHRON_SYS = `あなたはロールプレイ小説のあらすじ編集者�
 - 重要な台詞・約束・伏線・秘密の開示、関係や感情の転機は必ず残す。
 - {{user}}と各キャラクターの名前を明記し、代名詞に頼らない。
 - 前置き・見出し・記号は不要。要約本文のみを出力する。`;
+const CHOICE_SYS = `あなたはロールプレイの進行補助です。{{user}}が次に取りうる行動や台詞の選択肢を提案します。出力はJSONのみです。`;
 
 function extractSchema(names) {
   return {
@@ -870,6 +1101,7 @@ const CONS_SCHEMA = {
   properties: { entries: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['text', 'imp', 'tag', 'from'], properties: {
     text: { type: 'string' }, imp: { type: 'integer' }, tag: { type: 'string', enum: TAG_KEYS }, from: { type: 'array', items: { type: 'string' } } } } } },
 };
+const CHOICE_SCHEMA = { type: 'object', additionalProperties: false, required: ['choices'], properties: { choices: { type: 'array', items: { type: 'string' } } } };
 
 const clampImp = v => clamp(Math.round(Number(v) || 3), 1, 5);
 const scopeBudget = sc => { const b = S.settings.mem.budgets; return sc === 'world' ? b.world : sc === 'user' ? b.user : b.char; };
@@ -889,7 +1121,7 @@ function resolveScope(s, ctx) {
   const low = s.toLowerCase();
   if (!s || low === 'world' || s === '世界') return 'world';
   if (low === 'user' || s === '{{user}}' || s === ctx.user) return 'user';
-  const c = ctx.chars.find(c => c.name === s) || ctx.chars.find(c => s.includes(c.name) || (s.length > 1 && c.name.includes(s)));
+  const c = charOf(s, ctx.chars);
   return c ? 'c:' + c.id : 'world';
 }
 function pushSnap(chat, at) {
@@ -969,8 +1201,8 @@ async function extractFacts(chat, batch) {
   const existing = m.entries.slice().sort((a, b) => a.turn - b.turn || entryNum(a) - entryNum(b))
     .map(e => `[${e.id}] (${scopeLabel(e.scope, ctx)} ★${e.imp} ${tl(e.turn)}${e.pinned ? ' 固定' : ''}) ${e.text}`).join('\n');
   const statics = [
-    ctx.world ? `【世界設定: ${ctx.world.name}】\n${M(ctx.world.content).slice(0, 2000)}` : '',
-    ...ctx.chars.map(c => `【${c.name}】\n${M([c.description, c.personality, c.scenario].filter(Boolean).join('\n')).slice(0, 800)}`),
+    ctx.story?.world?.trim() ? `【世界観・設定】\n${M(ctx.story.world).slice(0, 2000)}` : '',
+    ...ctx.chars.map(c => `【${c.name}】\n${M([c.profile, c.personality].filter(Boolean).join('\n')).slice(0, 800)}`),
   ].filter(Boolean).join('\n\n');
   const sys = M(EXTRACT_SYS.replaceAll('{{chars}}', names.join('、') || '（なし）').replaceAll('{{stateBudget}}', String(s.mem.budgets.state)));
   const user = `登場キャラクター: ${names.join('、') || '（なし）'}\nユーザーの名前: ${ctx.user}\n\n`
@@ -1099,8 +1331,7 @@ async function compressChronicle(chat, total) {
   if (chat.mem.rev !== rev || !S.chats.includes(chat)) return;
   const text = (res.text || '').trim();
   if (!text || text.length >= acc) return;
-  const idx = chat.mem.chronicle.indexOf(olds[0]);
-  if (idx !== 0 || !olds.every(o => chat.mem.chronicle.includes(o))) return;
+  if (chat.mem.chronicle.indexOf(olds[0]) !== 0 || !olds.every(o => chat.mem.chronicle.includes(o))) return;
   chat.mem.chronicle.splice(0, k, { id: uid(), from: olds[0].from, to: olds.at(-1).to, text, merged: true });
   memLog(chat, `あらすじを統合: ${k}件 ${acc}字 → ${text.length}字`);
   await saveChat(chat);
@@ -1109,6 +1340,14 @@ async function compressChronicle(chat, total) {
 /* =====================================================================
    Generation
    ===================================================================== */
+function rememberModel(provider, model) {
+  if (!model || provider === 'mock') return;
+  const r = S.settings.recentModels[provider] = (S.settings.recentModels[provider] || []).filter(x => x !== model);
+  r.unshift(model);
+  r.splice(8);
+  saveSettings();
+}
+
 async function generate(chat, { mode = 'reply', regenMsg = null } = {}) {
   if (S.gen) { toast('生成中です'); return; }
   const s = S.settings;
@@ -1128,63 +1367,84 @@ async function generate(chat, { mode = 'reply', regenMsg = null } = {}) {
     chat.messages.push(target);
     end = chat.messages.length - 1;
   }
-  const idx = target.sw;
-  const join = base && /[。．.!?！？」』）)…―〜♪]$/.test(base.trimEnd()) ? '\n\n' : '';
-  const setText = t => { target.swipes[idx] = base ? base.trimEnd() + join + (join ? t.replace(/^\s+/, '') : t) : t.replace(/^\s+/, ''); };
+  const idx = target.sw, cfg = llmCfg('main');
+  target.mdl = target.mdl || [];
+  const prevMdl = target.mdl[idx];
+  target.mdl[idx] = cfg.provider === 'mock' ? 'demo' : cfg.model;
+  const setText = t => { target.swipes[idx] = base ? base.trimEnd() + '\n' + t.replace(/^\s+/, '') : t.replace(/^\s+/, ''); };
   const ctrl = new AbortController();
   S.gen = { chatId: chat.id, msgId: target.id, ctrl };
-  if (curChatId() === chat.id) { renderMessages(chat, { keep: true }); scrollBottom(); updateComposer(); }
+  chat.lastChoices = null;
+  if (curChatId() === chat.id) { renderMessages(chat, { keep: true }); scrollBottom(); updateComposer(); renderChoices(chat); }
   let ok = false;
   try {
     const req = buildChatRequest(chat, { end, mode });
     S.lastPrompt[chat.id] = req;
     const res = await callLLM({
-      role: 'main', kind: 'chat', system: req.system, messages: req.messages, maxTokens: s.maxTokens, temperature: s.temperature,
+      role: 'main', kind: 'chat', demoName: chatCtx(chat).chars[0]?.name, system: req.system, messages: req.messages, maxTokens: s.maxTokens, temperature: s.temperature,
       stream: s.streaming, signal: ctrl.signal, onText: t => { setText(t); paintStreaming(chat, target); },
     });
     const out = String(res.text || '').replace(/<context>[\s\S]*?<\/context>/g, '').replace(/^\s*<\/?(context|instruction)>\s*/g, '');
     setText(out);
     if (!out.trim()) {
       throw new Error(res.stop === 'refusal' ? 'モデルが応答を辞退しました（refusal）。表現を変えるか、別のモデルでお試しください。'
-        : /max_tokens|length|MAX_TOKENS/.test(res.stop || '') ? '最大出力トークンに達し、本文が空でした。設定で最大出力トークンを増やしてください。'
+        : /max_tokens|length|MAX_TOKENS/.test(res.stop || '') ? '最大出力トークンに達し、本文が空でした。マイページで最大出力トークンを増やしてください。'
         : '空の応答が返りました。');
     }
-    if (/max_tokens|length|MAX_TOKENS/.test(res.stop || '')) toast('最大出力トークンで途中終了しました（「続き」で続行できます）', 'warn', 4000);
+    if (/max_tokens|length|MAX_TOKENS/.test(res.stop || '')) toast('最大出力トークンで途中終了しました（メッセージをタップ →「続きを書かせる」）', 'warn', 4000);
+    rememberModel(cfg.provider, cfg.model);
     ok = true;
   } catch (e) {
     if (e.name === 'AbortError') ok = txt(target).trim().length > (base ? base.trim().length : 0);
     else toast(e.message, 'err', 9000);
   }
   if (!ok) {
-    if (regenMsg) { target.swipes.splice(idx, 1); target.sw = Math.max(0, target.swipes.length - 1); }
-    else if (mode === 'continue') target.swipes[idx] = base;
+    if (regenMsg) { target.swipes.splice(idx, 1); target.mdl.splice(idx, 1); target.sw = Math.max(0, target.swipes.length - 1); }
+    else if (mode === 'continue') { target.swipes[idx] = base; target.mdl[idx] = prevMdl; }
     else chat.messages.splice(chat.messages.indexOf(target), 1);
   }
   S.gen = null;
   touch(chat);
   await saveChat(chat);
   if (curChatId() === chat.id) { renderMessages(chat, { keep: true }); updateComposer(); }
+  if (ok && chat.choices && mode !== 'continue') fetchChoices(chat, target);
 }
 
-async function send() {
+async function fetchChoices(chat, msg) {
+  const ctx = chatCtx(chat);
+  S.choiceBusy[chat.id] = true;
+  renderChoices(chat);
+  try {
+    const recent = chat.messages.filter(isDialog).slice(-4);
+    const content = `直近のやり取り:\n${logLines(chat, recent, ctx)}\n\n${ctx.user}が次に取りうる行動・台詞の選択肢を3つ、方向性を変えて提案してください。各40字以内。台詞はそのまま書き、行動は *…* で囲む。\n出力: {"choices":["...","...","..."]}`;
+    const res = await callLLM({ role: 'mem', kind: 'choices', system: [{ text: macros(CHOICE_SYS, ctx) }], messages: [{ role: 'user', content }], maxTokens: 2000, schema: CHOICE_SCHEMA, temperature: 0.9 });
+    const items = (parseJSON(res.text)?.choices || []).map(x => String(x).trim()).filter(Boolean).slice(0, 4);
+    if (items.length && lastDialog(chat)?.id === msg.id) { chat.lastChoices = { msgId: msg.id, items }; saveChat(chat); }
+  } catch (e) {
+    toast('選択肢の生成に失敗しました: ' + e.message, 'warn', 4000);
+  } finally {
+    delete S.choiceBusy[chat.id];
+    renderChoices(chat);
+  }
+}
+
+async function send(textOverride) {
   const chat = curChat();
   if (!chat || S.gen) return;
-  const ta = $('#input'), text = ta.value.trim();
+  const ta = $('#input'), text = (textOverride ?? ta.value).trim();
   if (!text) { aiTurn(chat); return; }
   // 新しい発言を送った時点で、それまでのやり取りは「確定」→ 記憶へ
   const boundary = chat.messages.at(-1)?.id || 0;
   commitMemory(chat, boundary);
   chat.messages.push({ id: ++chat.seq, role: 'user', swipes: [text], sw: 0, turn: maxTurn(chat) + 1, t: now() });
-  ta.value = '';
-  S.drafts[chat.id] = '';
-  autosize(ta);
+  if (textOverride == null) { ta.value = ''; S.drafts[chat.id] = ''; autosize(ta); }
   touch(chat);
   await saveChat(chat);
   generate(chat, { mode: 'reply' });
 }
 function aiTurn(chat) {
   const last = lastDialog(chat);
-  if (!last) { toast('まず最初のメッセージを書いてください'); return; }
+  if (!last) { generate(chat, { mode: 'reply' }); return; }
   if (last.role === 'ai') commitMemory(chat, last.id);
   generate(chat, { mode: 'reply' });
 }
@@ -1199,9 +1459,9 @@ function toast(msg, kind = '', ms = 2600) {
   $('#toasts').appendChild(el);
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, ms);
 }
-function openSheet({ id = '', title = '', html = '', full = false, data = {}, onClose }) {
+function openSheet({ id = '', title = '', html = '', full = false, side = '', data = {}, onClose }) {
   const wrap = document.createElement('div');
-  wrap.className = 'sheet-wrap';
+  wrap.className = 'sheet-wrap' + (side === 'right' ? ' right' : '');
   wrap.dataset.sheet = id;
   Object.assign(wrap.dataset, data);
   wrap.innerHTML = `<div class="sheet-backdrop" data-act="closeSheet"></div><div class="sheet${full ? ' full' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-head"><h2>${esc(title)}</h2><button class="icon-btn" data-act="closeSheet" aria-label="閉じる">${ic('x')}</button></div><div class="sheet-body">${html}</div></div>`;
@@ -1225,6 +1485,7 @@ function setSheetBody(id, html, top = false) {
   b.innerHTML = html;
   b.scrollTop = top ? 0 : st;
 }
+const chatFrom = t => getChat(t.closest('.sheet-wrap')?.dataset.chat) || curChat();
 function autosize(ta) { if (!ta) return; ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 170) + 'px'; }
 function scrollBottom() { const sc = $('#msgs'); if (sc) sc.scrollTop = sc.scrollHeight; }
 async function copyText(s) {
@@ -1249,16 +1510,19 @@ async function saveFile(name, text, type = 'application/json') {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
 }
-function fileToAvatar(file, size = 320) {
+// 画像を中央（縦長は上寄り）で切り抜いて JPEG 化
+function fileToImage(file, w, h) {
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => {
-      const c = document.createElement('canvas'), g = c.getContext('2d'), s = Math.min(img.width, img.height);
-      c.width = c.height = size;
-      const sx = (img.width - s) / 2, sy = img.height > img.width ? (img.height - s) * 0.15 : (img.height - s) / 2;
-      g.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+      const c = document.createElement('canvas'), g = c.getContext('2d'), r = w / h;
+      c.width = w; c.height = h;
+      let sw = img.width, sh = img.height;
+      if (sw / sh > r) sw = sh * r; else sh = sw / r;
+      const sx = (img.width - sw) / 2, sy = (img.height - sh) * 0.18;
+      g.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
       URL.revokeObjectURL(url);
-      res(c.toDataURL('image/jpeg', 0.86));
+      res(c.toDataURL('image/jpeg', 0.85));
     };
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('画像を読み込めませんでした')); };
     img.src = url;
@@ -1271,7 +1535,7 @@ function applyUI() {
   root.dataset.theme = dark ? 'dark' : 'light';
   root.dataset.font = u.font;
   root.style.setProperty('--fs', clamp(Number(u.fs) || 16, 12, 24) + 'px');
-  $('meta[name=theme-color]').content = dark ? '#0d0e12' : '#f6f4f0';
+  $('meta[name=theme-color]').content = dark ? '#111114' : '#f5f4f8';
 }
 // iOS のキーボード表示時も入力欄が隠れないよう、表示領域に合わせる
 function fitViewport() {
@@ -1285,9 +1549,9 @@ function makeIcon() {
   const c = document.createElement('canvas'), g = c.getContext('2d');
   c.width = c.height = 180;
   const gr = g.createLinearGradient(0, 0, 180, 180);
-  gr.addColorStop(0, '#3a2a6a'); gr.addColorStop(1, '#0d0e12');
+  gr.addColorStop(0, '#5a36e0'); gr.addColorStop(1, '#16151c');
   g.fillStyle = gr; g.fillRect(0, 0, 180, 180);
-  g.strokeStyle = '#b69cff'; g.lineWidth = 9; g.lineJoin = 'round'; g.lineCap = 'round';
+  g.strokeStyle = '#fff'; g.lineWidth = 9; g.lineJoin = 'round'; g.lineCap = 'round';
   const layer = y => { g.beginPath(); g.moveTo(40, y); g.lineTo(90, y + 25); g.lineTo(140, y); g.stroke(); };
   g.beginPath(); g.moveTo(90, 38); g.lineTo(140, 63); g.lineTo(90, 88); g.lineTo(40, 63); g.closePath(); g.stroke();
   layer(90); layer(117);
@@ -1301,6 +1565,7 @@ const VIEWS = {}, MOUNT = {};
 
 function go(v, p = {}) { S.stack.push({ v, p }); render(); }
 function back() { if (S.stack.length > 1) S.stack.pop(); render(); }
+function goHome() { closeAllSheets(); S.stack = [{ v: 'home', p: {} }]; S.tab = 'home'; render(); }
 function render() {
   const top = S.stack.at(-1);
   const key = `${top.v}:${top.p.id || ''}:${top.v === 'home' ? S.tab : ''}`;
@@ -1313,62 +1578,76 @@ function render() {
   if (keep != null && top.v !== 'chat') { const sc = $('.scroll', el); if (sc) sc.scrollTop = keep; }
 }
 
-/* ---- home ---- */
-const TABS = [['chats', 'チャット', 'chat'], ['chars', 'キャラ', 'user'], ['worlds', '世界', 'globe'], ['plots', 'プロット', 'route'], ['settings', '設定', 'sliders']];
+/* ---- home (tabs) ---- */
+const TABS = [['home', 'ホーム', 'home'], ['create', '作成', 'create'], ['talks', 'トーク', 'talk'], ['my', 'マイページ', 'user']];
 VIEWS.home = () => {
   const t = S.tab;
-  const titles = { chats: '<span class="brand">Memoria</span>', chars: 'キャラクター', worlds: '世界設定', plots: 'プロット', settings: '設定' };
-  const actions = {
-    chats: `<button class="icon-btn" data-act="newChat" aria-label="新しいチャット">${ic('plus')}</button>`,
-    chars: `<button class="icon-btn" data-act="importChar" aria-label="読み込み">${ic('upload')}</button><button class="icon-btn" data-act="newChar" aria-label="新規">${ic('plus')}</button>`,
-    worlds: `<button class="icon-btn" data-act="importWorld" aria-label="読み込み">${ic('upload')}</button><button class="icon-btn" data-act="newWorld" aria-label="新規">${ic('plus')}</button>`,
-    plots: `<button class="icon-btn" data-act="newPlot" aria-label="新規">${ic('plus')}</button>`,
-    settings: '',
-  }[t];
-  const body = { chats: tabChats, chars: tabChars, worlds: tabWorlds, plots: tabPlots, settings: tabSettings }[t]();
-  return `<header class="topbar"><h1 class="title">${titles[t]}</h1><div class="grow"></div>${actions}</header>
-  <main class="scroll">${body}</main>
+  let head = '', body = '';
+  if (t === 'home') {
+    const tags = [...new Set(S.stories.flatMap(s => s.tags || []))].slice(0, 16);
+    head = `<header class="home-head"><button class="ht ${S.homeSort === 'rec' ? 'on' : ''}" data-act="homeSort" data-v="rec">ホーム</button><button class="ht ${S.homeSort === 'rank' ? 'on' : ''}" data-act="homeSort" data-v="rank">ランキング</button><span class="grow"></span><button class="icon-btn" data-act="homeSearch" aria-label="検索">${ic('search')}</button></header>
+      ${S.homeQ != null ? `<div class="search-row"><input type="search" id="homeQ" placeholder="タイトル・タグ・キャラ名で検索" value="${esc(S.homeQ)}" autocapitalize="off"></div>` : ''}
+      ${S.stories.length ? `<div class="chips">${[['', 'おすすめ'], ['★', 'ブックマーク'], ...tags.map(x => [x, x])].map(([v, l]) => `<button class="chip ${S.homeTag === v ? 'on' : ''}" data-act="homeTag" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>` : ''}`;
+    body = S.stories.length ? `<div class="sgrid" id="sgrid">${gridHTML()}</div>` : welcomeHTML();
+  } else {
+    const titles = { create: '作成', talks: 'トーク', my: 'マイページ' };
+    head = `<header class="home-head"><span class="ht on">${titles[t]}</span></header>`;
+    body = { create: tabCreate, talks: tabTalks, my: tabMy }[t]();
+  }
+  return `${head}<main class="scroll">${body}</main>
   <nav class="tabbar">${TABS.map(([k, l, i]) => `<button class="tab ${k === t ? 'on' : ''}" data-act="tab" data-tab="${k}">${ic(i)}<span>${l}</span></button>`).join('')}</nav>`;
 };
 MOUNT.home = () => {
+  const q = $('#homeQ');
+  if (q) {
+    q.addEventListener('input', () => { S.homeQ = q.value; const g = $('#sgrid'); if (g) g.innerHTML = gridHTML(); });
+    if (!q.value) q.focus();
+  }
   const el = $('#storageInfo');
   if (el && navigator.storage?.estimate) navigator.storage.estimate().then(e => {
-    el.textContent = `使用中のストレージ: 約${(e.usage / 1048576).toFixed(1)}MB ・ キャラ${S.chars.length} / 世界${S.worlds.length} / プロット${S.plots.length} / チャット${S.chats.length}`;
+    el.textContent = `使用中のストレージ: 約${(e.usage / 1048576).toFixed(1)}MB ・ プロット${S.stories.length} / トーク${S.chats.length}`;
   }).catch(() => {});
 };
-function emptyBlock(title, text, buttons) {
-  return `<div class="empty"><h2>${title}</h2><p>${text}</p><div class="btn-col">${buttons}</div></div>`;
+function gridHTML() {
+  let list = S.stories.slice();
+  if (S.homeTag === '★') list = list.filter(s => s.fav);
+  else if (S.homeTag) list = list.filter(s => (s.tags || []).includes(S.homeTag));
+  const q = (S.homeQ || '').trim().toLowerCase();
+  if (q) list = list.filter(s => [s.title, s.description, ...(s.tags || []), ...s.chars.map(c => c.name)].join(' ').toLowerCase().includes(q));
+  const counts = new Map(list.map(s => [s.id, msgCount(s.id)]));
+  const lastUse = s => talksOf(s.id)[0]?.updatedAt || s.updatedAt || s.createdAt || 0;
+  list.sort(S.homeSort === 'rank' ? (a, b) => counts.get(b.id) - counts.get(a.id) : (a, b) => lastUse(b) - lastUse(a));
+  if (!list.length) return `<p class="empty-s" style="grid-column:1/-1">該当するプロットがありません</p>`;
+  return list.map((s, i) => {
+    const n = counts.get(s.id), talk = talksOf(s.id)[0], last = talk && lastDialog(talk);
+    return `<button class="scard" data-act="openStory" data-id="${s.id}"><div class="sc-img">${coverHTML(s)}${n ? `<span class="sc-badge">${ic('chat', 'xs')}${fmtCount(n)}</span>` : ''}${S.homeSort === 'rank' ? `<span class="sc-rank">${i + 1}</span>` : ''}</div>
+      <div class="sc-body"><div class="sc-title">${esc(s.title)}</div>${s.description ? `<div class="sc-desc">${esc(s.description)}</div>` : ''}${s.tags?.length ? `<div class="sc-tags">${s.tags.map(x => '#' + esc(x)).join(' ')}</div>` : ''}${last ? `<div class="sc-cont">${esc(lastLine(txt(last)))}…と続きから</div>` : ''}</div></button>`;
+  }).join('');
 }
-function tabChats() {
-  if (!S.chats.length) {
-    if (!S.chars.length) return `<div class="welcome"><div class="logo">${ic('layers')}</div><h2>Memoria へようこそ</h2>
-      <p>ターンごとに事実を積み重ねる「記憶」を持った<br>AIロールプレイチャットです。</p>
-      <ol class="steps"><li><b>APIを設定</b><span>設定タブでプロバイダ・APIキー・モデルを入力</span></li>
-      <li><b>キャラ・世界・プロットを用意</b><span>自作、サンプル、SillyTavernのカードから</span></li>
-      <li><b>チャット開始</b><span>記憶は毎ターン自動で積み上がり、整理されます</span></li></ol>
-      <div class="btn-col"><button class="btn primary" data-act="loadSample">サンプルを読み込む</button><button class="btn" data-act="tab" data-tab="settings">APIを設定する</button><button class="btn ghost" data-act="useDemo">APIなしでデモを試す</button></div></div>`;
-    return emptyBlock('チャットはまだありません', 'キャラクターと、必要なら世界設定・プロットを選んで物語を始めましょう。', `<button class="btn primary" data-act="newChat">${ic('plus', 'sm')}新しいチャット</button>`);
-  }
-  const list = S.chats.slice().sort((a, b) => b.updatedAt - a.updatedAt);
-  return `<div class="list">${list.map(c => {
-    const chars = c.charIds.map(getChar).filter(Boolean), last = lastDialog(c);
-    const plot = getPlot(c.plotId);
-    return `<button class="row" data-act="openChat" data-id="${c.id}">${avatarHTML(chars[0], 50)}<div class="row-main"><div class="row-title">${esc(c.title)}</div><div class="row-sub">${plot ? `<span style="color:var(--accent)">${esc(plot.title)}</span> · ` : ''}${esc(last ? txt(last).replace(/\s+/g, ' ').slice(0, 60) : '')}</div></div><div class="row-meta">${relTime(c.updatedAt)}<br><span class="pill">${tl(maxTurn(c))}</span></div></button>`;
+function welcomeHTML() {
+  return `<div class="welcome"><div class="logo">${ic('layers')}</div><h2>Memoria へようこそ</h2>
+    <p>ターンごとに事実を積み重ねる「記憶」を持った<br>AIロールプレイチャットです。</p>
+    <ol class="steps"><li><b>APIを設定</b><span>マイページでプロバイダ・APIキー・モデルを入力</span></li>
+    <li><b>プロットを用意</b><span>キャラ・世界観・導入をまとめた物語。自作・サンプル・SillyTavernカードから</span></li>
+    <li><b>トークを始める</b><span>記憶は毎ターン自動で積み上がり、整理されます</span></li></ol>
+    <div class="btn-col"><button class="btn primary" data-act="loadSample">サンプルを読み込む</button><button class="btn" data-act="tab" data-tab="my">APIを設定する</button><button class="btn ghost" data-act="useDemo">APIなしでデモを試す</button></div></div>`;
+}
+function tabCreate() {
+  return `<div class="create-top">
+    <button class="btn primary block" data-act="newStory">${ic('plus', 'sm')}新しいプロットを作る</button>
+    <div class="btn-row"><button class="btn sm" data-act="importStory">${ic('upload', 'sm')}ファイルから読み込む</button><button class="btn sm" data-act="loadSample">サンプルを追加</button></div>
+    <p class="hint">SillyTavern のキャラクターカード（PNG / JSON）や、Memoria で書き出したプロットを読み込めます。</p></div>
+    <div class="sec-h">あなたのプロット（${S.stories.length}）</div>
+    <div class="list">${S.stories.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).map(s => `<button class="row" data-act="editStory" data-id="${s.id}"><span class="thumb-sq">${coverHTML(s, 22)}</span><div class="row-main"><div class="row-title">${esc(s.title)}</div><div class="row-sub">${esc(s.chars.map(c => c.name).join('・') || 'キャラ未設定')}</div></div>${ic('edit', 'sm')}</button>`).join('') || '<p class="empty-s">まだプロットがありません</p>'}</div>`;
+}
+function tabTalks() {
+  if (!S.chats.length) return `<div class="empty"><h2>トークはまだありません</h2><p>ホームからプロットを選んで「トークを始める」を押しましょう。</p></div>`;
+  return `<div class="list">${S.chats.slice().sort((a, b) => b.updatedAt - a.updatedAt).map(c => {
+    const st = getStory(c.storyId), last = lastDialog(c);
+    return `<button class="row" data-act="openChat" data-id="${c.id}"><span class="thumb-sq">${coverHTML(st, 22)}</span><div class="row-main"><div class="row-title">${esc(c.title)}</div><div class="row-sub">${esc(last ? lastLine(txt(last)) : '')}</div></div><div class="row-meta">${relTime(c.updatedAt)}<br><span class="pill">${tl(maxTurn(c))}</span></div></button>`;
   }).join('')}</div>`;
 }
-function tabChars() {
-  if (!S.chars.length) return emptyBlock('キャラクターがいません', '新しく作るか、SillyTavern のキャラクターカード（PNG / JSON）を読み込めます。', `<button class="btn primary" data-act="newChar">${ic('plus', 'sm')}キャラクターを作成</button><button class="btn" data-act="importChar">${ic('upload', 'sm')}カードを読み込む</button><button class="btn ghost" data-act="loadSample">サンプルを読み込む</button>`);
-  return `<div class="grid">${S.chars.map(c => `<button class="char-card" data-act="charMenu" data-id="${c.id}">${avatarHTML(c, 72)}<div class="cc-name">${esc(c.name)}</div><div class="cc-desc">${esc((c.description || c.personality || '').replace(/\s+/g, ' ').slice(0, 60))}</div></button>`).join('')}</div>`;
-}
-function tabWorlds() {
-  if (!S.worlds.length) return emptyBlock('世界設定はまだありません', '世界観・地理・勢力などを書いておくと、キーワード発火なしで常にAIへ渡されます。', `<button class="btn primary" data-act="newWorld">${ic('plus', 'sm')}世界設定を作成</button><button class="btn" data-act="importWorld">${ic('upload', 'sm')}ロアブック（JSON）を読み込む</button>`);
-  return `<div class="list">${S.worlds.map(w => `<button class="row" data-act="editWorld" data-id="${w.id}"><span class="row-ic">${ic('globe')}</span><div class="row-main"><div class="row-title">${esc(w.name)}</div><div class="row-sub">${esc((w.content || '').replace(/\s+/g, ' ').slice(0, 80))}</div></div><div class="row-meta">${(w.content || '').length.toLocaleString()}字</div></button>`).join('')}</div>`;
-}
-function tabPlots() {
-  if (!S.plots.length) return emptyBlock('プロットはまだありません', '状況・目的・展開の方向性を書いたプロットを用意しておくと、チャット中にワンタップで切り替えられます。', `<button class="btn primary" data-act="newPlot">${ic('plus', 'sm')}プロットを作成</button>`);
-  return `<div class="list">${S.plots.map(p => `<button class="row" data-act="editPlot" data-id="${p.id}"><span class="row-ic">${ic('route')}</span><div class="row-main"><div class="row-title">${esc(p.title)}</div><div class="row-sub">${esc((p.content || '').replace(/\s+/g, ' ').slice(0, 80))}</div></div></button>`).join('')}</div>`;
-}
-function tabSettings() {
+function tabMy() {
   const s = S.settings, p = s.provider, mp = s.mem.provider;
   const provOpts = (sel, same) => (same ? `<option value="" ${!sel ? 'selected' : ''}>メインと同じ</option>` : '')
     + Object.entries(PROVIDERS).map(([k, v]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${v.label}</option>`).join('');
@@ -1377,12 +1656,17 @@ function tabSettings() {
     .map(([v, l]) => `<option value="${v}" ${sel === v ? 'selected' : ''}>${l}</option>`).join('');
   const num = (path, label, o = {}) => `<label class="field"><span>${label}</span><input type="number" inputmode="${o.dec ? 'decimal' : 'numeric'}" data-set="${path}" data-num="1" value="${getPath(s, path)}"${o.step ? ` step="${o.step}"` : ''}${o.min != null ? ` min="${o.min}"` : ''}>${o.hint ? `<div class="hint">${o.hint}</div>` : ''}</label>`;
   const dl = (id, prov) => `<datalist id="${id}">${(PROVIDERS[prov].models || []).map(m => `<option value="${m}">`).join('')}</datalist>`;
-  const sel = (path, opts, cur, rer) => `<select data-set="${path}"${rer ? ' data-rerender="1"' : ''}>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  const sel = (path, opts, cur) => `<select data-set="${path}">${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
   return `
+<section class="card"><h3>プロフィール</h3>
+  <div class="profile-card"><button class="av-pick" style="margin:0" data-act="pickPersonaAvatar">${avatarHTML({ name: s.persona.name, avatar: s.persona.avatar }, 64)}<span>${s.persona.avatar ? '変更' : '画像'}</span></button>
+  <div style="flex:1;min-width:0"><label class="field" style="margin:0"><span>名前</span><input data-set="persona.name" data-rerender="1" value="${esc(s.persona.name)}"></label></div></div>
+  <label class="field"><span>あなたの設定</span><textarea rows="3" data-set="persona.desc" placeholder="外見・立場・性格など（新しいトークに使われます）">${esc(s.persona.desc)}</textarea></label>
+</section>
 <section class="card"><h3>API</h3>
   <label class="field"><span>プロバイダ</span><select data-set="provider" data-rerender="1">${provOpts(p)}</select></label>
   ${keyField(p)}
-  ${p === 'custom' ? `<label class="field"><span>ベースURL</span><input data-set="customBase" value="${esc(s.customBase)}" placeholder="https://example.com/v1" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url"><div class="hint">OpenAI互換の /chat/completions を持つエンドポイント（DeepSeek・ローカルLLMなど）。ブラウザからの接続（CORS）を許可している必要があります。</div></label>` : ''}
+  ${p === 'custom' ? `<label class="field"><span>ベースURL</span><input data-set="customBase" value="${esc(s.customBase)}" placeholder="https://example.com/v1" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url"><div class="hint">OpenAI互換の /chat/completions を持つエンドポイント（ローカルLLMなど）。ブラウザからの接続（CORS）を許可している必要があります。</div></label>` : ''}
   ${p === 'nanogpt' || mp === 'nanogpt' ? `<label class="switch"><span>NanoGPT：サブスク対象のモデルだけ使う</span><input type="checkbox" data-set="nanoSub" ${s.nanoSub ? 'checked' : ''}></label><p class="hint" style="margin-top:-6px">NanoGPT のサブスクに加入している場合はオン。サブスク内のモデルに限定され、従量課金が発生しません。「一覧」もサブスク対象だけになります。</p>` : ''}
   <label class="field"><span>モデル</span><div class="inline"><input data-set="models.${p}" value="${esc(s.models[p] || '')}" list="dl-main" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="モデルID"><button class="btn sm" data-act="pickModel" data-p="${p}" data-path="models.${p}">一覧</button></div></label>
   ${dl('dl-main', p)}
@@ -1394,27 +1678,19 @@ function tabSettings() {
   <label class="field"><span>思考の深さ（effort）</span><select data-set="effort">${effortOpts(s.effort)}</select><div class="hint">Claude の新しいモデルと、NanoGPT の思考（thinking）モデルで有効です。ロールプレイは low が速くておすすめ。温度は Claude Opus 5 / Sonnet 5 などでは使われません。</div></label>
   ${num('context', '入力の上限目安（トークン）', { min: 4000, hint: '設定・記憶・履歴を合わせた送信量の上限。超える分は古い履歴から省かれます（省いた分もあらすじで補われます）。' })}
   <label class="switch"><span>ストリーミング表示</span><input type="checkbox" data-set="streaming" ${s.streaming ? 'checked' : ''}></label>
+  <label class="field"><span>毎ターンの追加指示（任意）</span><textarea rows="3" data-set="postPrompt" placeholder="例: 今回は会話多めで。">${esc(s.postPrompt)}</textarea></label>
 </section>
 <section class="card"><h3>記憶エンジン</h3>
   <label class="switch"><span>毎ターン自動で記憶を更新</span><input type="checkbox" data-set="mem.auto" ${s.mem.auto ? 'checked' : ''}></label>
   <label class="field"><span>記憶処理に使うプロバイダ</span><select data-set="mem.provider" data-rerender="1">${provOpts(mp, true)}</select></label>
   ${mp && mp !== p ? keyField(mp) : ''}
-  <label class="field"><span>記憶処理に使うモデル</span><div class="inline"><input data-set="mem.model" value="${esc(s.mem.model)}" list="dl-mem" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="空欄＝メインと同じ"><button class="btn sm" data-act="pickModel" data-p="${mp || p}" data-path="mem.model">一覧</button></div><div class="hint">毎ターン1回の「事実の抽出」と、ときどきの整理・要約に使います。安価で速いモデル（例: claude-haiku-4-5）にすると費用を抑えられます。</div></label>
+  <label class="field"><span>記憶処理に使うモデル</span><div class="inline"><input data-set="mem.model" value="${esc(s.mem.model)}" list="dl-mem" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="空欄＝メインと同じ"><button class="btn sm" data-act="pickModel" data-p="${mp || p}" data-path="mem.model">一覧</button></div><div class="hint">毎ターン1回の「事実の抽出」、ときどきの整理・要約、選択肢の提案に使います。安価で速いモデル（例: claude-haiku-4-5）にすると費用を抑えられます。</div></label>
   ${dl('dl-mem', mp || p)}
   <label class="field"><span>記憶処理の effort</span><select data-set="mem.effort">${effortOpts(s.mem.effort)}</select></label>
   <div class="grid2">${num('mem.recent', '原文で送る直近の件数', { min: 6 })}${num('mem.chunk', 'あらすじ化の単位（件）', { min: 4 })}</div>
   <div class="lbl" style="margin-top:8px">記憶の容量（字）— 超えると自動で統合・圧縮</div>
   <div class="grid2">${num('mem.budgets.char', 'キャラ記憶（1人あたり）', { min: 300 })}${num('mem.budgets.world', '世界記憶', { min: 300 })}${num('mem.budgets.user', 'ユーザー記憶', { min: 200 })}${num('mem.budgets.chronicle', 'あらすじ', { min: 500 })}${num('mem.budgets.state', '現在の状況', { min: 200 })}</div>
   <div class="btn-row"><button class="btn sm" data-act="testApi" data-role="mem">記憶モデルを接続テスト</button></div>
-</section>
-<section class="card"><h3>プロンプト</h3>
-  <label class="field"><span>システムプロンプト</span><textarea rows="10" data-set="systemPrompt">${esc(s.systemPrompt)}</textarea><div class="hint">{{char}} と {{user}} が使えます。</div></label>
-  <div class="btn-row"><button class="btn sm" data-act="resetSystem">既定に戻す</button></div>
-  <label class="field"><span>毎ターンの追加指示（任意）</span><textarea rows="3" data-set="postPrompt" placeholder="例: 400〜700字で書く。{{user}}の行動は描写しない。">${esc(s.postPrompt)}</textarea></label>
-</section>
-<section class="card"><h3>あなた（既定のペルソナ）</h3>
-  <label class="field"><span>名前</span><input data-set="persona.name" value="${esc(s.persona.name)}"></label>
-  <label class="field"><span>設定</span><textarea rows="3" data-set="persona.desc" placeholder="外見・立場・性格など">${esc(s.persona.desc)}</textarea></label>
 </section>
 <section class="card"><h3>表示</h3>
   <label class="field"><span>テーマ</span>${sel('ui.theme', [['dark', 'ダーク'], ['light', 'ライト'], ['auto', '端末に合わせる']], s.ui.theme)}</label>
@@ -1424,84 +1700,138 @@ function tabSettings() {
   <p class="hint" id="storageInfo">&nbsp;</p>
   <div class="btn-row"><button class="btn sm" data-act="exportAll">${ic('download', 'sm')}バックアップを書き出す</button><button class="btn sm" data-act="importBackup">${ic('upload', 'sm')}バックアップを読み込む</button></div>
   <label class="switch"><span>書き出しにAPIキーを含める</span><input type="checkbox" id="expKeys"></label>
-  <div class="btn-row"><button class="btn sm" data-act="loadSample">サンプルを追加</button><button class="btn sm danger" data-act="wipeAll">全データを削除</button></div>
+  <div class="btn-row"><button class="btn sm danger" data-act="wipeAll">全データを削除</button></div>
   <p class="hint">iPhone の Safari は、しばらく開かないサイトのデータを消すことがあります。「ホーム画面に追加」して使い、ときどきバックアップを書き出してください。</p>
 </section>
-<p class="foot">Memoria 1.0</p>`;
+<p class="foot">Memoria 2.0</p>`;
 }
 
-/* ---- editors ---- */
+/* ---- story detail ---- */
+function charCardHTML(c, key) {
+  const text = [c.profile, c.personality].filter(x => x && x.trim()).join('\n\n');
+  const long = text.length > 180, open = S.expand[key];
+  return `<div class="ccard">${c.avatar ? `<div class="cc-img"><img src="${esc(c.avatar)}" alt=""></div>` : ''}<div class="cc-n">${esc(c.name)}</div>${text ? `<div class="pre ${long && !open ? 'clip' : ''}">${esc(text)}</div>${long ? `<button class="more" data-act="expand" data-k="${key}">${open ? '閉じる' : ic('down')}</button>` : ''}` : ''}</div>`;
+}
+function clipSection(key, inner, long) {
+  const open = S.expand[key];
+  return `<div class="${long && !open ? 'clip' : ''}">${inner}</div>${long ? `<button class="more" data-act="expand" data-k="${key}">${open ? '閉じる' : ic('down')}</button>` : ''}`;
+}
+VIEWS.story = p => {
+  const st = getStory(p.id);
+  if (!st) return '';
+  const ctx = storyCtx(st);
+  const imgs = [st.cover, ...st.chars.map(c => c.avatar)].filter(Boolean);
+  const hi = Math.min(S.heroIdx || 0, Math.max(0, imgs.length - 1));
+  const talks = talksOf(st.id), count = msgCount(st.id);
+  const intro = st.opening?.trim() ? blocksHTML(parseBlocks(macros(st.opening, ctx), st.chars), ctx, { tap: false }) : '';
+  return `<div class="detail-top" id="detailTop"><button class="icon-btn" data-act="back" aria-label="戻る">${ic('back')}</button><span class="dt-title">${esc(st.title)}</span><button class="icon-btn" data-act="goHome" aria-label="ホーム">${ic('home')}</button><button class="icon-btn" data-act="storyMenu" data-id="${st.id}" aria-label="メニュー">${ic('dots')}</button></div>
+  <main class="scroll">
+    <div class="hero">${imgs.length ? `<img src="${esc(imgs[hi])}" alt="">` : coverHTML(st, 110)}</div>
+    ${imgs.length > 1 ? `<div class="thumbs">${imgs.map((u, i) => `<button class="thumb ${i === hi ? 'on' : ''}" data-act="heroPick" data-i="${i}"><img src="${esc(u)}" alt=""></button>`).join('')}</div>` : ''}
+    <div class="d-body">
+      <h1 class="d-title">${esc(st.title)}</h1>
+      ${st.description ? `<p class="d-desc">${esc(st.description)}</p>` : ''}
+      ${st.tags?.length ? `<div class="d-tags">${st.tags.map(x => '#' + esc(x)).join(' ')}</div>` : ''}
+      <div class="d-stats"><span>${ic('chat', 'xs')}${fmtCount(count)}</span>${st.world?.trim() ? `<button data-act="scrollToSec" data-to="sec-world">${ic('book', 'xs')}設定集</button>` : ''}<span>${ic('talk', 'xs')}トーク ${talks.length}</span></div>
+      <hr>
+      ${st.chars.length ? `<h2 class="d-h">プロット</h2>${st.chars.map(c => charCardHTML(c, st.id + ':c:' + c.id)).join('')}` : ''}
+      ${st.userRole?.trim() ? `<h2 class="d-h">あなたの役</h2><div class="pre">${esc(macros(st.userRole, ctx))}</div>` : ''}
+      ${st.world?.trim() ? `<h2 class="d-h" id="sec-world">設定集</h2>${clipSection(st.id + ':world', `<div class="pre">${esc(macros(st.world, ctx))}</div>`, st.world.length > 220)}` : ''}
+      ${intro ? `<h2 class="d-h">イントロ</h2>${clipSection(st.id + ':intro', `<div class="intro">${intro}</div>`, st.opening.length > 160)}` : ''}
+      ${talks.length ? `<h2 class="d-h">トーク履歴</h2><div class="list" style="margin:0 -16px">${talks.map(c => `<button class="row" data-act="openChat" data-id="${c.id}"><div class="row-main"><div class="row-title">${esc(c.title)}</div><div class="row-sub">${esc(lastDialog(c) ? lastLine(txt(lastDialog(c))) : '')}</div></div><div class="row-meta">${relTime(c.updatedAt)}<br><span class="pill">${tl(maxTurn(c))}</span></div></button>`).join('')}</div><button class="btn block" data-act="newTalk" data-story="${st.id}">${ic('plus', 'sm')}新しいトークを始める</button>` : ''}
+    </div>
+  </main>
+  <div class="d-bar"><button class="fav ${st.fav ? 'on' : ''}" data-act="favStory" data-id="${st.id}" aria-label="ブックマーク">${ic('bookmark')}</button><button class="btn primary" data-act="startTalk" data-id="${st.id}">${talks.length ? '続きから' : 'トークを始める'}</button></div>`;
+};
+
+MOUNT.story = () => {
+  const sc = $('#view .scroll'), top = $('#detailTop'), hero = $('#view .hero');
+  if (!sc || !top || !hero) return;
+  const upd = () => top.classList.toggle('solid', sc.scrollTop > hero.offsetHeight - top.offsetHeight - 10);
+  sc.addEventListener('scroll', upd, { passive: true });
+  upd();
+};
+
+/* ---- story editor ---- */
 function field(f, label, val, o = {}) {
   const hint = o.hint ? `<div class="hint">${o.hint}</div>` : '';
   if (o.input) return `<label class="field"><span>${label}</span><input data-f="${f}" value="${esc(val)}" placeholder="${esc(o.ph || '')}">${hint}</label>`;
   return `<label class="field"><span>${label}</span><textarea data-f="${f}" rows="${o.rows || 4}" placeholder="${esc(o.ph || '')}">${esc(val)}</textarea>${hint}</label>`;
 }
-const editorHead = (title, act) => `<header class="topbar"><button class="icon-btn" data-act="back" aria-label="戻る">${ic('back')}</button><h1 class="title">${title}</h1><div class="grow"></div><button class="btn primary sm" data-act="${act}">保存</button></header>`;
 function readForm() { $$('#view [data-f]').forEach(el => { S.draft[el.dataset.f] = el.value; }); }
-
-VIEWS.editChar = () => {
-  const c = S.draft;
-  return editorHead(c._new ? '新規キャラクター' : 'キャラクター編集', 'saveChar') + `<main class="scroll form">
-  <div class="avatar-edit"><button class="av-pick" data-act="pickAvatar">${avatarHTML(c.name || c.avatar ? c : { name: '+' }, 96)}<span>${c.avatar ? '画像を変更' : '画像を設定'}</span></button>${c.avatar ? '<button class="btn sm ghost" data-act="clearAvatar">画像を外す</button>' : ''}</div>
-  ${field('name', '名前', c.name, { input: true, ph: '例: リーネ' })}
-  ${field('description', 'プロフィール・外見', c.description, { rows: 5 })}
-  ${field('personality', '性格', c.personality, { rows: 3 })}
-  ${field('scenario', '背景・シナリオ', c.scenario, { rows: 4 })}
-  ${field('firstMessage', '最初のメッセージ', c.firstMessage, { rows: 6, hint: 'チャット開始時の最初の発言。{{user}} と {{char}} が使えます。' })}
-  ${field('altGreetingsText', '別パターンの最初のメッセージ（任意）', c.altGreetingsText, { rows: 3, hint: '複数ある場合は「---」だけの行で区切ります。開始時に左右の矢印で選べます。' })}
-  ${field('examples', '台詞例（口調の参考）', c.examples, { rows: 4 })}
-  ${field('lore', '補足設定（常に参照）', c.lore, { rows: 4 })}
-  ${field('charNote', 'このキャラ専用の演技指示', c.charNote, { rows: 3 })}
-  ${c._new ? '' : `<div class="btn-row"><button class="btn sm danger" data-act="deleteChar" data-id="${c.id}">このキャラクターを削除</button></div>`}
-  </main>`;
-};
-VIEWS.editWorld = () => {
-  const w = S.draft;
-  return editorHead(w._new ? '新規世界設定' : '世界設定の編集', 'saveWorld') + `<main class="scroll form">
-  ${field('name', '名前', w.name, { input: true, ph: '例: 霧の港町ヴェルナ' })}
-  ${field('content', '世界設定', w.content, { rows: 18, hint: '地理・勢力・歴史・魔法や技術・社会のルールなど。キーワード発火なしで常にAIへ渡されます（長いほど毎回の送信量が増えます）。' })}
-  ${w._new ? '' : `<div class="btn-row"><button class="btn sm danger" data-act="deleteWorld" data-id="${w.id}">この世界設定を削除</button></div>`}
-  </main>`;
-};
-VIEWS.editPlot = () => {
-  const p = S.draft;
-  return editorHead(p._new ? '新規プロット' : 'プロットの編集', 'savePlot') + `<main class="scroll form">
-  ${field('title', 'タイトル', p.title, { input: true, ph: '例: 霧夜の依頼' })}
-  ${field('content', 'プロット内容', p.content, { rows: 10, hint: '状況・目的・展開の方向性・雰囲気など。チャット中にワンタップで切り替えられ、記憶はそのまま引き継がれます。' })}
-  ${field('opening', '導入文（任意）', p.opening, { rows: 5, hint: 'このプロットで新しいチャットを始めるとき、キャラの最初のメッセージの代わりに使われます。' })}
-  ${p._new ? '' : `<div class="btn-row"><button class="btn sm danger" data-act="deletePlot" data-id="${p.id}">このプロットを削除</button></div>`}
-  </main>`;
-};
-function charDraft(id) {
-  const c = id ? clone(getChar(id)) : { id: uid(), name: '', description: '', personality: '', scenario: '', firstMessage: '', altGreetings: [], examples: '', lore: '', charNote: '', avatar: '', createdAt: now(), _new: true };
-  c.altGreetingsText = (c.altGreetings || []).join('\n---\n');
-  return c;
+function storyDraft(id) {
+  const d = id ? clone(getStory(id)) : { id: uid(), title: '', cover: '', description: '', tags: [], chars: [], world: '', direction: '', userRole: '', opening: '', createdAt: now(), _new: true };
+  d.tagsText = (d.tags || []).join(' ');
+  return d;
 }
+const OPENING_PH = `【ナレーション】
+閉店まであと五分。海霧が坂を這い上がって、ランプの明かりを滲ませていた
+【キャラ名】
+*帳簿から顔を上げた。濡れた外套から靴の泥まで、静かに{{user}}を測っていく*
+……いらっしゃいませ。もう閉めるところでしたけど。`;
+VIEWS.editStory = () => {
+  const d = S.draft;
+  return `<header class="topbar"><button class="icon-btn" data-act="back" aria-label="戻る">${ic('back')}</button><h1 class="title">${d._new ? '新しいプロット' : 'プロットを編集'}</h1><div class="grow"></div><button class="btn primary sm" data-act="saveStory">保存</button></header>
+  <main class="scroll form">
+    <div class="cover-edit"><button class="cover-pick" data-act="pickCover">${d.cover ? `<img src="${esc(d.cover)}" alt="">` : `<span>${ic('image')}<br>表紙画像</span>`}</button>
+      <div style="flex:1;min-width:0">${field('title', 'タイトル', d.title, { input: true, ph: '例: 霧の港町の古書店' })}${d.cover ? '<button class="btn sm ghost" data-act="clearCover">画像を外す</button>' : ''}</div></div>
+    ${field('description', '紹介文（カードに表示）', d.description, { rows: 2, ph: '例: 閉店間際の古書店に、霧を連れた客が来た' })}
+    ${field('tagsText', 'タグ（スペース区切り）', d.tagsText, { input: true, ph: '例: ミステリー ファンタジー 古書店' })}
+    <div class="ed-sec">キャラクター <small>${d.chars.length}人</small></div>
+    ${d.chars.map((c, i) => `<button class="char-row" data-act="editDraftChar" data-i="${i}">${avatarHTML(c, 44)}<div class="row-main"><div class="row-title">${esc(c.name)}</div><div class="row-sub">${esc((c.profile || c.personality || '').replace(/\s+/g, ' ').slice(0, 50))}</div></div>${ic('edit', 'sm')}</button>`).join('')}
+    <div class="btn-row"><button class="btn sm" data-act="addChar">${ic('plus', 'sm')}キャラを追加</button><button class="btn sm" data-act="importCardToDraft">${ic('upload', 'sm')}キャラカードから追加</button></div>
+    <div class="ed-sec">物語</div>
+    ${field('world', '世界観・設定集', d.world, { rows: 10, hint: '地理・勢力・歴史・ルールなど。キーワード発火なしで、常にAIへ渡されます（長いほど毎回の送信量が増えます）。' })}
+    <div class="btn-row"><button class="btn sm" data-act="importLorebook">${ic('upload', 'sm')}ロアブック（JSON）を取り込む</button></div>
+    ${field('direction', 'ストーリー・進行の指示', d.direction, { rows: 6, hint: '状況・目的・展開の方向性・雰囲気。AIだけが読む演出メモです。' })}
+    ${field('userRole', 'あなたの役', d.userRole, { rows: 3, ph: '例: 霧の夜に古書店を訪ねた旅人。師匠の失踪について何かを知っている' })}
+    ${field('opening', 'イントロ（最初のメッセージ）', d.opening, { rows: 10, ph: OPENING_PH, hint: '【ナレーション】で情景、【キャラ名】の下に *動作* と台詞を書くと、チャットでは吹き出しとして表示されます。{{user}} はあなたの名前に置き換わります。' })}
+    ${d._new ? '' : `<div class="btn-row"><button class="btn sm" data-act="exportStory" data-id="${d.id}">${ic('download', 'sm')}このプロットを書き出す</button><button class="btn sm danger" data-act="deleteStory" data-id="${d.id}">${ic('trash', 'sm')}削除</button></div>`}
+  </main>`;
+};
+function charSheetHTML() {
+  const c = S.charDraft;
+  const f = (k, label, rows, ph = '') => `<label class="field"><span>${label}</span><textarea data-cf="${k}" rows="${rows}" placeholder="${esc(ph)}">${esc(c[k] || '')}</textarea></label>`;
+  return `<button class="av-pick" data-act="pickCharAvatar">${avatarHTML(c.name || c.avatar ? c : { name: '+' }, 96)}<span>${c.avatar ? '画像を変更' : '画像を設定'}</span></button>
+    <label class="field"><span>名前</span><input data-cf="name" value="${esc(c.name)}" placeholder="例: リーネ"></label>
+    ${f('profile', 'プロフィール・外見', 6, '年齢・立場・外見・背景など')}
+    ${f('personality', '性格', 3)}
+    ${f('examples', '口調・台詞例', 4, '一人称、語尾、相手の呼び方、口癖など')}
+    ${f('note', '補足・演技指示（任意）', 3)}
+    <div class="btn-row end">${c._idx >= 0 ? '<button class="btn danger" data-act="removeDraftChar">削除</button><span class="grow"></span>' : ''}<button class="btn" data-act="closeSheet">キャンセル</button><button class="btn primary" data-act="saveDraftChar">OK</button></div>`;
+}
+function readCharForm() { $$('#sheets [data-cf]').forEach(el => { S.charDraft[el.dataset.cf] = el.value; }); }
+function openCharSheet() { openSheet({ id: 'char', title: S.charDraft._idx >= 0 ? 'キャラクターを編集' : 'キャラクターを追加', full: true, html: charSheetHTML() }); }
 
 /* ---- chat ---- */
 VIEWS.chat = p => {
   const chat = getChat(p.id);
   if (!chat) return '';
-  const ctx = chatCtx(chat);
-  return `<header class="topbar">
+  const ctx = chatCtx(chat), cfg = llmCfg('main');
+  return `<header class="topbar chat-top">
     <button class="icon-btn" data-act="back" aria-label="戻る">${ic('back')}</button>
-    <button class="chat-head" data-act="chatSettings">${avatarHTML(ctx.chars[0], 36)}<div class="ch-text"><div class="ch-title">${esc(chat.title)}</div><div class="ch-sub">${ic('route', 'xs')}<span>${esc(ctx.plot ? ctx.plot.title : 'プロットなし')}</span></div></div></button>
-    <button class="icon-btn" data-act="plotSheet" aria-label="プロット切替">${ic('route')}</button>
-    <button class="icon-btn mem-btn" id="memBtn" data-act="memory" aria-label="記憶">${ic('layers')}<i class="dot"></i></button>
+    <div class="ct-title">${esc(ctx.story?.title || chat.title)}</div>
+    <button class="mpill" data-act="modelSheet"><span>${esc(cfg.provider === 'mock' ? 'demo' : modelShort(cfg.model) || '未設定')}</span>${ic('down', 'xs')}</button>
+    <button class="icon-btn mem-btn" id="memBtn" data-act="drawer" aria-label="メニュー">${ic('menu')}<i class="dot"></i></button>
   </header>
   <div class="mem-flash" id="memFlash"></div>
   <main class="scroll msgs" id="msgs"></main>
   <footer class="composer">
-    <button class="icon-btn" data-act="composerMenu" aria-label="メニュー">${ic('plus')}</button>
-    <textarea id="input" rows="1" placeholder="${esc(ctx.user)}として書く…"></textarea>
-    <button class="send-btn" id="sendBtn" data-act="send" aria-label="送信">${ic('send')}</button>
+    <button class="to-bottom" id="toBottom" data-act="toBottom" style="top:-56px" aria-label="最新へ">${ic('down')}</button>
+    <div class="choices" id="choices"></div>
+    <div class="comp-row">
+      <button class="bolt" data-act="aiTurnBtn" aria-label="おまかせ">${ic('bolt', 'sm')}<small>おまかせ</small></button>
+      <div class="in-wrap"><textarea id="input" rows="1" placeholder="メッセージ"></textarea><button class="ast" id="astBtn" data-act="insertAst" aria-label="＊を挿入">＊</button></div>
+      <button class="send-btn" id="sendBtn" data-act="send" aria-label="送信">${ic('send')}</button>
+    </div>
   </footer>`;
 };
 MOUNT.chat = p => {
   const chat = getChat(p.id);
   if (!chat) { S.stack.pop(); render(); return; }
   renderMessages(chat);
-  const ta = $('#input');
+  renderChoices(chat);
+  const ta = $('#input'), sc = $('#msgs');
   ta.value = S.drafts[chat.id] || '';
   autosize(ta);
   ta.addEventListener('input', () => { autosize(ta); S.drafts[chat.id] = ta.value; });
@@ -1510,21 +1840,27 @@ MOUNT.chat = p => {
     if (e.ctrlKey || e.metaKey || (FINE && !e.shiftKey)) { e.preventDefault(); send(); }
   });
   ta.addEventListener('focus', () => setTimeout(scrollBottom, 350));
-  $('#sendBtn').addEventListener('pointerdown', e => e.preventDefault());
+  for (const id of ['sendBtn', 'astBtn']) $('#' + id).addEventListener('pointerdown', e => e.preventDefault());
+  sc.addEventListener('scroll', () => $('#toBottom')?.classList.toggle('on', sc.scrollHeight - sc.scrollTop - sc.clientHeight > 400), { passive: true });
   updateComposer();
   $('#memBtn').classList.toggle('busy', !!S.memJobs[chat.id]);
 };
 
 function msgHTML(chat, x, ctx, lastD) {
-  if (x.role === 'sys') return `<div class="divider"><span>${ic('route', 'xs')}${esc(txt(x))}</span></div>`;
-  const covered = x.id <= chat.mem.coveredId, processed = x.id <= chat.mem.lastId;
+  const covered = x.id <= chat.mem.coveredId ? ' covered' : '';
+  if (x.role === 'sys') return `<div class="divider"><span>${esc(txt(x))}</span></div>`;
+  if (x.role === 'user') {
+    const av = { name: ctx.user, avatar: S.settings.persona.avatar };
+    return `<div class="msg user${covered}" data-id="${x.id}"><div class="u-main"><div class="u-name">${esc(ctx.user)}</div><div class="bubble me" data-act="msgTap">${fmt(txt(x))}</div></div>${avatarHTML(av, 40)}</div>`;
+  }
   const streaming = S.gen && S.gen.chatId === chat.id && S.gen.msgId === x.id;
-  const body = streaming ? (txt(x) ? fmt(txt(x), true) : TYPING) : fmt(txt(x));
-  const meta = `${tl(x.turn)}${processed ? ' · <span class="mk">記憶済</span>' : ''}`;
-  if (x.role === 'user') return `<div class="msg user${covered ? ' covered' : ''}" data-id="${x.id}"><div class="bubble" data-act="msgTap"><div class="body">${body}</div></div><div class="meta">${meta}</div></div>`;
+  const blocks = parseBlocks(txt(x), ctx.chars);
+  let inner;
+  if (streaming && !blocks.length) inner = `<div class="say">${avatarHTML(ctx.chars[0], 40)}<div class="say-main"><div class="say-name">${esc(ctx.chars[0]?.name || '')}</div><div class="brow"><div class="bubble ai">${TYPING}</div></div></div></div>`;
+  else inner = blocksHTML(blocks, ctx, { tag: streaming ? '' : modelShort(x.mdl?.[x.sw]), caret: streaming });
   const isLast = lastD && lastD.id === x.id && !streaming;
-  const swipe = isLast ? `<div class="swipe"><button class="icon-btn" data-act="swipePrev" data-id="${x.id}" ${x.sw === 0 ? 'disabled' : ''} aria-label="前の候補">${ic('left', 'sm')}</button><span>${x.sw + 1}/${x.swipes.length}</span><button class="icon-btn" data-act="swipeNext" data-id="${x.id}" aria-label="次の候補">${ic('right', 'sm')}</button><span class="grow"></span><button class="icon-btn" data-act="contMsg" aria-label="続きを書かせる">${ic('forward', 'sm')}</button><button class="icon-btn" data-act="regen" data-id="${x.id}" aria-label="再生成">${ic('refresh', 'sm')}</button></div>` : '';
-  return `<div class="msg ai${covered ? ' covered' : ''}" data-id="${x.id}">${avatarHTML(ctx.chars[0], 36)}<div class="ai-main"><div class="name">${esc(ctx.chars.map(c => c.name).join('・') || 'AI')}<span class="meta">${meta}</span></div><div class="body" data-act="msgTap">${body}</div>${swipe}</div></div>`;
+  const swipe = isLast ? `<div class="swipe"><button class="icon-btn" data-act="swipePrev" data-id="${x.id}" ${x.sw === 0 ? 'disabled' : ''} aria-label="前の候補">${ic('left', 'sm')}</button><span>${x.sw + 1}/${x.swipes.length}</span><button class="icon-btn" data-act="swipeNext" data-id="${x.id}" aria-label="次の候補">${ic('right', 'sm')}</button><span class="grow"></span><button class="icon-btn" data-act="contMsg" aria-label="続きを書かせる">${ic('forward', 'sm')}</button><button class="icon-btn" data-act="regen" aria-label="再生成">${ic('refresh', 'sm')}</button></div>` : '';
+  return `<div class="msg ai${covered}" data-id="${x.id}">${inner}${swipe}</div>`;
 }
 function renderMessages(chat, { keep = false } = {}) {
   const sc = $('#msgs');
@@ -1532,8 +1868,8 @@ function renderMessages(chat, { keep = false } = {}) {
   const fromBottom = sc.scrollHeight - sc.scrollTop;
   const ctx = chatCtx(chat), all = chat.messages, n = S.showN[chat.id] || 80;
   const start = Math.max(0, all.length - n), lastD = lastDialog(chat);
-  let html = start > 0 ? `<button class="btn sm ghost more-btn" data-act="showMore">以前のメッセージを表示（残り${start}件）</button>` : '';
-  if (!all.length) html += `<div class="empty-s">最初のメッセージを書いて、物語を始めましょう。</div>`;
+  let html = start > 0 ? `<button class="btn sm ghost more-btn" data-act="showMore">以前のメッセージを表示（残り${start}件）</button>`
+    : `<div class="notice">${ic('info', 'xs')}返答はすべてAIが生成した内容です</div><div class="divider"><span>${esc(ctx.user)}に変身！</span></div>`;
   for (let i = start; i < all.length; i++) {
     const x = all[i];
     html += msgHTML(chat, x, ctx, lastD);
@@ -1550,12 +1886,22 @@ function paintStreaming(chat, msg) {
   requestAnimationFrame(() => {
     paintQueued = false;
     if (curChatId() !== chat.id || S.gen?.msgId !== msg.id) return;
-    const el = $(`#msgs .msg[data-id="${msg.id}"] .body`), sc = $('#msgs');
+    const el = $(`#msgs .msg[data-id="${msg.id}"]`), sc = $('#msgs');
     if (!el || !sc) return;
-    const near = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 140;
-    el.innerHTML = fmt(txt(msg), true);
+    const near = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 160;
+    el.outerHTML = msgHTML(chat, msg, chatCtx(chat), lastDialog(chat));
     if (near) sc.scrollTop = sc.scrollHeight;
   });
+}
+function renderChoices(chat) {
+  if (curChatId() !== chat.id) return;
+  const el = $('#choices');
+  if (!el) return;
+  const last = lastDialog(chat);
+  if (S.choiceBusy[chat.id]) el.innerHTML = '<span class="choice-wait"><span class="spin"></span>選択肢を考え中…</span>';
+  else if (chat.choices && chat.lastChoices && last && chat.lastChoices.msgId === last.id && !S.gen)
+    el.innerHTML = chat.lastChoices.items.map((c, i) => `<button class="choice" data-act="useChoice" data-i="${i}">${esc(c).replace(/\*([^*]+)\*/g, '<i>$1</i>')}</button>`).join('');
+  else el.innerHTML = '';
 }
 function updateComposer() {
   const b = $('#sendBtn');
@@ -1591,68 +1937,63 @@ function memUI(chat) {
   }
 }
 
-/* ---- sheets ---- */
-function openNewChat(preId) {
-  if (!S.chars.length) { toast('先にキャラクターを作成するか、サンプルを読み込んでください', 'warn', 3500); return; }
-  const sel = new Set([preId || S.chars[0].id]);
-  openSheet({ id: 'newchat', title: '新しいチャット', html: `
-    <div class="lbl">キャラクター（複数可）</div>
-    <div class="pick-list">${S.chars.map(c => `<label class="pick"><input type="checkbox" name="nc-char" value="${c.id}" ${sel.has(c.id) ? 'checked' : ''}>${avatarHTML(c, 36)}<span>${esc(c.name)}</span></label>`).join('')}</div>
-    <label class="field"><span>世界設定</span><select id="nc-world"><option value="">なし</option>${S.worlds.map((w, i) => `<option value="${w.id}" ${S.worlds.length === 1 && i === 0 ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select></label>
-    <label class="field"><span>プロット</span><select id="nc-plot"><option value="">なし</option>${S.plots.map(p => `<option value="${p.id}">${esc(p.title)}</option>`).join('')}</select></label>
-    <label class="field"><span>あなたの名前</span><input id="nc-user" value="${esc(S.settings.persona.name)}"></label>
-    <label class="field"><span>タイトル（任意）</span><input id="nc-title" placeholder="空欄なら自動"></label>
-    <button class="btn primary block" data-act="startChat">はじめる</button>` });
-}
-function createChat({ charIds, worldId, plotId, userName, title }) {
-  const chat = { id: uid(), title: '', charIds, worldId, plotId, userName, userDesc: S.settings.persona.desc, note: '', messages: [], seq: 0, createdAt: now(), updatedAt: now(), mem: newMem(), snaps: [] };
-  const ctx = chatCtx(chat), plot = ctx.plot, c0 = ctx.chars[0];
-  chat.title = title || `${ctx.chars.map(c => c.name).join('・')}${plot ? ' · ' + plot.title : ''}`;
-  const greets = plot?.opening?.trim() ? [plot.opening] : [c0?.firstMessage, ...(c0?.altGreetings || [])].filter(g => g && g.trim());
-  if (greets.length) chat.messages.push({ id: ++chat.seq, role: 'ai', swipes: greets.map(g => macros(g, ctx).trim()), sw: 0, turn: 0, t: now() });
+/* ---- talks ---- */
+function createTalk(story) {
+  const n = talksOf(story.id).length;
+  const chat = { id: uid(), storyId: story.id, title: story.title + (n ? `（${n + 1}）` : ''), userName: S.settings.persona.name || 'あなた', userDesc: S.settings.persona.desc || '', note: '', choices: false, messages: [], seq: 0, createdAt: now(), updatedAt: now(), mem: newMem(), snaps: [] };
+  const ctx = chatCtx(chat);
+  if (story.opening?.trim()) chat.messages.push({ id: ++chat.seq, role: 'ai', swipes: [macros(story.opening, ctx).trim()], sw: 0, turn: 0, t: now(), mdl: [] });
   return chat;
 }
-function openCharMenu(id) {
-  const c = getChar(id);
-  if (!c) return;
-  openSheet({ id: 'charmenu', title: c.name, html: `<div class="menu">
-    <button data-act="newChat" data-char="${id}">${ic('chat')}このキャラと新しいチャット</button>
-    <button data-act="editChar" data-id="${id}">${ic('edit')}編集</button>
-    <button data-act="dupChar" data-id="${id}">${ic('copy')}複製</button>
-    <button data-act="exportChar" data-id="${id}">${ic('download')}書き出し（SillyTavern互換JSON）</button>
-    <button class="danger" data-act="deleteChar" data-id="${id}">${ic('trash')}削除</button></div>` });
+async function startNewTalk(story) {
+  const chat = createTalk(story);
+  S.chats.push(chat);
+  await DB.put('chats', chat);
+  closeAllSheets();
+  if (S.stack.at(-1).v === 'chat') S.stack.pop();
+  go('chat', { id: chat.id });
 }
-function openChatSettings(chat) {
-  openSheet({ id: 'chatset', title: 'チャット設定', data: { chat: chat.id }, html: `
-    <label class="field"><span>タイトル</span><input id="cs-title" value="${esc(chat.title)}"></label>
-    <div class="lbl">キャラクター</div>
-    <div class="pick-list">${S.chars.map(c => `<label class="pick"><input type="checkbox" name="cs-char" value="${c.id}" ${chat.charIds.includes(c.id) ? 'checked' : ''}>${avatarHTML(c, 32)}<span>${esc(c.name)}</span></label>`).join('')}</div>
-    <label class="field"><span>世界設定</span><select id="cs-world"><option value="">なし</option>${S.worlds.map(w => `<option value="${w.id}" ${chat.worldId === w.id ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select></label>
-    <label class="field"><span>あなたの名前</span><input id="cs-user" value="${esc(chat.userName)}"></label>
-    <label class="field"><span>あなたの設定（このチャット用）</span><textarea id="cs-udesc" rows="3">${esc(chat.userDesc || '')}</textarea></label>
-    <label class="field"><span>作者メモ（毎ターン参照される演出指示）</span><textarea id="cs-note" rows="3" placeholder="例: リーネ視点の三人称で。雨と灯りの描写を多めに。">${esc(chat.note || '')}</textarea></label>
-    <button class="btn primary block" data-act="saveChatSettings">保存</button>
-    <div class="btn-row"><button class="btn sm" data-act="exportChat">${ic('download', 'sm')}このチャットを書き出す</button><button class="btn sm danger" data-act="deleteChat">${ic('trash', 'sm')}チャットを削除</button></div>` });
-}
-function openPlotSheet(chat) {
-  const row = (id, title, sub) => `<button class="plot-opt ${(chat.plotId || '') === id ? 'on' : ''}" data-act="setPlot" data-id="${id}"><span class="radio"></span><span class="po-main"><b>${esc(title)}</b><small>${esc(sub)}</small></span></button>`;
-  openSheet({ id: 'plots', title: 'プロットを切り替え', data: { chat: chat.id }, html: `
-    ${row('', 'なし', 'プロット指示を使わない')}
-    ${S.plots.map(p => row(p.id, p.title, (p.content || '').replace(/\s+/g, ' ').slice(0, 70))).join('')}
-    <div class="btn-row"><button class="btn sm" data-act="newPlot">${ic('plus', 'sm')}新しいプロット</button>${chat.plotId && getPlot(chat.plotId) ? `<button class="btn sm" data-act="editPlot" data-id="${chat.plotId}">${ic('edit', 'sm')}現在のプロットを編集</button>` : ''}</div>
-    <p class="hint">切り替えても会話と記憶はそのまま引き継がれ、次の応答から新しいプロットが反映されます。</p>` });
+
+/* ---- drawer & sheets ---- */
+function drawerHTML(chat) {
+  const ctx = chatCtx(chat), cfg = llmCfg('main'), talks = talksOf(chat.storyId), bms = chat.messages.filter(m => m.bm).length;
+  const chev = ic('right', 'sm');
+  return `<div class="dr-card"><div><small>${esc(PROVIDERS[cfg.provider]?.label || '')}</small><b>${esc(cfg.provider === 'mock' ? 'デモ' : cfg.model || '未設定')}</b></div><button class="btn primary sm" data-act="modelSheet">変更</button></div>
+    <div class="dmenu">
+      <button data-act="newTalk"><span class="dm">新しいトーク<small>内容を保存したまま、新しく始められます</small></span></button>
+      <button data-act="resumeSheet"><span class="dm">再開</span><span class="val">${talks.length}件</span>${chev}</button>
+      <button data-act="deleteChat"><span class="dm">トーク削除</span></button>
+      <hr>
+      <button data-act="profileSheet"><span class="dm">トークプロフィール</span><span class="val">${esc(ctx.user)}</span>${chev}</button>
+      <button data-act="toggleChoices"><span class="dm">選択肢</span><span class="val">${chat.choices ? '使用する' : '使用しない'}</span>${chev}</button>
+      <button data-act="memory"><span class="dm">記憶<small>${tl(chat.mem.turn)}まで記憶済み・${chat.mem.entries.length}件</small></span>${chev}</button>
+      <button data-act="noteSheet"><span class="dm">作者メモ<small>展開の指示を毎ターン反映</small></span><span class="val">${chat.note?.trim() ? 'あり' : 'なし'}</span>${chev}</button>
+      <button data-act="editStory" data-id="${chat.storyId}"><span class="dm">プロットを編集</span>${chev}</button>
+      <hr>
+      <button data-act="bookmarks"><span class="dm">ブックマーク一覧</span><span class="val">${bms || ''}</span></button>
+      <button data-act="exportChat"><span class="dm">トークを書き出す</span></button>
+    </div>
+    <button class="dr-exit" data-act="exitRoom">${ic('logout', 'sm')}トークルームを退出</button>`;
 }
 function openMsgMenu(chat, msg) {
-  const isLastAi = msg.role === 'ai' && lastDialog(chat)?.id === msg.id;
-  openSheet({ id: 'msgmenu', title: msg.role === 'user' ? 'あなたのメッセージ' : 'AIのメッセージ', data: { chat: chat.id, msg: msg.id }, html: `
-    <div class="msg-preview">${esc(txt(msg).slice(0, 200))}</div>
+  const isLastAi = msg.role === 'ai' && lastDialog(chat)?.id === msg.id, processed = msg.id <= chat.mem.lastId;
+  openSheet({ id: 'msgmenu', title: `${msg.role === 'user' ? chatCtx(chat).user : 'AI'} · ${tl(msg.turn)}${processed ? ' · 記憶済' : ''}`, data: { chat: chat.id, msg: msg.id }, html: `
+    <div class="msg-preview">${esc(plainText(txt(msg)).slice(0, 200))}</div>
     <div class="menu">
       <button data-act="mCopy">${ic('copy')}コピー</button>
+      <button data-act="mBookmark" class="${msg.bm ? 'on' : ''}">${ic('bookmark')}${msg.bm ? 'ブックマークを外す' : 'ブックマーク'}</button>
       <button data-act="mEdit">${ic('edit')}編集</button>
       ${isLastAi ? `<button data-act="regen">${ic('refresh')}再生成（別の候補を作る）</button><button data-act="contMsg">${ic('forward')}続きを書かせる</button>` : ''}
       <button data-act="mDelete">${ic('trash')}このメッセージだけ削除</button>
       <button class="danger" data-act="mRewind">${ic('undo')}ここから下をすべて削除（巻き戻し）<small>記憶もこの時点まで巻き戻します</small></button>
     </div>` });
+}
+function modelSheetHTML() {
+  const s = S.settings, p = s.provider, cur = s.models[p] || '';
+  const list = [...new Set([...(s.recentModels[p] || []), ...(PROVIDERS[p].models || [])])].filter(Boolean);
+  return `<p class="hint" style="margin:0 0 10px">${esc(PROVIDERS[p].label)}（マイページで変更）</p>
+    <div class="menu">${list.map(m => `<button class="${m === cur ? 'on' : ''}" data-act="chooseModel" data-m="${esc(m)}" data-path="models.${p}">${m === cur ? ic('right', 'sm') : '<span style="width:18px"></span>'}${esc(m)}</button>`).join('')}</div>
+    <div class="btn-row"><button class="btn sm" data-act="pickModel" data-p="${p}" data-path="models.${p}">${ic('search', 'sm')}一覧から選ぶ</button><button class="btn sm" data-act="goMy">${ic('user', 'sm')}API設定</button></div>`;
 }
 
 /* ---- memory panel ---- */
@@ -1723,13 +2064,12 @@ function memPaneHTML(chat, tab, ctx) {
   const desc = sc === 'world' ? '世界・場所・組織・NPC・出来事について積み重なった事実です。'
     : sc === 'user' ? `${esc(ctx.user)}について判明した事実です。`
     : `${esc(scopeLabel(sc, ctx))}が体験したこと・感じたこと・関係・約束・秘密の記憶です。`;
-  return `<p class="note-box">${desc}キーワード発火ではなく、毎回すべてAIへ渡されます。📌で固定すると自動の圧縮・削除から保護されます。</p>
+  return `<p class="note-box">${desc}キーワード発火ではなく、毎回すべてAIへ渡されます。ピン留めすると自動の圧縮・削除から保護されます。</p>
     ${meterHTML(used, budget, `${list.length}件`)}
     <div class="mem-add"><textarea id="memNew" rows="2" placeholder="記憶を手動で追加…"></textarea><div class="inline">${impSel('memNewImp', 3)}<button class="btn sm primary" data-act="memAdd" data-scope="${sc}">追加</button></div></div>
     <div>${list.length ? list.map(memEntryHTML).join('') : '<p class="empty-s">まだ記憶はありません。会話が進むと自動で積み重なります。</p>'}</div>
     <div class="btn-row"><button class="btn sm" data-act="memConsolidate" data-scope="${sc}" ${list.filter(e => !e.pinned).length < 3 ? 'disabled' : ''}>今すぐ整理・圧縮</button></div>`;
 }
-function memSheetChat(t) { const w = t.closest('.sheet-wrap') || sheetById('memory'); return getChat(w?.dataset.chat) || curChat(); }
 function refreshMem(top = false) { const w = sheetById('memory'); if (w) setSheetBody('memory', memoryHTML(getChat(w.dataset.chat)), top); }
 
 /* ---- import / export ---- */
@@ -1753,65 +2093,82 @@ function bookText(entries) {
   return (entries || []).filter(e => e && e.enabled !== false && !e.disable && (e.content || '').trim())
     .map(e => `■ ${e.comment || e.name || [].concat(e.keys || e.key || []).join(' / ') || '項目'}\n${e.content.trim()}`).join('\n\n');
 }
-function cardToChar(j) {
-  const d = j.data && typeof j.data === 'object' ? j.data : j;
-  const mx = d.extensions?.memoria || {};
-  return {
-    id: uid(), name: d.name || '名無し', description: d.description || '', personality: d.personality || '', scenario: d.scenario || '',
-    firstMessage: d.first_mes || '', altGreetings: d.alternate_greetings || [], examples: d.mes_example || '',
-    charNote: mx.charNote ?? [d.system_prompt, d.post_history_instructions].filter(Boolean).join('\n').replace(/\{\{original\}\}/g, '').trim(),
-    lore: mx.lore ?? bookText(d.character_book?.entries), avatar: '', createdAt: now(),
-  };
-}
-function charToCard(c) {
-  return { spec: 'chara_card_v2', spec_version: '2.0', data: {
-    name: c.name, description: c.description, personality: c.personality, scenario: c.scenario, first_mes: c.firstMessage,
-    mes_example: c.examples, alternate_greetings: c.altGreetings || [], system_prompt: c.charNote, post_history_instructions: '',
-    creator_notes: 'Exported from Memoria', tags: [], creator: '', character_version: '', extensions: { memoria: { lore: c.lore, charNote: c.charNote } },
-  } };
-}
-function lorebookToWorld(j, fname) {
-  if (j.app === 'memoria-world' && j.world) return { ...j.world, id: uid() };
+function loreFromJSON(j) {
   let entries = j.entries ? (Array.isArray(j.entries) ? j.entries : Object.values(j.entries)) : Array.isArray(j) ? j : [];
   if (!entries.length && j.data?.character_book) entries = j.data.character_book.entries || [];
   entries = entries.slice().sort((a, b) => (a.order ?? a.insertion_order ?? 0) - (b.order ?? b.insertion_order ?? 0));
-  const content = bookText(entries);
-  if (!content) throw new Error('ロアブックの項目が見つかりませんでした');
-  return { id: uid(), name: j.name || fname.replace(/\.json$/i, ''), content, createdAt: now() };
+  const text = bookText(entries);
+  if (!text) throw new Error('ロアブックの項目が見つかりませんでした');
+  return text;
+}
+function cardData(j) { return j.data && typeof j.data === 'object' ? j.data : j; }
+function cardToChar(j, avatar = '') {
+  const d = cardData(j);
+  return { id: uid(), name: d.name || '名無し', avatar, profile: [d.description, d.scenario].filter(Boolean).join('\n\n'), personality: d.personality || '', examples: d.mes_example || '',
+    note: [d.system_prompt, d.post_history_instructions].filter(Boolean).join('\n').replace(/\{\{original\}\}/g, '').trim() };
+}
+function cardToStory(j, avatar = '', cover = '') {
+  const d = cardData(j), c = cardToChar(j, avatar);
+  return { id: uid(), title: d.name || '名無し', cover, description: (d.creator_notes || d.description || '').replace(/\s+/g, ' ').slice(0, 80), tags: (d.tags || []).slice(0, 6),
+    chars: [c], world: bookText(d.character_book?.entries), direction: '', userRole: '', opening: d.first_mes || '', createdAt: now(), updatedAt: now() };
+}
+async function readCard(f) {
+  if (/\.png$/i.test(f.name) || f.type === 'image/png') {
+    const t = pngText(await f.arrayBuffer()), b64 = t.chara || t.ccv3;
+    if (!b64) throw new Error('この画像にはキャラクター情報が含まれていません');
+    return { json: JSON.parse(b64utf8(b64)), avatar: await fileToImage(f, 320, 320), cover: await fileToImage(f, 600, 800) };
+  }
+  return { json: JSON.parse(await f.text()), avatar: '', cover: '' };
+}
+function withNewIds(story) {
+  const st = clone(story);
+  st.id = uid();
+  st.chars = (st.chars || []).map(c => ({ ...c, id: uid() }));
+  st.createdAt = st.updatedAt = now();
+  return st;
 }
 function pick(kind, accept) { const i = $('#filePick'); i.value = ''; i.accept = accept; S.pickKind = kind; i.click(); }
 async function handleFile(kind, f) {
-  if (kind === 'avatar') { S.draft.avatar = await fileToAvatar(f); render(); return; }
-  if (kind === 'char') {
-    let card, avatar = '';
-    if (/\.png$/i.test(f.name) || f.type === 'image/png') {
-      const t = pngText(await f.arrayBuffer()), b64 = t.chara || t.ccv3;
-      if (!b64) throw new Error('この画像にはキャラクター情報が含まれていません');
-      card = JSON.parse(b64utf8(b64));
-      avatar = await fileToAvatar(f);
-    } else card = JSON.parse(await f.text());
-    const c = cardToChar(card);
-    c.avatar = avatar;
-    S.chars.push(c);
-    await DB.put('chars', c);
-    toast(`「${c.name}」を読み込みました`, 'ok');
+  if (kind === 'cover') { S.draft.cover = await fileToImage(f, 600, 800); render(); return; }
+  if (kind === 'charAvatar') { S.charDraft.avatar = await fileToImage(f, 320, 320); setSheetBody('char', charSheetHTML()); return; }
+  if (kind === 'personaAvatar') { S.settings.persona.avatar = await fileToImage(f, 256, 256); await saveSettings(); render(); return; }
+  if (kind === 'cardToDraft') {
+    const { json, avatar } = await readCard(f), d = cardData(json);
+    S.draft.chars.push(cardToChar(json, avatar));
+    if (!S.draft.opening?.trim() && d.first_mes) S.draft.opening = d.first_mes;
+    if (!S.draft.world?.trim() && d.character_book?.entries?.length) S.draft.world = bookText(d.character_book.entries);
     render();
+    toast(`「${d.name}」を追加しました`, 'ok');
     return;
   }
-  const j = JSON.parse(await f.text());
-  if (kind === 'world') {
-    const w = lorebookToWorld(j, f.name);
-    S.worlds.push(w);
-    await DB.put('worlds', w);
-    toast(`世界設定「${w.name}」を読み込みました（${w.content.length.toLocaleString()}字）`, 'ok', 3500);
+  if (kind === 'lorebook') {
+    const text = loreFromJSON(JSON.parse(await f.text()));
+    S.draft.world = (S.draft.world?.trim() ? S.draft.world.trim() + '\n\n' : '') + text;
     render();
+    toast(`ロアブックを取り込みました（${text.length.toLocaleString()}字）`, 'ok');
+    return;
+  }
+  if (kind === 'story') {
+    let st;
+    if (/\.png$/i.test(f.name) || f.type === 'image/png') { const r = await readCard(f); st = cardToStory(r.json, r.avatar, r.cover); }
+    else {
+      const j = JSON.parse(await f.text());
+      if (j.app === 'memoria-story' && j.story) st = withNewIds(j.story);
+      else if (j.app === 'memoria') throw new Error('これはバックアップです。マイページ →「バックアップを読み込む」から読み込んでください');
+      else st = cardToStory(j);
+    }
+    S.stories.push(st);
+    await DB.put('stories', st);
+    toast(`プロット「${st.title}」を読み込みました`, 'ok');
+    go('story', { id: st.id });
     return;
   }
   if (kind === 'backup') {
+    const j = JSON.parse(await f.text());
     if (j.app !== 'memoria') throw new Error('Memoria のバックアップファイルではありません');
-    const n = ['chars', 'worlds', 'plots', 'chats'].map(k => (j[k] || []).length);
-    if (!confirm(`キャラ${n[0]}・世界${n[1]}・プロット${n[2]}・チャット${n[3]}件を読み込みます。同じIDのデータは上書きされます。よろしいですか？`)) return;
-    for (const k of ['chars', 'worlds', 'plots', 'chats']) {
+    const n = [(j.stories || []).length, (j.chats || []).length];
+    if (!confirm(`プロット${n[0]}件・トーク${n[1]}件を読み込みます。同じIDのデータは上書きされます。よろしいですか？`)) return;
+    for (const k of ['stories', 'chats']) {
       for (const item of j[k] || []) {
         if (k === 'chats') { item.mem = deepMerge(newMem(), item.mem || {}); item.snaps ||= []; }
         const i = S[k].findIndex(x => x.id === item.id);
@@ -1819,6 +2176,7 @@ async function handleFile(kind, f) {
         await DB.put(k, item);
       }
     }
+    if (j.chars || j.worlds || j.plots) await migrateV1(j.chars || [], j.worlds || [], j.plots || []);
     if (j.settings && confirm('設定も読み込みますか？（APIキーが含まれていない場合は現在のキーを残します）')) {
       const keys = S.settings.keys;
       S.settings = deepMerge(DEFAULTS, j.settings);
@@ -1830,43 +2188,61 @@ async function handleFile(kind, f) {
     render();
   }
 }
+
+// v1（キャラ・世界・プロットが別々）のデータを、キャラ入りプロットへ変換
+async function migrateV1(oldChars, oldWorlds, oldPlots) {
+  const toEmb = c => ({ id: c.id, name: c.name, avatar: c.avatar || '', profile: [c.description, c.scenario].filter(Boolean).join('\n\n'), personality: c.personality || '', examples: c.examples || '', note: [c.charNote, c.lore].filter(Boolean).join('\n\n') });
+  const used = new Set();
+  for (const chat of S.chats) {
+    if (chat.storyId) continue;
+    const chars = (chat.charIds || []).map(id => oldChars.find(c => c.id === id)).filter(Boolean);
+    chars.forEach(c => used.add(c.id));
+    const w = oldWorlds.find(x => x.id === chat.worldId), p = oldPlots.find(x => x.id === chat.plotId);
+    const st = { id: uid(), title: chat.title || chars[0]?.name || '無題', cover: '', description: (chars[0]?.description || '').replace(/\s+/g, ' ').slice(0, 80), tags: [], chars: chars.map(toEmb),
+      world: w?.content || '', direction: p?.content || '', userRole: '', opening: chars[0]?.firstMessage || '', createdAt: chat.createdAt || now(), updatedAt: now() };
+    S.stories.push(st);
+    chat.storyId = st.id;
+    await DB.put('stories', st);
+    await DB.put('chats', chat);
+  }
+  for (const c of oldChars) {
+    if (used.has(c.id) || S.stories.some(s => s.chars.some(x => x.id === c.id))) continue;
+    const st = { id: uid(), title: c.name, cover: '', description: (c.description || '').replace(/\s+/g, ' ').slice(0, 80), tags: [], chars: [toEmb(c)], world: '', direction: '', userRole: '', opening: c.firstMessage || '', createdAt: c.createdAt || now(), updatedAt: now() };
+    S.stories.push(st);
+    await DB.put('stories', st);
+  }
+}
+
 async function loadSample() {
-  const w = { id: uid(), name: '霧の港町ヴェルナ', createdAt: now(), content: `【概要】
-大陸西端の港町ヴェルナ。一年の大半を海霧に包まれ、霧の濃い夜には「記憶を喰う霧精」が出ると噂される。
-
-【社会】
-- 港を治めるのは商会連合。表向きは自治都市だが、裏では密輸組合「灰の手」が力を持つ。
-- 魔法は「刻印術」のみ。金属板に紋を刻み、触れた者の体温で発動する。高価で庶民には縁遠い。
-- 衛兵隊は商会連合の私兵に近く、賄賂がものを言う。
-
-【場所】
-- 灯台通り: 古書店や酒場が並ぶ坂道。夜はランプの灯りだけが頼り。
-- 第三埠頭: 倉庫街。夜間は立ち入り禁止で、「灰の手」の荷がひそかに出入りする。
-- 旧灯台: 二十年前に灯が消えたまま放置されている。
-
-【迷信】
-- 霧の濃い夜に本名を名乗ると、霧精に記憶を奪われる。` };
-  const c = { id: uid(), name: 'リーネ', avatar: '', createdAt: now(), altGreetings: [], lore: '', charNote: '',
-    description: '灯台通りの古書店「栞と錨」の店主代理。19歳。灰色がかった銀髪を低い位置でひとつに結び、丸眼鏡をかけている。指先にはいつもインクの染み。',
-    personality: '物静かで観察眼が鋭い。本の話になると早口になる。人を信用するまで時間がかかるが、一度信じた相手には誠実。嘘をつくのが下手で、動揺すると眼鏡を押し上げる癖がある。',
-    scenario: '三年前に失踪した師匠（店主エドガー）の行方を、ひとりで探し続けている。店に残された、暗号めいた書き込みのある航海日誌が唯一の手掛かり。',
-    firstMessage: `閉店間際の「栞と錨」に、扉の鈴がからん、と鳴った。
-霧を連れて入ってきた{{user}}に、カウンターの奥で帳簿をつけていた少女が顔を上げる。丸眼鏡の奥の灰色の瞳が、濡れた外套から足元まで、静かに{{user}}を測った。
-
-「……いらっしゃいませ。もう閉めるところでしたけど」
-
-彼女はペンを置き、少しだけ声を落とす。
-
-「こんな霧の夜に古書店を訪ねる人は、たいてい何か探し物をしている人です。――あなたは、何を？」`,
-    examples: `「この本、装丁は新しいですけど中身は写本です。紙の繊維が違うので」\n「……別に、心配なんてしていません。ただ、あなたがいないと帳簿が合わないだけです」` };
-  const plots = [
-    { title: '霧夜の依頼', content: '導入編。{{user}}は師匠エドガーの失踪に関わる何かを知っている人物として、リーネと出会う。互いに探り合いながら、航海日誌の最初の暗号を解く。展開はゆっくり、信頼関係の構築を重視する。雰囲気は静かなミステリー。', opening: '' },
-    { title: '第三埠頭の影', content: '密輸組合「灰の手」が動き出す。夜の倉庫街への潜入、追跡、息を殺す緊張感のある展開にする。危険が迫り、リーネが{{user}}を頼らざるを得ない場面を作る。', opening: '' },
-    { title: '日常：雨の日の古書店', content: '事件から離れた穏やかな一日。店番、常連客とのやりとり、紅茶、何気ない会話を通して、リーネの素顔や過去を少しずつ見せる。事件は進展させない。', opening: '' },
-  ].map(p => ({ id: uid(), createdAt: now(), ...p }));
-  S.worlds.push(w); S.chars.push(c); S.plots.push(...plots);
-  await Promise.all([DB.put('worlds', w), DB.put('chars', c), ...plots.map(p => DB.put('plots', p))]);
-  toast('サンプル（世界設定・キャラクター・プロット3件）を追加しました', 'ok', 3500);
+  const mk = st => ({ id: uid(), cover: '', createdAt: now(), updatedAt: now(), ...st, chars: st.chars.map(c => ({ id: uid(), avatar: '', examples: '', note: '', ...c })) });
+  const a = mk({
+    title: '霧の港町の古書店', description: '閉店間際、霧を連れて入ってきた客に、店主代理の少女は静かに問う。「あなたは、何を探しに？」',
+    tags: ['ミステリー', 'ファンタジー', '古書店'],
+    chars: [{ name: 'リーネ', profile: '19歳。灯台通りの古書店「栞と錨」の店主代理。灰色がかった銀髪を低い位置でひとつに結び、丸眼鏡をかけている。指先にはいつもインクの染み。\n三年前に失踪した師匠エドガーの行方を、ひとりで探し続けている。手掛かりは、暗号めいた書き込みのある航海日誌だけ。',
+      personality: '物静かで観察眼が鋭い。本の話になると早口になる。人を信用するまで時間がかかるが、一度信じた相手には誠実。嘘が下手で、動揺すると眼鏡を押し上げる癖がある。',
+      examples: '一人称は「私」。丁寧語だが素っ気ない。{{user}}のことは最初「あなた」と呼ぶ。\nこの本、装丁は新しいですけど中身は写本です。紙の繊維が違うので。\n……別に、心配なんてしていません。帳簿が合わなくなるのが困るだけです。' }],
+    world: '【霧の港町ヴェルナ】\n大陸西端の港町。一年の大半を海霧に包まれ、霧の濃い夜には「記憶を喰う霧精」が出ると噂される。\n・港を治めるのは商会連合。裏では密輸組合「灰の手」が力を持つ。\n・魔法は「刻印術」のみ。金属板に紋を刻み、触れた者の体温で発動する。高価で庶民には縁遠い。\n・灯台通り：古書店や酒場が並ぶ坂道。夜はランプの灯りだけが頼り。\n・第三埠頭：倉庫街。夜間は立ち入り禁止で、「灰の手」の荷がひそかに出入りする。\n・迷信：霧の濃い夜に本名を名乗ると、霧精に記憶を奪われる。',
+    direction: '静かなミステリー。{{user}}はエドガーの失踪に関わる何かを知っている人物としてリーネと出会う。互いに探り合いながら、航海日誌の暗号を一つずつ解いていく。信頼関係はゆっくり育てる。数ターンに一度、「灰の手」の影をちらつかせる。',
+    userRole: '霧の夜に古書店を訪ねてきた旅人。エドガーの名を知っている。',
+    opening: '【ナレーション】\n閉店まであと五分。海霧が灯台通りの坂を這い上がって、ランプの明かりを滲ませていた。古書店「栞と錨」の扉の鈴が、からん、と鳴る\n【リーネ】\n*帳簿から顔を上げた。丸眼鏡の奥の灰色の目が、濡れた外套から靴の泥まで、静かに{{user}}を測っていく*\n……いらっしゃいませ。もう閉めるところでしたけど。\n*ペンを置く。こんな時間に来る客は、ろくでもないか、切羽詰まっているかのどちらかだ*\n霧の夜に古書店を訪ねる人は、たいてい何か探し物をしています。……あなたは、何を？',
+  });
+  const b = mk({
+    title: '竜騎士学院の落ちこぼれ寮', description: '入学初日、あなたが配属されたのは"問題児"だらけの第七寮だった。',
+    tags: ['学園', 'ファンタジー', 'コメディ'],
+    chars: [
+      { name: 'ミオ', profile: '16歳。第七寮の寮長代理。赤毛のポニーテール。竜との相性は学年一だが、座学は壊滅的。', personality: '明るくてお節介。思い立ったら即行動。落ち込むのも立ち直るのも早い。', examples: '一人称は「あたし」。{{user}}を「新入り」と呼ぶ。語尾が跳ねる。\nだいじょーぶだいじょーぶ！ なんとかなるって！' },
+      { name: 'シグ', profile: '16歳。第七寮の寮生。無口な銀髪の少年。相棒は手のひらサイズの黒竜ノクス。実技は首席だが協調性ゼロ。', personality: '無愛想で口数が少ない。面倒くさがりだが、実は面倒見がいい。皮肉がうまい。', examples: '一人称は「俺」。短く言い切る。\n……勝手にしろ。\nノクスが燃やした。俺じゃない。' },
+    ],
+    world: '【王立ラグナ学院】\n竜騎士を育てる全寮制の学院。全七寮。第七寮は成績不振者と問題児が集められる、敷地の端の古い寮。\n・新入生は入学から一か月以内に相棒の竜と契約しなければ退学になる。\n・竜は契約者の感情に反応して、火や雷を漏らすことがある。',
+    direction: '寮生活中心の学園ファンタジーコメディ。ミオとシグの対照的な反応を描き分け、{{user}}を巻き込んだ騒動を起こす。3〜5ターンに一度、小さな事件を起こす。根底には「一か月以内に竜と契約できるか」という緊張を置く。',
+    userRole: '今日入学した新入生。相棒の竜はまだいない。',
+    opening: '【ナレーション】\n王立ラグナ学院、入学式の夜。割り当て表を握りしめた{{user}}が辿り着いたのは、敷地の端に建つ古びた第七寮だった。扉を開けた瞬間、藁と、焦げた何かの匂いが鼻を刺す\n【ミオ】\n*階段の上から身を乗り出した。赤いポニーテールが大きく揺れる*\nあっ、来た来た！ 新入り！ ようこそ第七寮へ――\n*言いかけて、廊下の奥を二度見した。黒い煙がもくもく上がっている*\nちょっとシグ！ 歓迎の横断幕、燃やしたでしょ！\n【シグ】\n*壁にもたれたまま、片目だけ開けた。肩の上で、小さな黒竜があくびをする*\n燃やしたのはノクスだ。俺じゃない。\n*黒竜が得意げに煙を吐いた。横断幕は「歓迎」の二文字だけ、きれいに焼け残っていた*',
+  });
+  S.stories.push(a, b);
+  await Promise.all([DB.put('stories', a), DB.put('stories', b)]);
+  toast('サンプルのプロットを2つ追加しました', 'ok', 3000);
+  S.tab = 'home';
+  S.stack = [{ v: 'home', p: {} }];
   render();
 }
 
@@ -1875,90 +2251,121 @@ async function loadSample() {
    ===================================================================== */
 const ACT = {
   back: () => back(),
+  goHome: () => goHome(),
   tab: t => { closeAllSheets(); S.tab = t.dataset.tab; S.stack = [{ v: 'home', p: {} }]; render(); },
   closeSheet: t => closeSheet(t.closest('.sheet-wrap')),
-  useDemo: () => { S.settings.provider = 'mock'; saveSettings(); toast('デモモードにしました（設定タブでいつでも変更できます）', 'ok', 3500); loadSample(); },
+  useDemo: () => { S.settings.provider = 'mock'; saveSettings(); toast('デモモードにしました（マイページでいつでも変更できます）', 'ok', 3500); loadSample(); },
   loadSample: () => loadSample(),
-  showMore: () => { const c = curChat(); S.showN[c.id] = (S.showN[c.id] || 80) + 80; renderMessages(c, { keep: true }); },
+  goMy: () => { closeAllSheets(); S.stack = [{ v: 'home', p: {} }]; S.tab = 'my'; render(); },
 
-  // chats
-  newChat: t => { closeAllSheets(); openNewChat(t.dataset.char); },
-  openChat: t => go('chat', { id: t.dataset.id }),
-  startChat: async t => {
-    const w = t.closest('.sheet-wrap');
-    const charIds = $$('input[name=nc-char]:checked', w).map(i => i.value);
-    if (!charIds.length) return toast('キャラクターを選んでください', 'warn');
-    const chat = createChat({ charIds, worldId: $('#nc-world', w).value, plotId: $('#nc-plot', w).value, userName: $('#nc-user', w).value.trim() || S.settings.persona.name || 'あなた', title: $('#nc-title', w).value.trim() });
-    S.chats.push(chat);
-    await DB.put('chats', chat);
-    closeAllSheets();
-    S.stack = [{ v: 'home', p: {} }];
-    S.tab = 'chats';
-    go('chat', { id: chat.id });
+  // home
+  homeSort: t => { S.homeSort = t.dataset.v; render(); },
+  homeTag: t => { S.homeTag = t.dataset.v; render(); },
+  homeSearch: () => { S.homeQ = S.homeQ == null ? '' : null; render(); },
+  openStory: t => { S.heroIdx = 0; go('story', { id: t.dataset.id }); },
+  openChat: t => { closeAllSheets(); if (S.stack.at(-1).v === 'chat') S.stack.pop(); go('chat', { id: t.dataset.id }); },
+
+  // story detail
+  heroPick: t => { S.heroIdx = Number(t.dataset.i); render(); },
+  expand: t => { const k = t.dataset.k; S.expand[k] = !S.expand[k]; render(); },
+  scrollToSec: t => $('#' + t.dataset.to)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+  favStory: async t => { const st = getStory(t.dataset.id); st.fav = !st.fav; await DB.put('stories', st); render(); toast(st.fav ? 'ブックマークしました' : 'ブックマークを外しました', '', 1500); },
+  startTalk: async t => {
+    const st = getStory(t.dataset.id), talks = talksOf(st.id);
+    if (talks.length) go('chat', { id: talks[0].id }); else await startNewTalk(st);
   },
-  chatSettings: () => { closeAllSheets(); const c = curChat(); if (c) openChatSettings(c); },
-  saveChatSettings: async t => {
-    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat);
-    const ids = $$('input[name=cs-char]:checked', w).map(i => i.value);
-    if (!ids.length) return toast('キャラクターを1人以上選んでください', 'warn');
-    chat.title = $('#cs-title', w).value.trim() || chat.title;
-    chat.charIds = ids;
-    chat.worldId = $('#cs-world', w).value;
-    chat.userName = $('#cs-user', w).value.trim() || chat.userName;
-    chat.userDesc = $('#cs-udesc', w).value;
-    chat.note = $('#cs-note', w).value;
-    touch(chat);
-    await saveChat(chat);
-    closeSheet(w);
-    render();
-    toast('保存しました', 'ok');
+  storyMenu: t => {
+    const id = t.dataset.id;
+    openSheet({ id: 'storymenu', title: getStory(id)?.title || '', html: `<div class="menu">
+      <button data-act="editStory" data-id="${id}">${ic('edit')}プロットを編集</button>
+      <button data-act="newTalk" data-story="${id}">${ic('plus')}新しいトークを始める</button>
+      <button data-act="dupStory" data-id="${id}">${ic('copy')}複製</button>
+      <button data-act="exportStory" data-id="${id}">${ic('download')}書き出し</button>
+      <button class="danger" data-act="deleteStory" data-id="${id}">${ic('trash')}削除</button></div>` });
   },
-  deleteChat: async t => {
-    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat);
-    if (!confirm(`「${chat.title}」を削除します。記憶も含めて元に戻せません。よろしいですか？`)) return;
-    if (S.gen?.chatId === chat.id) S.gen.ctrl.abort();
-    S.chats = S.chats.filter(c => c !== chat);
-    await DB.del('chats', chat.id);
+  dupStory: async t => {
     closeAllSheets();
-    S.stack = [{ v: 'home', p: {} }];
-    render();
+    const st = withNewIds(getStory(t.dataset.id));
+    st.title += '（コピー）';
+    S.stories.push(st);
+    await DB.put('stories', st);
+    go('story', { id: st.id });
+  },
+  exportStory: t => { closeAllSheets(); const st = getStory(t.dataset.id); saveFile(`${st.title.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40)}.memoria.json`, JSON.stringify({ app: 'memoria-story', version: 2, story: st })); },
+  deleteStory: async t => {
+    const st = getStory(t.dataset.id), talks = talksOf(st.id);
+    if (!confirm(`「${st.title}」を削除します。${talks.length ? `このプロットのトーク${talks.length}件（記憶を含む）も削除されます。` : ''}元に戻せません。`)) return;
+    for (const c of talks) { S.chats = S.chats.filter(x => x !== c); await DB.del('chats', c.id); }
+    S.stories = S.stories.filter(x => x !== st);
+    await DB.del('stories', st.id);
+    goHome();
     toast('削除しました');
   },
-  exportChat: t => { const chat = getChat(t.closest('.sheet-wrap').dataset.chat); saveFile(`memoria-chat-${chat.title.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40)}-${ymd()}.json`, JSON.stringify({ app: 'memoria', version: 1, chats: [chat] })); },
-  plotSheet: () => { closeAllSheets(); const c = curChat(); if (c) openPlotSheet(c); },
-  setPlot: async t => {
-    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat), id = t.dataset.id;
-    closeSheet(w);
-    if ((chat.plotId || '') === id) return;
-    chat.plotId = id;
-    const p = getPlot(id);
-    chat.messages.push({ id: ++chat.seq, role: 'sys', swipes: [p ? `プロット「${p.title}」に切り替え` : 'プロットを解除'], sw: 0, turn: maxTurn(chat), t: now() });
-    touch(chat);
-    await saveChat(chat);
+
+  // story editor
+  newStory: () => { closeAllSheets(); S.draft = storyDraft(); go('editStory'); },
+  editStory: t => { closeAllSheets(); S.draft = storyDraft(t.dataset.id); go('editStory', { id: t.dataset.id }); },
+  pickCover: () => { readForm(); pick('cover', 'image/*'); },
+  clearCover: () => { readForm(); S.draft.cover = ''; render(); },
+  addChar: () => { readForm(); S.charDraft = { id: uid(), name: '', avatar: '', profile: '', personality: '', examples: '', note: '', _idx: -1 }; openCharSheet(); },
+  editDraftChar: t => { readForm(); const i = Number(t.dataset.i); S.charDraft = { ...clone(S.draft.chars[i]), _idx: i }; openCharSheet(); },
+  pickCharAvatar: () => { readCharForm(); pick('charAvatar', 'image/*'); },
+  saveDraftChar: t => {
+    readCharForm();
+    const c = { ...S.charDraft }, i = c._idx;
+    if (!c.name.trim()) return toast('名前を入力してください', 'warn');
+    c.name = c.name.trim();
+    delete c._idx;
+    if (i >= 0) S.draft.chars[i] = c; else S.draft.chars.push(c);
+    closeSheet(t.closest('.sheet-wrap'));
     render();
-    toast(p ? `プロット「${p.title}」に切り替えました` : 'プロットを解除しました', 'ok');
+  },
+  removeDraftChar: t => {
+    const i = S.charDraft._idx;
+    if (!confirm(`「${S.charDraft.name}」をこのプロットから外しますか？`)) return;
+    S.draft.chars.splice(i, 1);
+    closeSheet(t.closest('.sheet-wrap'));
+    render();
+  },
+  importCardToDraft: () => { readForm(); pick('cardToDraft', '.json,.png,image/png,application/json'); },
+  importLorebook: () => { readForm(); pick('lorebook', '.json,application/json'); },
+  importStory: () => pick('story', '.json,.png,image/png,application/json'),
+  saveStory: async () => {
+    readForm();
+    const d = S.draft;
+    if (!d.title.trim()) return toast('タイトルを入力してください', 'warn');
+    const st = { ...d, title: d.title.trim(), tags: [...new Set((d.tagsText || '').split(/[\s,、#＃]+/).map(x => x.trim()).filter(Boolean))], updatedAt: now() };
+    delete st.tagsText; delete st._new;
+    const i = S.stories.findIndex(x => x.id === st.id);
+    if (i >= 0) S.stories[i] = st; else S.stories.push(st);
+    await DB.put('stories', st);
+    toast('保存しました', 'ok', 1500);
+    if (d._new) { S.stack.pop(); go('story', { id: st.id }); } else back();
   },
 
-  // composer & messages
+  // chat
   send: () => send(),
   stop: () => S.gen?.ctrl.abort(),
-  composerMenu: () => {
-    const chat = curChat();
-    if (!chat) return;
-    openSheet({ id: 'cmenu', title: 'メニュー', data: { chat: chat.id }, html: `<div class="menu">
-      <button data-act="aiTurnBtn">${ic('play')}AIに物語を進めてもらう<small>自分は発言せずに次の展開へ（空欄で送信と同じ）</small></button>
-      <button data-act="contMsg">${ic('forward')}最後の応答の続きを書かせる</button>
-      <button data-act="plotSheet">${ic('route')}プロットを切り替える</button>
-      <button data-act="chatSettings">${ic('note')}作者メモ・チャット設定</button>
-      <button data-act="memUpdateNow">${ic('refresh')}記憶を今すぐ更新する</button>
-      <button data-act="memory">${ic('layers')}記憶パネルを開く</button></div>` });
+  toBottom: () => { const sc = $('#msgs'); if (sc) sc.scrollTo({ top: sc.scrollHeight, behavior: 'smooth' }); },
+  aiTurnBtn: () => { const c = curChat(); if (c && !S.gen) aiTurn(c); },
+  insertAst: () => {
+    const ta = $('#input'), chat = curChat();
+    const s = ta.selectionStart ?? ta.value.length, e = ta.selectionEnd ?? s, sel = ta.value.slice(s, e);
+    ta.value = ta.value.slice(0, s) + '*' + sel + '*' + ta.value.slice(e);
+    const pos = s + 1 + sel.length;
+    ta.focus();
+    ta.setSelectionRange(pos, pos);
+    autosize(ta);
+    if (chat) S.drafts[chat.id] = ta.value;
   },
-  aiTurnBtn: t => { closeSheet(t.closest('.sheet-wrap')); const c = curChat(); if (c) aiTurn(c); },
+  useChoice: t => { const chat = curChat(); const c = chat?.lastChoices?.items[Number(t.dataset.i)]; if (c) { chat.lastChoices = null; renderChoices(chat); send(c); } },
   msgTap: t => {
     if (String(window.getSelection?.() || '').length) return;
-    const chat = curChat(), msg = chat?.messages.find(m => m.id === Number(t.closest('.msg').dataset.id));
+    const chat = curChat(), el = t.closest('.msg');
+    const msg = chat && el && chat.messages.find(m => m.id === Number(el.dataset.id));
     if (msg) openMsgMenu(chat, msg);
   },
+  showMore: () => { const c = curChat(); S.showN[c.id] = (S.showN[c.id] || 80) + 80; renderMessages(c, { keep: true }); },
   swipePrev: t => {
     const chat = curChat(), msg = chat.messages.find(m => m.id === Number(t.dataset.id));
     if (!msg || S.gen || msg.sw === 0) return;
@@ -1982,6 +2389,13 @@ const ACT = {
     closeSheet(w);
     await copyText(txt(msg));
     toast('コピーしました', 'ok', 1500);
+  },
+  mBookmark: async t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat), msg = chat.messages.find(m => m.id === Number(w.dataset.msg));
+    closeSheet(w);
+    msg.bm = !msg.bm;
+    await saveChat(chat);
+    toast(msg.bm ? 'ブックマークしました' : 'ブックマークを外しました', '', 1500);
   },
   mEdit: t => {
     const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat), msg = chat.messages.find(m => m.id === Number(w.dataset.msg));
@@ -2019,78 +2433,158 @@ const ACT = {
     if (!confirm(`このメッセージ以降の${n}件を削除して巻き戻します。よろしいですか？`)) return;
     const r = restoreMemoryBefore(chat, msg.id);
     chat.messages.splice(i);
+    chat.lastChoices = null;
     if (msg.role === 'user') { S.drafts[chat.id] = txt(msg); const ta = $('#input'); if (ta) { ta.value = txt(msg); autosize(ta); } }
     touch(chat);
     await saveChat(chat);
     renderMessages(chat);
+    renderChoices(chat);
     toast(r === 'ok' ? '巻き戻しました（記憶もこの時点へ復元）' : r === 'fail' ? '巻き戻しました。※古すぎるため記憶は戻せませんでした。記憶パネルで確認してください。' : '巻き戻しました', r === 'fail' ? 'warn' : 'ok', 4000);
   },
 
-  // memory panel
-  memory: () => {
+  // drawer & talk menu
+  drawer: () => { const c = curChat(); if (c) openSheet({ id: 'drawer', side: 'right', data: { chat: c.id }, html: drawerHTML(c) }); },
+  exitRoom: () => goHome(),
+  modelSheet: () => { closeAllSheets(); openSheet({ id: 'model', title: 'モデルを切り替え', html: modelSheetHTML() }); },
+  newTalk: async t => {
+    const st = getStory(t.dataset.story) || chatCtx(chatFrom(t)).story;
+    if (!st) return toast('プロットが見つかりません', 'warn');
+    if (!confirm(`「${st.title}」の新しいトークを始めます。今のトークは保存され、「再開」から戻れます。`)) return;
+    await startNewTalk(st);
+  },
+  resumeSheet: t => {
+    const chat = chatFrom(t), talks = talksOf(chat.storyId);
     closeAllSheets();
-    const chat = curChat();
+    openSheet({ id: 'resume', title: 'トークを再開', html: `<div class="menu">${talks.map(c => `<button class="${c.id === chat.id ? 'on' : ''}" data-act="openChat" data-id="${c.id}"><span style="flex:1;min-width:0">${esc(c.title)}<small>${relTime(c.updatedAt)} ・ ${tl(maxTurn(c))} ・ ${esc(lastDialog(c) ? lastLine(txt(lastDialog(c))) : '')}</small></span></button>`).join('')}</div>` });
+  },
+  deleteChat: async t => {
+    const chat = chatFrom(t);
+    if (!confirm(`「${chat.title}」を削除します。記憶も含めて元に戻せません。よろしいですか？`)) return;
+    if (S.gen?.chatId === chat.id) S.gen.ctrl.abort();
+    S.chats = S.chats.filter(c => c !== chat);
+    await DB.del('chats', chat.id);
+    closeAllSheets();
+    if (S.stack.at(-1).v === 'chat') S.stack.pop();
+    render();
+    toast('削除しました');
+  },
+  profileSheet: t => {
+    const chat = chatFrom(t);
+    closeAllSheets();
+    openSheet({ id: 'profile', title: 'トークプロフィール', data: { chat: chat.id }, html: `
+      <label class="field"><span>このトークでのあなたの名前</span><input id="pf-name" value="${esc(chat.userName)}"></label>
+      <label class="field"><span>このトークでのあなたの設定</span><textarea id="pf-desc" rows="5" placeholder="外見・立場・性格など">${esc(chat.userDesc || '')}</textarea></label>
+      <p class="hint">アイコン画像はマイページのプロフィールで変更できます。</p>
+      <div class="btn-row end"><button class="btn" data-act="closeSheet">キャンセル</button><button class="btn primary" data-act="saveProfile">保存</button></div>` });
+  },
+  saveProfile: async t => {
+    const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat);
+    chat.userName = $('#pf-name', w).value.trim() || chat.userName;
+    chat.userDesc = $('#pf-desc', w).value;
+    await saveChat(chat);
+    closeSheet(w);
+    render();
+    toast('保存しました', 'ok', 1500);
+  },
+  toggleChoices: async t => {
+    const chat = chatFrom(t);
+    chat.choices = !chat.choices;
+    if (!chat.choices) chat.lastChoices = null;
+    await saveChat(chat);
+    setSheetBody('drawer', drawerHTML(chat));
+    renderChoices(chat);
+    toast(chat.choices ? '選択肢: 使用する（応答のたびに記憶用モデルで提案します）' : '選択肢: 使用しない', '', 2500);
+  },
+  noteSheet: t => {
+    const chat = chatFrom(t);
+    closeAllSheets();
+    openSheet({ id: 'note', title: '作者メモ', data: { chat: chat.id }, html: `
+      <p class="hint" style="margin:0 0 10px">このトークの展開への指示です。毎ターンAIに渡されます（本文では言及されません）。</p>
+      <textarea id="noteText" rows="6" placeholder="例: そろそろ二人きりになる場面へ。天気は雨に。">${esc(chat.note || '')}</textarea>
+      <div class="btn-row end"><button class="btn" data-act="closeSheet">キャンセル</button><button class="btn primary" data-act="saveNote">保存</button></div>` });
+  },
+  saveNote: async t => { const w = t.closest('.sheet-wrap'), chat = getChat(w.dataset.chat); chat.note = $('#noteText', w).value; await saveChat(chat); closeSheet(w); toast('作者メモを保存しました', 'ok', 1500); },
+  bookmarks: t => {
+    const chat = chatFrom(t), list = chat.messages.filter(m => m.bm);
+    closeAllSheets();
+    openSheet({ id: 'bms', title: `ブックマーク（${list.length}）`, data: { chat: chat.id }, html: list.length
+      ? `<div class="menu">${list.map(m => `<button data-act="jumpMsg" data-id="${m.id}">${ic('bookmark')}<span style="flex:1;min-width:0">${esc(plainText(txt(m)).slice(0, 80))}<small>${tl(m.turn)}</small></span></button>`).join('')}</div>`
+      : '<p class="empty-s">メッセージをタップ →「ブックマーク」で追加できます。</p>' });
+  },
+  jumpMsg: t => {
+    const chat = chatFrom(t);
+    closeAllSheets();
+    const idx = chat.messages.findIndex(m => m.id === Number(t.dataset.id));
+    if (idx < 0) return;
+    const need = chat.messages.length - idx;
+    if ((S.showN[chat.id] || 80) < need) S.showN[chat.id] = need + 10;
+    renderMessages(chat, { keep: true });
+    const el = $(`#msgs .msg[data-id="${t.dataset.id}"]`);
+    if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1700); }
+  },
+  exportChat: t => {
+    const chat = chatFrom(t), st = getStory(chat.storyId);
+    saveFile(`memoria-talk-${chat.title.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40)}-${ymd()}.json`, JSON.stringify({ app: 'memoria', version: 2, stories: st ? [st] : [], chats: [chat] }));
+  },
+
+  // memory panel
+  memory: t => {
+    const chat = chatFrom(t);
+    closeAllSheets();
     if (!chat) return;
     S.memEditing = null;
     openSheet({ id: 'memory', title: '記憶', full: true, data: { chat: chat.id }, html: memoryHTML(chat), onClose: () => { S.memEditing = null; } });
   },
   memTab: t => { S.memTab = t.dataset.tab; S.memEditing = null; refreshMem(true); },
   memUpdateNow: t => {
-    const chat = memSheetChat(t);
-    const w = t.closest('.sheet-wrap');
-    if (w && w.dataset.sheet !== 'memory') closeSheet(w);
-    const last = chat?.messages.at(-1);
+    const chat = chatFrom(t), last = chat?.messages.at(-1);
     if (!last) return toast('まだメッセージがありません');
     if (S.gen?.chatId === chat.id) return toast('生成が終わってから実行してください', 'warn');
     queueMemory(chat, last.id);
     toast('記憶を更新しています…', '', 1800);
   },
-  memPin: async t => { const chat = memSheetChat(t), e = chat.mem.entries.find(x => x.id === t.dataset.eid); if (!e) return; e.pinned = !e.pinned; await saveChat(chat); refreshMem(); toast(e.pinned ? '固定しました（自動の圧縮・削除から保護）' : '固定を解除しました', '', 2000); },
+  memPin: async t => { const chat = chatFrom(t), e = chat.mem.entries.find(x => x.id === t.dataset.eid); if (!e) return; e.pinned = !e.pinned; await saveChat(chat); refreshMem(); toast(e.pinned ? '固定しました（自動の圧縮・削除から保護）' : '固定を解除しました', '', 2000); },
   memEdit: t => { S.memEditing = t.dataset.eid; refreshMem(); $('#memEditText')?.focus(); },
   memCancelEdit: () => { S.memEditing = null; refreshMem(); },
   memSaveEdit: async t => {
-    const chat = memSheetChat(t), e = chat.mem.entries.find(x => x.id === t.dataset.eid), text = $('#memEditText').value.trim();
+    const chat = chatFrom(t), e = chat.mem.entries.find(x => x.id === t.dataset.eid), text = $('#memEditText').value.trim();
     if (e && text) { e.text = text; e.imp = clampImp($('#memEditImp').value); if (e.src === 'auto') e.src = 'manual'; await saveChat(chat); }
     S.memEditing = null;
     refreshMem();
   },
   memDel: async t => {
-    const chat = memSheetChat(t), e = chat.mem.entries.find(x => x.id === t.dataset.eid);
+    const chat = chatFrom(t), e = chat.mem.entries.find(x => x.id === t.dataset.eid);
     if (!e || !confirm(`この記憶を削除しますか？\n\n${e.text}`)) return;
     chat.mem.entries = chat.mem.entries.filter(x => x !== e);
     await saveChat(chat);
     refreshMem();
   },
   memAdd: async t => {
-    const chat = memSheetChat(t), text = $('#memNew').value.trim();
+    const chat = chatFrom(t), text = $('#memNew').value.trim();
     if (!text) return toast('内容を入力してください', 'warn');
     chat.mem.entries.push({ id: 'm' + (++chat.mem.seq), scope: t.dataset.scope, text, imp: clampImp($('#memNewImp').value), tag: '', turn: chat.mem.turn, src: 'manual' });
     await saveChat(chat);
     refreshMem();
     toast('記憶を追加しました', 'ok', 1500);
   },
-  memSaveState: async t => { const chat = memSheetChat(t); chat.mem.state = $('#memState').value.trim(); await saveChat(chat); toast('現在の状況を保存しました', 'ok', 1500); },
-  memConsolidate: t => {
-    const chat = memSheetChat(t);
-    queueMemory(chat, chat.mem.lastId, { consolidateScope: t.dataset.scope });
-    toast('整理・圧縮しています…', '', 1800);
-  },
+  memSaveState: async t => { const chat = chatFrom(t); chat.mem.state = $('#memState').value.trim(); await saveChat(chat); toast('現在の状況を保存しました', 'ok', 1500); },
+  memConsolidate: t => { const chat = chatFrom(t); queueMemory(chat, chat.mem.lastId, { consolidateScope: t.dataset.scope }); toast('整理・圧縮しています…', '', 1800); },
   chronEdit: t => { S.memEditing = t.dataset.eid; refreshMem(); $('#memEditText')?.focus(); },
   chronSave: async t => {
-    const chat = memSheetChat(t), c = chat.mem.chronicle.find(x => x.id === t.dataset.eid), text = $('#memEditText').value.trim();
+    const chat = chatFrom(t), c = chat.mem.chronicle.find(x => x.id === t.dataset.eid), text = $('#memEditText').value.trim();
     if (c && text) { c.text = text; await saveChat(chat); }
     S.memEditing = null;
     refreshMem();
   },
   chronDel: async t => {
-    const chat = memSheetChat(t), c = chat.mem.chronicle.find(x => x.id === t.dataset.eid);
+    const chat = chatFrom(t), c = chat.mem.chronicle.find(x => x.id === t.dataset.eid);
     if (!c || !confirm('このあらすじを削除しますか？ 該当期間の出来事はAIに伝わらなくなります。')) return;
     chat.mem.chronicle = chat.mem.chronicle.filter(x => x !== c);
     await saveChat(chat);
     refreshMem();
   },
   memRebuild: async t => {
-    const chat = memSheetChat(t), n = chat.messages.filter(isDialog).length;
+    const chat = chatFrom(t), n = chat.messages.filter(isDialog).length;
     if (!confirm(`全${n}件のメッセージから記憶とあらすじを作り直します。APIを約${Math.ceil(n / MEM_BATCH)}回以上呼び出すため費用と時間がかかります。続けますか？`)) return;
     const log = chat.mem.log, rev = chat.mem.rev + 1;
     chat.mem = newMem();
@@ -2104,7 +2598,7 @@ const ACT = {
     if (last) queueMemory(chat, last.id);
   },
   memReset: async t => {
-    const chat = memSheetChat(t);
+    const chat = chatFrom(t);
     if (!confirm('記憶項目と「現在の状況」をすべて消します（あらすじは残ります）。よろしいですか？')) return;
     chat.mem.entries = [];
     chat.mem.state = '';
@@ -2115,90 +2609,8 @@ const ACT = {
     refreshMem();
   },
 
-  // characters
-  charMenu: t => openCharMenu(t.dataset.id),
-  newChar: () => { closeAllSheets(); S.draft = charDraft(); go('editChar'); },
-  editChar: t => { closeAllSheets(); S.draft = charDraft(t.dataset.id); go('editChar', { id: t.dataset.id }); },
-  pickAvatar: () => { readForm(); pick('avatar', 'image/*'); },
-  clearAvatar: () => { readForm(); S.draft.avatar = ''; render(); },
-  saveChar: async () => {
-    readForm();
-    const d = S.draft;
-    if (!d.name.trim()) return toast('名前を入力してください', 'warn');
-    const c = { ...d, name: d.name.trim(), altGreetings: (d.altGreetingsText || '').split(/\n\s*-{3,}\s*\n/).map(x => x.trim()).filter(Boolean), updatedAt: now() };
-    delete c.altGreetingsText; delete c._new;
-    const i = S.chars.findIndex(x => x.id === c.id);
-    if (i >= 0) S.chars[i] = c; else S.chars.push(c);
-    await DB.put('chars', c);
-    toast('保存しました', 'ok', 1500);
-    back();
-  },
-  dupChar: async t => {
-    closeAllSheets();
-    const c = { ...clone(getChar(t.dataset.id)), id: uid(), createdAt: now() };
-    c.name += '（コピー）';
-    S.chars.push(c);
-    await DB.put('chars', c);
-    render();
-  },
-  exportChar: t => { closeAllSheets(); const c = getChar(t.dataset.id); saveFile(`${c.name}.json`, JSON.stringify(charToCard(c), null, 2)); },
-  deleteChar: async t => {
-    const c = getChar(t.dataset.id);
-    if (!c || !confirm(`「${c.name}」を削除しますか？（このキャラを使ったチャットは残ります）`)) return;
-    closeAllSheets();
-    S.chars = S.chars.filter(x => x !== c);
-    await DB.del('chars', c.id);
-    if (S.stack.at(-1).v === 'editChar') S.stack.pop();
-    render();
-  },
-  importChar: () => pick('char', '.json,.png,image/png,application/json'),
-
-  // worlds
-  newWorld: () => { S.draft = { id: uid(), name: '', content: '', createdAt: now(), _new: true }; go('editWorld'); },
-  editWorld: t => { S.draft = clone(getWorld(t.dataset.id)); go('editWorld', { id: t.dataset.id }); },
-  saveWorld: async () => {
-    readForm();
-    const w = { ...S.draft, name: S.draft.name.trim(), updatedAt: now() };
-    if (!w.name) return toast('名前を入力してください', 'warn');
-    delete w._new;
-    const i = S.worlds.findIndex(x => x.id === w.id);
-    if (i >= 0) S.worlds[i] = w; else S.worlds.push(w);
-    await DB.put('worlds', w);
-    toast('保存しました', 'ok', 1500);
-    back();
-  },
-  deleteWorld: async t => {
-    const w = getWorld(t.dataset.id);
-    if (!w || !confirm(`「${w.name}」を削除しますか？`)) return;
-    S.worlds = S.worlds.filter(x => x !== w);
-    await DB.del('worlds', w.id);
-    back();
-  },
-  importWorld: () => pick('world', '.json,application/json'),
-
-  // plots
-  newPlot: () => { closeAllSheets(); S.draft = { id: uid(), title: '', content: '', opening: '', createdAt: now(), _new: true }; go('editPlot'); },
-  editPlot: t => { closeAllSheets(); S.draft = clone(getPlot(t.dataset.id)); go('editPlot', { id: t.dataset.id }); },
-  savePlot: async () => {
-    readForm();
-    const p = { ...S.draft, title: S.draft.title.trim(), updatedAt: now() };
-    if (!p.title) return toast('タイトルを入力してください', 'warn');
-    delete p._new;
-    const i = S.plots.findIndex(x => x.id === p.id);
-    if (i >= 0) S.plots[i] = p; else S.plots.push(p);
-    await DB.put('plots', p);
-    toast('保存しました', 'ok', 1500);
-    back();
-  },
-  deletePlot: async t => {
-    const p = getPlot(t.dataset.id);
-    if (!p || !confirm(`「${p.title}」を削除しますか？`)) return;
-    S.plots = S.plots.filter(x => x !== p);
-    await DB.del('plots', p.id);
-    back();
-  },
-
   // settings
+  pickPersonaAvatar: () => pick('personaAvatar', 'image/*'),
   toggleKey: t => { const i = t.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; t.textContent = i.type === 'password' ? '表示' : '隠す'; },
   pickModel: async t => {
     const p = t.dataset.p, path = t.dataset.path;
@@ -2206,10 +2618,17 @@ const ACT = {
     let list;
     try { list = await fetchModels(p); } catch (e) { return toast('取得に失敗しました: ' + e.message, 'err', 7000); }
     if (!list.length) return toast('モデルが見つかりませんでした', 'warn');
-    const w = openSheet({ id: 'models', title: `モデルを選択（${list.length}件）`, html: `<input id="modelFilter" placeholder="絞り込み…" autocapitalize="off" autocorrect="off" spellcheck="false"><div class="menu model-list" style="margin-top:8px">${list.map(m => `<button data-act="chooseModel" data-m="${esc(m)}" data-path="${path}">${esc(m)}</button>`).join('')}</div>` });
+    const w = openSheet({ id: 'models', title: `モデルを選択（${list.length}件）`, html: `<input type="search" id="modelFilter" placeholder="絞り込み…" autocapitalize="off" autocorrect="off" spellcheck="false"><div class="menu model-list" style="margin-top:8px">${list.map(m => `<button data-act="chooseModel" data-m="${esc(m)}" data-path="${path}">${esc(m)}</button>`).join('')}</div>` });
     $('#modelFilter', w).addEventListener('input', e => { const q = e.target.value.toLowerCase(); $$('.model-list button', w).forEach(b => { b.hidden = !b.dataset.m.toLowerCase().includes(q); }); });
   },
-  chooseModel: t => { setPath(S.settings, t.dataset.path, t.dataset.m); saveSettings(); closeSheet(t.closest('.sheet-wrap')); render(); toast('モデル: ' + t.dataset.m, 'ok', 1500); },
+  chooseModel: t => {
+    setPath(S.settings, t.dataset.path, t.dataset.m);
+    if (t.dataset.path.startsWith('models.')) rememberModel(t.dataset.path.slice(7), t.dataset.m);
+    saveSettings();
+    closeAllSheets();
+    render();
+    toast('モデル: ' + t.dataset.m, 'ok', 1500);
+  },
   testApi: async t => {
     const role = t.dataset.role, cfg = llmCfg(role);
     toast(`接続テスト中…（${cfg.model || 'モデル未設定'}）`, '', 1800);
@@ -2218,18 +2637,17 @@ const ACT = {
       toast(`成功: ${(r.text || '（空の応答）').trim().slice(0, 60)}`, 'ok', 4000);
     } catch (e) { toast('失敗: ' + e.message, 'err', 9000); }
   },
-  resetSystem: () => { if (!confirm('システムプロンプトを既定に戻しますか？')) return; S.settings.systemPrompt = DEFAULT_SYSTEM; saveSettings(); render(); },
   exportAll: () => {
     const withKeys = $('#expKeys')?.checked;
     const settings = clone(S.settings);
     if (!withKeys) settings.keys = {};
-    saveFile(`memoria-backup-${ymd()}.json`, JSON.stringify({ app: 'memoria', version: 1, exportedAt: new Date().toISOString(), settings, chars: S.chars, worlds: S.worlds, plots: S.plots, chats: S.chats }));
+    saveFile(`memoria-backup-${ymd()}.json`, JSON.stringify({ app: 'memoria', version: 2, exportedAt: new Date().toISOString(), settings, stories: S.stories, chats: S.chats }));
   },
   importBackup: () => pick('backup', '.json,application/json'),
   wipeAll: async () => {
-    if (!confirm('すべてのキャラ・世界設定・プロット・チャット・設定を削除します。元に戻せません。')) return;
+    if (!confirm('すべてのプロット・トーク・設定を削除します。元に戻せません。')) return;
     if (!confirm('本当に削除しますか？（先にバックアップを書き出すことをおすすめします）')) return;
-    for (const s of ['kv', 'chars', 'worlds', 'plots', 'chats']) await DB.clear(s);
+    for (const s of ['kv', 'chars', 'worlds', 'plots', 'chats', 'stories']) await DB.clear(s);
     location.reload();
   },
 };
@@ -2276,10 +2694,14 @@ addEventListener('beforeunload', e => { if (S.gen || Object.keys(S.memJobs).leng
   }
   const st = await DB.get('kv', 'settings');
   S.settings = deepMerge(DEFAULTS, st?.data || {});
-  [S.chars, S.worlds, S.plots, S.chats] = await Promise.all(['chars', 'worlds', 'plots', 'chats'].map(s => DB.all(s)));
+  let oldChars, oldWorlds, oldPlots;
+  [S.stories, S.chats, oldChars, oldWorlds, oldPlots] = await Promise.all(['stories', 'chats', 'chars', 'worlds', 'plots'].map(s => DB.all(s)));
   for (const c of S.chats) { c.mem = deepMerge(newMem(), c.mem || {}); c.snaps ||= []; }
-  const byCreated = (a, b) => (a.createdAt || 0) - (b.createdAt || 0);
-  S.chars.sort(byCreated); S.worlds.sort(byCreated); S.plots.sort(byCreated);
+  if (S.chats.some(c => !c.storyId) || (!S.stories.length && oldChars.length)) {
+    await migrateV1(oldChars, oldWorlds, oldPlots);
+    await Promise.all(['chars', 'worlds', 'plots'].map(s => DB.clear(s)));
+  }
+  S.stories.forEach(s => { s.chars ||= []; s.tags ||= []; });
   applyUI();
   render();
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyUI);
