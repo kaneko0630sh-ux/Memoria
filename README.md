@@ -44,7 +44,7 @@ npx serve .
 設定 → 記憶エンジン で記憶処理だけ安いモデル（例: `claude-haiku-4-5`）にすると費用を抑えられます。
 
 ## 対応
-- プロバイダ: Anthropic (Claude) / OpenAI / OpenRouter / Google Gemini / OpenAI互換（カスタムURL） / デモ（APIなし）
+- プロバイダ: Anthropic (Claude) / OpenAI / OpenRouter / NanoGPT（サブスク限定モード対応） / Google Gemini / OpenAI互換（カスタムURL） / デモ（APIなし）
 - 読み込み: SillyTavern キャラクターカード（PNG・JSON V1/V2）、SillyTavern ワールド情報（JSON → 世界設定に常時展開）
 - バックアップ: 全データを JSON で書き出し・読み込み
 

@@ -359,6 +359,7 @@ const PROVIDERS = {
   anthropic: { label: 'Anthropic（Claude）', models: ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5', 'claude-fable-5-1', 'claude-opus-4-8'], keyHint: 'sk-ant-...' },
   openai: { label: 'OpenAI', models: [], keyHint: 'sk-...' },
   openrouter: { label: 'OpenRouter', models: [], keyHint: 'sk-or-...' },
+  nanogpt: { label: 'NanoGPT', models: ['anthropic/claude-sonnet-5', 'deepseek-chat', 'moonshotai/kimi-k2.6', 'z-ai/glm-5.3-flash'], keyHint: 'NanoGPTのAPIキー' },
   gemini: { label: 'Google Gemini', models: ['gemini-2.5-pro', 'gemini-2.5-flash'], keyHint: 'AIza...' },
   custom: { label: 'OpenAI互換（カスタムURL）', models: [], keyHint: '不要なら空欄' },
   mock: { label: 'デモ（APIなし・動作確認用）', models: ['demo'], keyHint: '' },
@@ -366,9 +367,9 @@ const PROVIDERS = {
 
 const DEFAULTS = {
   provider: 'anthropic',
-  keys: { anthropic: '', openai: '', openrouter: '', gemini: '', custom: '' },
-  models: { anthropic: 'claude-opus-5', openai: '', openrouter: '', gemini: '', custom: '', mock: 'demo' },
-  customBase: '',
+  keys: { anthropic: '', openai: '', openrouter: '', nanogpt: '', gemini: '', custom: '' },
+  models: { anthropic: 'claude-opus-5', openai: '', openrouter: '', nanogpt: '', gemini: '', custom: '', mock: 'demo' },
+  customBase: '', nanoSub: false,
   maxTokens: 4000, temperature: 1, effort: 'low', streaming: true, context: 48000,
   mem: {
     auto: true, provider: '', model: '', effort: 'medium', recent: 30, chunk: 10,
@@ -589,11 +590,16 @@ async function callAnthropic(cfg, o) {
   ]);
 }
 
-async function callOpenAI(cfg, o) {
+function openaiBase(p) {
   const s = S.settings;
-  const base = cfg.provider === 'openai' ? 'https://api.openai.com/v1'
-    : cfg.provider === 'openrouter' ? 'https://openrouter.ai/api/v1'
-    : (s.customBase || '').trim().replace(/\/+$/, '');
+  if (p === 'openai') return 'https://api.openai.com/v1';
+  if (p === 'openrouter') return 'https://openrouter.ai/api/v1';
+  if (p === 'nanogpt') return s.nanoSub ? 'https://nano-gpt.com/api/subscription/v1' : 'https://nano-gpt.com/api/v1';
+  return (s.customBase || '').trim().replace(/\/+$/, '');
+}
+
+async function callOpenAI(cfg, o) {
+  const base = openaiBase(cfg.provider);
   if (!base) throw new Error('カスタムのベースURLが未設定です（設定タブ → API）');
   const sysText = (o.system || []).map(b => b.text).filter(t => t && t.trim()).join('\n\n');
   const body = {
@@ -604,6 +610,7 @@ async function callOpenAI(cfg, o) {
   if (o.temperature != null) body.temperature = o.temperature;
   if (o.schema) body.response_format = { type: 'json_object' };
   if (o.stream) body.stream = true;
+  if (cfg.provider === 'nanogpt' && cfg.effort) body.reasoning_effort = cfg.effort;
   const headers = { 'content-type': 'application/json' };
   if (cfg.key) headers.authorization = 'Bearer ' + cfg.key;
   if (cfg.provider === 'openrouter') { headers['X-Title'] = 'Memoria'; if (/^https?:/.test(location.origin)) headers['HTTP-Referer'] = location.origin; }
@@ -632,6 +639,7 @@ async function callOpenAI(cfg, o) {
     { test: (b, m) => 'max_completion_tokens' in b && /max_completion_tokens/i.test(m), apply: b => { b.max_tokens = b.max_completion_tokens; delete b.max_completion_tokens; } },
     { test: (b, m) => 'temperature' in b && /temperature/i.test(m), apply: b => delete b.temperature },
     { test: (b, m) => b.response_format && /response_format|json/i.test(m), apply: b => delete b.response_format },
+    { test: (b, m) => b.reasoning_effort && /reasoning/i.test(m), apply: b => delete b.reasoning_effort },
   ]);
 }
 
@@ -719,7 +727,7 @@ async function fetchModels(p) {
     if (!r.ok) throw await httpErr(r);
     return ((await r.json()).models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, ''));
   }
-  const base = p === 'openai' ? 'https://api.openai.com/v1' : p === 'openrouter' ? 'https://openrouter.ai/api/v1' : (s.customBase || '').trim().replace(/\/+$/, '');
+  const base = openaiBase(p);
   if (!base) throw new Error('ベースURLが未設定です');
   const r = await fetch(base + '/models', { headers: key ? { authorization: 'Bearer ' + key } : {} });
   if (!r.ok) throw await httpErr(r);
@@ -1375,6 +1383,7 @@ function tabSettings() {
   <label class="field"><span>プロバイダ</span><select data-set="provider" data-rerender="1">${provOpts(p)}</select></label>
   ${keyField(p)}
   ${p === 'custom' ? `<label class="field"><span>ベースURL</span><input data-set="customBase" value="${esc(s.customBase)}" placeholder="https://example.com/v1" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url"><div class="hint">OpenAI互換の /chat/completions を持つエンドポイント（DeepSeek・ローカルLLMなど）。ブラウザからの接続（CORS）を許可している必要があります。</div></label>` : ''}
+  ${p === 'nanogpt' || mp === 'nanogpt' ? `<label class="switch"><span>NanoGPT：サブスク対象のモデルだけ使う</span><input type="checkbox" data-set="nanoSub" ${s.nanoSub ? 'checked' : ''}></label><p class="hint" style="margin-top:-6px">NanoGPT のサブスクに加入している場合はオン。サブスク内のモデルに限定され、従量課金が発生しません。「一覧」もサブスク対象だけになります。</p>` : ''}
   <label class="field"><span>モデル</span><div class="inline"><input data-set="models.${p}" value="${esc(s.models[p] || '')}" list="dl-main" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="モデルID"><button class="btn sm" data-act="pickModel" data-p="${p}" data-path="models.${p}">一覧</button></div></label>
   ${dl('dl-main', p)}
   <div class="btn-row"><button class="btn sm" data-act="testApi" data-role="main">接続テスト</button></div>
@@ -1382,7 +1391,7 @@ function tabSettings() {
 </section>
 <section class="card"><h3>生成</h3>
   <div class="grid2">${num('maxTokens', '最大出力トークン', { min: 256 })}${num('temperature', '温度', { step: 0.05, dec: true, min: 0 })}</div>
-  <label class="field"><span>思考の深さ（effort）</span><select data-set="effort">${effortOpts(s.effort)}</select><div class="hint">Claude の新しいモデルで有効です。ロールプレイは low が速くておすすめ。温度は Claude Opus 5 / Sonnet 5 などでは使われません。</div></label>
+  <label class="field"><span>思考の深さ（effort）</span><select data-set="effort">${effortOpts(s.effort)}</select><div class="hint">Claude の新しいモデルと、NanoGPT の思考（thinking）モデルで有効です。ロールプレイは low が速くておすすめ。温度は Claude Opus 5 / Sonnet 5 などでは使われません。</div></label>
   ${num('context', '入力の上限目安（トークン）', { min: 4000, hint: '設定・記憶・履歴を合わせた送信量の上限。超える分は古い履歴から省かれます（省いた分もあらすじで補われます）。' })}
   <label class="switch"><span>ストリーミング表示</span><input type="checkbox" data-set="streaming" ${s.streaming ? 'checked' : ''}></label>
 </section>
