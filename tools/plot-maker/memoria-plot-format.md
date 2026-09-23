@@ -135,7 +135,7 @@ Memoria の出力と同じ「見出しブロック」形式で書きます。見
 | `pace` | 展開速度 | `fast`（速い）/ `natural`（自然）/ `slow`（遅い） | `natural` |
 | `pov` | ナレーション視点 | `1st`（一人称）/ `2nd`（二人称: ナレーションが{{user}}を「あなた」と呼ぶ）/ `3rd`（三人称） | `3rd` |
 | `tense` | 時制 | `past`（過去形）/ `present`（現在形） | `past` |
-| `length` | 応答の長さ | `short`（200〜400字）/ `medium`（400〜800字）/ `long`（800〜1500字）/ `auto`（自動） | `auto` |
+| `length` | 応答の長さ | `one`（一言: 描写1つ＋台詞1つでチャットのように返す）/ `short`（200〜400字）/ `medium`（400〜800字）/ `long`（800〜1500字）/ `auto`（自動） | `auto` |
 | `expr` | 表現方式 | `dialog`（会話多め）/ `basic`（基本）/ `action`（行動多め） | `basic` |
 | `mood` | 雰囲気（配列・最大2つ） | `romance`（ロマンス）/ `iyashi`（癒し）/ `serious`（シリアス）/ `yandere`（ヤンデレ）/ `fantasy`（ファンタジー）/ `action`（アクション）/ `mystery`（ミステリー）/ `horror`（ホラー） | `[]` |
 | `prose` | 文章スタイル | `real`（等身大リアリズム: 短文と具体描写、本音が地の文ににじむ）/ `romance`（恋愛心理小説）/ `hardboiled`（ハードボイルド）/ `nocturne`（夜想文学: 静かで詩的）/ `seishun`（温かな青春物語）/ `action`（アクション）/ `fantasy`（王道ファンタジー）/ `lightnovel`（ライトノベル: テンポのよい掛け合い）/ `horror`（心理ホラー）/ `none`（設定しない） | `real` |

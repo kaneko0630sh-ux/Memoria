@@ -1,5 +1,6 @@
 // スタイル（文体・演出・進行）の定義。エディタのUIとプロンプトの両方がこの表から作られる
 // 選択肢を増やすときは options に1件足すだけでよい
+import { STYLE_DEFAULTS } from '../core/store.js';
 
 const opt = (v, label, desc, rule) => ({ v, label, desc, rule });
 
@@ -33,7 +34,8 @@ export const STYLE_GROUPS = {
     ],
   },
   length: {
-    label: '応答の長さ', cols: 4, options: [
+    label: '応答の長さ', cols: 5, options: [
+      opt('one', '一言', '描写1つと台詞1つだけ。チャットのようにテンポよく返します', '1回の応答は、1人のキャラクターのブロック1つだけ。中身は *動作・表情の描写* 1段落（1〜2文）と台詞1つ（1〜2文）の2行だけにする。ナレーションのブロックは書かない（場面が大きく変わるときだけ、先頭に1文のナレーションを置いてよい）。複数のキャラクターがいても、反応するのは最も自然な1人だけ。全体で120字程度まで。この分量の指定は、ほかの文体・表現の指示より優先する'),
       opt('short', '短い', '200〜400字程度でテンポよく返します', '1回の応答は全体で200〜400字程度'),
       opt('medium', '中間', '400〜800字程度で返します', '1回の応答は全体で400〜800字程度'),
       opt('long', '長い', '800〜1500字程度でじっくり描きます', '1回の応答は全体で800〜1500字程度'),
@@ -133,7 +135,7 @@ export function sanitizeStyle(src = {}) {
   return out;
 }
 
-const pickOpt = (g, v) => STYLE_GROUPS[g].options.find(o => o.v === v) || STYLE_GROUPS[g].options[0];
+const pickOpt = (g, v) => { const o = STYLE_GROUPS[g].options; return o.find(x => x.v === v) || o.find(x => x.v === STYLE_DEFAULTS[g]) || o[0]; };
 
 // プロットのスタイル設定から、文体と演出の指示文を組み立てる
 export function styleText(style) {
@@ -161,7 +163,7 @@ export function styleText(style) {
 
 // 表示用の出力形式。アプリがこの形式を解析して吹き出しに分ける
 export function formatRules(ctx, style, extra = []) {
-  const names = ctx.chars.map(c => c.name);
+  const names = ctx.chars.map(c => c.name), one = style.length === 'one';
   const lines = [
     '# 出力形式（厳守・システムが解析して表示します）',
     'ブロックごとに見出し行を置き、その下に本文を書く。',
@@ -172,14 +174,14 @@ export function formatRules(ctx, style, extra = []) {
     '【キャラクター名】',
     '*その人物の動作・表情・内心の段落*',
     'その人物の台詞',
-    '*動作の段落*',
-    '台詞',
+    ...(one ? [] : ['*動作の段落*', '台詞']),
     '',
     `- キャラクター名は ${names.join('、') || '登場人物の名前'} を正確に使う。名前のある脇役が話すときは【その人物の名前】で独立したブロックにする。`,
     '- キャラクターのブロック内では、動作・内心の段落は行頭と行末を必ず * で囲む。台詞は * で囲まず、「」も付けない。',
     '- 1つのブロックに書くのはその人物の動作と台詞だけ。別の人物が話すときはブロックを分ける。',
     '- ナレーションは場面転換・情景・時間の経過・その場全体の空気を描く。台詞は入れない。',
   ];
+  if (one) lines.push('- 応答の長さは「一言」: 【キャラクター名】ブロック1つに、*描写* 1行と台詞1行だけを書く（【情報】やプラグインのブロックを求められている場合は、その後に置く）。');
   const info = [];
   if (style.infoBg === 'on') info.push('📅 日時 / 📍 場所 / 🌤 天気・空気 をそれぞれ1行で');
   if (style.infoChar === 'on') info.push('登場中のキャラクターごとに「名前｜服装｜感情｜{{user}}への印象」を1行で');
