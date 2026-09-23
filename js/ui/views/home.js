@@ -2,10 +2,12 @@
 import { S, talksOf, msgCount, lastDialog, txt, maxTurn, getStory, saveSettings, storyIssues } from '../../core/store.js';
 import { esc, fmtCount, relTime, tl } from '../../core/util.js';
 import { lastLine } from '../../engine/parse.js';
-import { ic, coverHTML } from '../dom.js';
+import { ic, coverHTML, openSheet, closeSheet, sheetOf } from '../dom.js';
 import { defineView, defineActions, go, render, goHome } from '../app.js';
 import { myPageHTML, mountMyPage } from './settings.js';
-import { loadSamples, importStoryFile } from '../../io/porting.js';
+import { loadSamples, importStoryFile, importStoryText } from '../../io/porting.js';
+
+const PLOT_MAKER = 'https://github.com/kaneko0630sh-ux/Memoria/tree/main/tools/plot-maker';
 
 const TABS = [['home', 'ホーム', 'home'], ['create', '作成', 'create'], ['talks', 'トーク', 'talk'], ['my', 'マイページ', 'user']];
 const published = () => S.stories.filter(s => !s.draft);
@@ -67,8 +69,8 @@ function createTab() {
   const list = S.stories.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   return `<div class="create-top">
     <button class="btn primary block" data-act="newStory">${ic('plus', 'sm')}新しいプロットを作る</button>
-    <div class="btn-row"><button class="btn sm" data-act="importStory">${ic('upload', 'sm')}ファイルから読み込む</button><button class="btn sm" data-act="loadSample">サンプルを追加</button></div>
-    <p class="hint">SillyTavern のキャラクターカード（PNG / JSON）や、Memoria で書き出したプロットを読み込めます。</p></div>
+    <div class="btn-row"><button class="btn sm" data-act="importStory">${ic('upload', 'sm')}ファイルから読み込む</button><button class="btn sm" data-act="pasteStory">${ic('copy', 'sm')}テキストを貼り付けて読み込む</button><button class="btn sm" data-act="loadSample">サンプルを追加</button></div>
+    <p class="hint">SillyTavern のキャラクターカード（PNG / JSON）や、Memoria で書き出したプロットを読み込めます。Claude や ChatGPT にヒアリングしてもらってプロットを作るなら <a href="${PLOT_MAKER}" target="_blank" rel="noopener">プロット作成ツール</a> を。</p></div>
     <div class="sec-h">あなたのプロット（${list.length}）</div>
     <div class="list">${list.map(s => `<button class="row" data-act="editStory" data-id="${s.id}"><span class="thumb-sq">${coverHTML(s, 22)}</span><div class="row-main"><div class="row-title">${esc(s.title || '（無題）')}${s.draft ? ' <span class="pill warn">下書き</span>' : ''}</div><div class="row-sub">${esc(s.chars.map(c => c.name).filter(Boolean).join('・') || 'キャラ未設定')}${!storyIssues(s).ok ? ' ・ 未入力の必須項目あり' : ''}</div></div>${ic('edit', 'sm')}</button>`).join('') || '<p class="empty-s">まだプロットがありません</p>'}</div>`;
 }
@@ -90,4 +92,18 @@ defineActions({
   loadSample: async () => { await loadSamples(); goHome('home'); },
   useDemo: async () => { S.settings.provider = 'mock'; await saveSettings(); await loadSamples(); goHome('home'); },
   importStory: async () => { const st = await importStoryFile(); if (st) go('story', { id: st.id }); },
+  pasteStory: () => openSheet({
+    id: 'paste-story', title: 'テキストを貼り付けて読み込む',
+    html: `<p class="hint">プロット作成ツール（Claude / ChatGPT）が出力した JSON を、そのまま貼り付けてください。前後の文章やコードブロックの囲みが混ざっていても大丈夫です。</p>
+      <textarea id="pasteStoryText" rows="10" placeholder='{"app":"memoria-story", ...}' autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+      <div class="btn-row end"><button class="btn" data-act="closeSheet">キャンセル</button><button class="btn primary" data-act="pasteStoryOk">読み込む</button></div>`,
+  }),
+  pasteStoryOk: async el => {
+    const text = document.getElementById('pasteStoryText')?.value || '';
+    if (!text.trim()) return;
+    const st = await importStoryText(text);
+    if (!st) return;
+    closeSheet(sheetOf(el));
+    go('story', { id: st.id });
+  },
 });

@@ -120,6 +120,19 @@ export const STYLE_SECTIONS = [
 
 export const INFOBOX_OPTIONS = [['off', '使用しない'], ['on', '使用する']];
 
+// 外から来たスタイル（書き出しファイル・プロット作成ツール）を定義済みの値だけに揃える。表示名で書かれていても受け付ける
+export function sanitizeStyle(src = {}) {
+  const out = {};
+  for (const [k, G] of Object.entries(STYLE_GROUPS)) {
+    const val = v => G.options.find(o => o.v === v || o.label === v)?.v;
+    if (G.multi) { if (Array.isArray(src[k])) out[k] = [...new Set(src[k].map(val).filter(Boolean))].slice(0, G.multi); }
+    else if (val(src[k])) out[k] = val(src[k]);
+  }
+  if (typeof src.choices === 'boolean') out.choices = src.choices;
+  for (const k of ['infoBg', 'infoChar']) if (INFOBOX_OPTIONS.some(([v]) => v === src[k])) out[k] = src[k];
+  return out;
+}
+
 const pickOpt = (g, v) => STYLE_GROUPS[g].options.find(o => o.v === v) || STYLE_GROUPS[g].options[0];
 
 // プロットのスタイル設定から、文体と演出の指示文を組み立てる

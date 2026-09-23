@@ -33,7 +33,8 @@ APIキーは各端末のブラウザ内（IndexedDB）にだけ保存され、�
 
 ## 対応
 - プロバイダ: Anthropic (Claude) / OpenAI / OpenRouter / NanoGPT（サブスク限定モード対応） / DeepSeek / Google Gemini / OpenAI互換（カスタムURL） / デモ（APIなし）
-- 読み込み: SillyTavern キャラクターカード（PNG・JSON）、ワールド情報（ロアブック）、Memoria のプロット書き出し
+- 読み込み: SillyTavern キャラクターカード（PNG・JSON）、ワールド情報（ロアブック）、Memoria のプロット書き出し（ファイル、またはテキストの貼り付け）
+- プロット作成ツール: Claude / ChatGPT のプロジェクトでヒアリングしてプロットを作る → [`tools/plot-maker/`](tools/plot-maker/)
 - バックアップ: 全データを JSON で書き出し・読み込み
 
 ## コードの構成
@@ -47,6 +48,7 @@ js/engine/            parse（出力の解析）/ style（文体・演出）/ lo
 js/plugins/           registry（プラグインの仕組み）/ dice / diary
 js/ui/                dom（部品）/ app（画面切替・アクション）/ blocks（出力の表示）/ views/（各画面）
 js/io/porting.js      読み込み・書き出し・サンプル
+tools/plot-maker/     アプリ外のプロット作成ツール（Claude / ChatGPT のプロジェクト用の指示と形式説明）
 ```
 - エンジン層は画面を直接触らず、`core/hooks.js` のイベントで通知します。
 - **プロバイダを増やす**: `js/llm/providers.js` の `PROVIDERS` に1件追加

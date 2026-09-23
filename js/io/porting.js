@@ -3,6 +3,7 @@ import { S, DEFAULT_SETTINGS, normalizeStory, normalizeChar, normalizeChat, save
 import { DB } from '../core/db.js';
 import { uid, now, clone, deepMerge, b64utf8 } from '../core/util.js';
 import { stEntriesToLore } from '../engine/lorebook.js';
+import { sanitizeStyle } from '../engine/style.js';
 import { pickFile, fileToImage, toast } from '../ui/dom.js';
 
 /* ---------- キャラクターカード（SillyTavern PNG / JSON） ---------- */
@@ -47,31 +48,72 @@ export async function readCardFile() {
   try { return await parseCard(f); } catch (e) { toast('読み込みに失敗しました: ' + e.message, 'err', 6000); return null; }
 }
 
-// 「作成」タブの「ファイルから読み込む」: カード / Memoria のプロット書き出し
-export async function importStoryFile() {
-  const f = await pickFile('.json,.png,image/png,application/json');
+/* ---------- プロット（Memoria 形式） ----------
+   書き出したファイル・プロット作成ツール（tools/plot-maker）の出力・貼り付けたテキストを受け付ける */
+const splitList = v => (typeof v === 'string' ? v.split(/[,、，]/) : Array.isArray(v) ? v : []).map(x => String(x).trim()).filter(Boolean);
+
+// 貼り付けたテキストは前後に説明文やコードブロックの囲みが付いていることがある
+function readStoryJSON(text) {
+  const s = String(text || '').trim();
+  const tries = [s, ...[...s.matchAll(/```[\w-]*\s*\n([\s\S]*?)```/g)].map(m => m[1]), s.slice(s.indexOf('{'), s.lastIndexOf('}') + 1)];
+  for (const t of tries) { try { return JSON.parse(t); } catch { /* 次の候補へ */ } }
+  throw new Error('JSONとして読み込めませんでした（途中で切れていないか確認してください）');
+}
+
+// Memoria 形式なら取り出したプロットを、それ以外（キャラカードなど）なら null を返す
+function memoriaStory(json) {
+  if (json?.app === 'memoria') throw new Error('これはバックアップです。マイページ →「バックアップを読み込む」から読み込んでください');
+  const src = json?.app === 'memoria-story' ? json.story : Array.isArray(json?.story?.chars) ? json.story : Array.isArray(json?.chars) ? json : null;
+  if (!src || typeof src !== 'object') return null;
+  // キャラの ID は振り直す。状況例は元の ID かキャラ名（char）でつなぎ直す
+  const ids = {}, byName = {};
+  const chars = (src.chars || []).map(c => {
+    const id = uid();
+    if (c.id) ids[c.id] = id;
+    if (c.name) byName[c.name] = id;
+    return { ...clone(c), id };
+  });
+  const examples = (src.examples || []).map(({ char, ...x }) => ({ ...x, charId: ids[x.charId] || byName[char] || byName[x.charId] || chars[0]?.id || '' }));
+  const lore = (src.lore || []).map(e => ({ ...e, keys: splitList(e.keys) }));
+  return normalizeStory({
+    ...clone(src), id: uid(), chars, examples, lore, tags: splitList(src.tags).slice(0, 8), style: sanitizeStyle(src.style || {}),
+    cover: src.cover || '', fav: false, draft: false, createdAt: now(), updatedAt: now(),
+  });
+}
+
+async function storyFromCard(f) {
+  const r = await parseCard(f);
+  return normalizeStory({
+    title: r.char.name, cover: r.image ? await fileToImage(f, 600, 800) : '', description: (r.d.creator_notes || r.d.description || '').replace(/\s+/g, ' ').slice(0, 80),
+    tags: (r.d.tags || []).slice(0, 6), chars: [r.char], prompt: r.scenario, opening: r.firstMes, lore: r.lore,
+  });
+}
+
+async function saveImported(read) {
   try {
-    let st;
-    const json = isPng(f) ? null : JSON.parse(await f.text());
-    if (json?.app === 'memoria-story' && json.story) {
-      const src = clone(json.story);
-      st = normalizeStory({ ...src, id: uid(), chars: (src.chars || []).map(c => ({ ...c, id: uid() })), createdAt: now(), draft: false });
-    } else if (json?.app === 'memoria') {
-      throw new Error('これはバックアップです。マイページ →「バックアップを読み込む」から読み込んでください');
-    } else {
-      const r = await parseCard(f);
-      st = normalizeStory({
-        title: r.char.name, cover: r.image ? await fileToImage(f, 600, 800) : '', description: (r.d.creator_notes || r.d.description || '').replace(/\s+/g, ' ').slice(0, 80),
-        tags: (r.d.tags || []).slice(0, 6), chars: [r.char], prompt: r.scenario, opening: r.firstMes, lore: r.lore,
-      });
-    }
+    const st = await read();
     await saveStory(st);
-    toast(`プロット「${st.title}」を読み込みました`, 'ok');
+    toast(`プロット「${st.title || '（無題）'}」を読み込みました`, 'ok');
     return st;
   } catch (e) {
     toast('読み込みに失敗しました: ' + e.message, 'err', 6000);
     return null;
   }
+}
+
+// 「作成」タブの「ファイルから読み込む」: Memoria のプロット / キャラカード（PNG・JSON）
+export async function importStoryFile() {
+  const f = await pickFile('.json,.png,image/png,application/json,text/plain');
+  return saveImported(async () => (isPng(f) ? null : memoriaStory(readStoryJSON(await f.text()))) || storyFromCard(f));
+}
+
+// 「作成」タブの「テキストを貼り付けて読み込む」: Claude / ChatGPT が出力したプロットをそのまま貼る
+export function importStoryText(text) {
+  return saveImported(async () => {
+    const st = memoriaStory(readStoryJSON(text));
+    if (!st) throw new Error('Memoria のプロット形式ではありません');
+    return st;
+  });
 }
 
 /* ---------- バックアップ ---------- */
