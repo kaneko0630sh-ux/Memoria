@@ -4,8 +4,9 @@ import { esc, fmtCount, relTime, tl, clone, uid, safeName } from '../../core/uti
 import { parseBlocks, lastLine } from '../../engine/parse.js';
 import { createTalk } from '../../engine/chat.js';
 import { blockOwners } from '../../plugins/registry.js';
-import { ic, avatarHTML, coverHTML, openSheet, closeAllSheets, sheetOf, saveFile, toast } from '../dom.js';
+import { ic, coverHTML, openSheet, closeAllSheets, sheetOf, saveFile, toast } from '../dom.js';
 import { blocksHTML } from '../blocks.js';
+import { personaListHTML } from './personas.js';
 import { defineView, defineActions, go, render, goHome } from '../app.js';
 
 function clip(key, inner, long) {
@@ -57,22 +58,22 @@ defineView('story', {
   },
 });
 
-/* ---------- トークの開始（プロフィールを選べる場合は選択シートを出す） ---------- */
-async function openNewTalk(story, profile) {
-  const chat = createTalk(story, profile);
+/* ---------- トークの開始（選べるプロフィールが複数あれば選択シートを出す） ---------- */
+async function openNewTalk(story, persona) {
+  const chat = createTalk(story, persona);
   await addChat(chat);
   closeAllSheets();
   if (curView().v === 'chat') S.ui.stack.pop();
   go('chat', { id: chat.id });
 }
 export function beginTalk(story) {
-  const profiles = story.profiles.filter(p => p.name.trim());
-  if (!profiles.length) return openNewTalk(story, null);
-  const me = S.settings.persona;
+  const choices = S.settings.personas.length + story.profiles.filter(p => p.name.trim()).length;
+  if (choices <= 1) return openNewTalk(story, null);
   closeAllSheets();
-  openSheet({ id: 'profiles', title: 'トークプロフィールを選択', data: { story: story.id }, html: `<p class="hint" style="margin:0 0 8px">このトークであなたが演じる人物を選んでください。</p><div class="menu">
-    <button data-act="pickProfile" data-i="-1">${avatarHTML({ name: me.name, avatar: me.avatar }, 40)}<span class="grow">${esc(me.name)}<small>マイプロフィール</small></span></button>
-    ${profiles.map(p => `<button data-act="pickProfile" data-i="${story.profiles.indexOf(p)}">${avatarHTML({ name: p.name }, 40)}<span class="grow">${esc(p.name)}<small>${esc(p.desc.slice(0, 60))}</small></span></button>`).join('')}</div>` });
+  const html = () => `<p class="hint" style="margin:0 0 10px">このトークであなたが演じる人物を選んでください。トーク中も ☰ →「トークプロフィール」からいつでも切り替えられます。</p>`
+    + personaListHTML({ act: 'pickProfile', story });
+  const w = openSheet({ id: 'persona-start', title: 'トークプロフィールを選択', data: { story: story.id }, html: html() });
+  w._html = html;
 }
 
 defineActions({
@@ -91,10 +92,7 @@ defineActions({
     if (talksOf(st.id).length && !confirm(`「${st.title}」の新しいトークを始めます。今までのトークは保存され、「再開」から戻れます。`)) return;
     return beginTalk(st);
   },
-  pickProfile: el => {
-    const st = getStory(sheetOf(el).dataset.story), i = Number(el.dataset.i);
-    return openNewTalk(st, i >= 0 ? st.profiles[i] : null);
-  },
+  pickProfile: el => openNewTalk(getStory(sheetOf(el).dataset.story), { kind: el.dataset.kind, id: el.dataset.id }),
   storyMenu: el => {
     const id = el.dataset.id;
     openSheet({ id: 'storymenu', title: getStory(id)?.title || '', html: `<div class="menu">

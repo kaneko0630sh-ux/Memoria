@@ -1,6 +1,6 @@
 // 起動処理: データ読み込み → 形式の移行 → 画面開始
 import { DB } from './core/db.js';
-import { S, DEFAULT_SETTINGS, normalizeStory, normalizeChat } from './core/store.js';
+import { S, DEFAULT_SETTINGS, normalizeStory, normalizeChat, migratePersonas, saveSettings } from './core/store.js';
 import { deepMerge } from './core/util.js';
 import { migrateLegacy } from './io/porting.js';
 import { startApp } from './ui/app.js';
@@ -10,6 +10,7 @@ import './ui/views/story.js';
 import './ui/views/editor.js';
 import './ui/views/chat.js';
 import './ui/views/memory-panel.js';
+import './ui/views/personas.js';
 import './ui/views/settings.js';
 import './plugins/dice.js';
 import './plugins/diary.js';
@@ -31,6 +32,12 @@ async function boot() {
     await migrateLegacy(oldChars, oldWorlds, oldPlots);
     for (const s of ['chars', 'worlds', 'plots']) await DB.clear(s);
   }
+  // 単一のペルソナ → トークプロフィール一覧
+  const legacyPersona = S.settings.persona;
+  delete S.settings.persona;
+  const migrated = migratePersonas(legacyPersona);
+  if (legacyPersona || migrated.length) await saveSettings();
+  for (const c of migrated) await DB.put('chats', c);
 
   startApp();
   navigator.storage?.persist?.().catch(() => {});

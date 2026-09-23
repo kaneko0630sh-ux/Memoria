@@ -1,5 +1,5 @@
 // トーク画面（メッセージ・入力欄・☰メニュー・各種シート）
-import { S, getChat, getStory, curChat, curChatId, talksOf, txt, lastDialog, maxTurn, chatCtx, saveChat, removeChat, curView } from '../../core/store.js';
+import { S, getChat, getStory, curChat, curChatId, talksOf, txt, lastDialog, maxTurn, chatCtx, resolvePersona, saveChat, removeChat, curView } from '../../core/store.js';
 import { esc, FINE, relTime, tl, modelShort, safeName, ymd } from '../../core/util.js';
 import { on } from '../../core/hooks.js';
 import { PROVIDERS, EFFORTS, llmCfg } from '../../llm/providers.js';
@@ -11,6 +11,7 @@ import { ic, avatarHTML, openSheet, closeSheet, closeAllSheets, sheetOf, setShee
 import { blocksHTML } from '../blocks.js';
 import { defineView, defineActions, go, render, goHome, isView } from '../app.js';
 import { openEditor } from './editor.js';
+import { openPersonaSwitcher } from './personas.js';
 
 /* ---------- 表示 ---------- */
 defineView('chat', {
@@ -69,9 +70,9 @@ function msgHTML(chat, x, ctx, lastD) {
   const covered = x.id <= chat.mem.coveredId ? ' covered' : '';
   if (x.role === 'sys') return `<div class="divider"><span>${esc(txt(x))}</span></div>`;
   if (x.role === 'user') {
-    const av = { name: ctx.user, avatar: S.settings.persona.avatar };
+    const pr = x.persona ? resolvePersona(chat, x.persona) : ctx.persona; // 送信した時点のプロフィールで表示
     const body = esc(txt(x)).replace(/\*([^*\n]+?)\*/g, '<span class=act>$1</span>').split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
-    return `<div class="msg user${covered}" data-id="${x.id}"><div class="u-main"><div class="u-name">${esc(ctx.user)}</div><div class="bubble me" data-act="msgTap">${body}</div></div>${avatarHTML(av, 40)}</div>`;
+    return `<div class="msg user${covered}" data-id="${x.id}"><div class="u-main"><div class="u-name">${esc(pr.name)}</div><div class="bubble me" data-act="msgTap">${body}</div></div>${avatarHTML(pr, 40)}</div>`;
   }
   const streaming = isStreaming(chat, x), isLast = lastD?.id === x.id;
   const blocks = parseBlocks(txt(x), ctx.chars, blockOwners(ctx.story));
@@ -88,8 +89,10 @@ function renderMessages(chat, { keep = false } = {}) {
   const fromBottom = sc.scrollHeight - sc.scrollTop;
   const ctx = chatCtx(chat), all = chat.messages, n = S.ui.showN[chat.id] || 80;
   const start = Math.max(0, all.length - n), lastD = lastDialog(chat);
+  // v3.1 以降のトークは先頭に「〇〇に変身！」の区切りを持つ。古いトークだけここで補う
+  const legacyHead = all[0]?.role !== 'sys' ? `<div class="divider"><span>${esc(ctx.user)}に変身！</span></div>` : '';
   let html = start > 0 ? `<button class="btn sm ghost more-btn" data-act="showMore">以前のメッセージを表示（残り${start}件）</button>`
-    : `<div class="notice">${ic('info', 'xs')}返答はすべてAIが生成した内容です</div><div class="divider"><span>${esc(ctx.user)}に変身！</span></div>`;
+    : `<div class="notice">${ic('info', 'xs')}返答はすべてAIが生成した内容です</div>${legacyHead}`;
   for (let i = start; i < all.length; i++) {
     const x = all[i];
     html += msgHTML(chat, x, ctx, lastD);
@@ -308,24 +311,7 @@ defineActions({
     render();
     toast('削除しました');
   },
-  profileSheet: el => {
-    const chat = chatOf(el);
-    closeAllSheets();
-    openSheet({ id: 'profile', title: 'トークプロフィール', data: { chat: chat.id }, html: `
-      <label class="field"><span>このトークでのあなたの名前</span><input class="pf-name" value="${esc(chat.userName)}"></label>
-      <label class="field"><span>このトークでのあなたの設定</span><textarea class="pf-desc" rows="5" placeholder="外見・立場・性格など">${esc(chat.userDesc || '')}</textarea></label>
-      <p class="hint">アイコン画像はマイページのプロフィールで変更できます。</p>
-      <div class="btn-row end"><button class="btn" data-act="closeSheet">キャンセル</button><button class="btn primary" data-act="saveProfile">保存</button></div>` });
-  },
-  saveProfile: async el => {
-    const w = sheetOf(el), chat = chatOf(el);
-    chat.userName = w.querySelector('.pf-name').value.trim() || chat.userName;
-    chat.userDesc = w.querySelector('.pf-desc').value;
-    await saveChat(chat);
-    closeSheet(w);
-    render();
-    toast('保存しました', 'ok', 1500);
-  },
+  profileSheet: el => { const chat = chatOf(el); closeAllSheets(); openPersonaSwitcher(chat); },
   toggleChoices: async el => {
     const chat = chatOf(el);
     chat.choices = !chat.choices;

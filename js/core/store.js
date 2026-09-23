@@ -23,7 +23,8 @@ export const DEFAULT_SETTINGS = {
   },
   lore: { depth: 4, budget: 3000 },
   postPrompt: '',
-  persona: { name: 'あなた', desc: '', avatar: '' },
+  personas: [], // トークプロフィール（ペルソナ）: { id, name, desc, avatar }
+  defaultPersona: '',
   ui: { theme: 'dark', font: 'gothic', fs: 16 },
 };
 
@@ -79,15 +80,31 @@ export function findChar(id) {
   return null;
 }
 
+/* ---------- personas（トークプロフィール） ----------
+   トークは chat.persona = { kind: 'mine' | 'plot', id } で参照する。
+   mine: マイページで保存したもの / plot: プロットが用意したもの */
+export const newPersona = (o = {}) => ({ id: uid(), name: '', desc: '', avatar: '', ...o });
+export const defaultPersona = () => S.settings.personas.find(p => p.id === S.settings.defaultPersona) || S.settings.personas[0] || newPersona({ name: 'あなた' });
+export const defaultPersonaRef = () => ({ kind: 'mine', id: defaultPersona().id });
+// ref を省略するとトークの現在のプロフィール。メッセージごとの ref（送信時点のもの）も渡せる
+export function resolvePersona(chat, ref = chat?.persona) {
+  if (ref?.kind === 'plot') {
+    const p = getStory(chat.storyId)?.profiles.find(x => x.id === ref.id);
+    if (p) return { ...p, kind: 'plot' };
+  }
+  const p = S.settings.personas.find(x => x.id === ref?.id) || defaultPersona();
+  return { ...p, kind: 'mine' };
+}
+
 /* ---------- context ---------- */
 export function chatCtx(chat) {
   const story = getStory(chat.storyId), chars = story?.chars.filter(c => c.name.trim()) || [];
-  const user = chat.userName || S.settings.persona.name || 'あなた';
-  return { story, chars, user, char: chars.map(c => c.name).join('、') || 'キャラクター', userDesc: chat.userDesc ?? S.settings.persona.desc ?? '' };
+  const persona = resolvePersona(chat);
+  return { story, chars, persona, user: persona.name || 'あなた', char: chars.map(c => c.name).join('、') || 'キャラクター', userDesc: persona.desc || '' };
 }
 export function storyCtx(story) {
-  const chars = story.chars.filter(c => c.name.trim());
-  return { story, chars, user: S.settings.persona.name || 'あなた', char: chars.map(c => c.name).join('、') || 'キャラクター', userDesc: S.settings.persona.desc || '' };
+  const chars = story.chars.filter(c => c.name.trim()), persona = defaultPersona();
+  return { story, chars, persona, user: persona.name || 'あなた', char: chars.map(c => c.name).join('、') || 'キャラクター', userDesc: persona.desc || '' };
 }
 export function macros(s, ctx) {
   return String(s ?? '').replace(/\{\{char\}\}|<BOT>/gi, () => ctx.char).replace(/\{\{user\}\}|<USER>/gi, () => ctx.user);
@@ -124,7 +141,7 @@ export function normalizeStory(s = {}) {
   st.chars = (s.chars || []).map(normalizeChar);
   st.lore = (s.lore || []).map(normalizeLore);
   st.examples = (s.examples || []).map(x => ({ id: uid(), charId: '', situation: '', reply: '', ...x }));
-  st.profiles = (s.profiles || []).map(x => ({ id: uid(), name: '', desc: '', ...x }));
+  st.profiles = (s.profiles || []).map(x => ({ id: uid(), name: '', desc: '', avatar: '', ...x }));
   st.tags = Array.isArray(s.tags) ? s.tags : [];
   st.plugins = s.plugins && typeof s.plugins === 'object' ? s.plugins : {};
   st.v = 3;
@@ -140,6 +157,33 @@ export function normalizeChat(c) {
   c.note ??= '';
   c.choices ??= false;
   return c;
+}
+
+// v3.0 までの「単一のペルソナ」「トークごとの名前と設定」をペルソナ一覧に移す
+export function migratePersonas(legacy) {
+  const s = S.settings;
+  if (!s.personas.length) {
+    const p = newPersona({ name: legacy?.name || 'あなた', desc: legacy?.desc || '', avatar: legacy?.avatar || '' });
+    s.personas.push(p);
+    s.defaultPersona = p.id;
+  }
+  const changed = [];
+  for (const c of S.chats) {
+    if (c.persona) continue;
+    const plot = getStory(c.storyId)?.profiles.find(p => p.name && p.name === c.userName);
+    let ref;
+    if (plot) ref = { kind: 'plot', id: plot.id };
+    else {
+      let p = s.personas.find(p => p.name === (c.userName || defaultPersona().name));
+      if (!p) { p = newPersona({ name: c.userName, desc: c.userDesc || '' }); s.personas.push(p); }
+      ref = { kind: 'mine', id: p.id };
+    }
+    c.persona = ref;
+    delete c.userName;
+    delete c.userDesc;
+    changed.push(c);
+  }
+  return changed;
 }
 
 // プロットを「完成」にするための必須項目

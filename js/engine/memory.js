@@ -4,7 +4,7 @@
 // - 容量超過: その記憶帳だけを統合・圧縮して一定量に保つ（ピン留めは保護）
 // - 直近ウィンドウから外れた会話: 「あらすじ」に要約して引き継ぐ
 // - 注入時: 常駐（固定・★5・進行度）＋記憶係が選んだ記憶＋場面の要素に結びつく記憶だけを渡す
-import { S, txt, isDialog, chatCtx, macros, charOf, findChar, saveChat, newMem } from '../core/store.js';
+import { S, txt, isDialog, chatCtx, macros, charOf, findChar, saveChat, newMem, resolvePersona } from '../core/store.js';
 import { clone, clamp, now, uid, tl, estTokens, parseJSON } from '../core/util.js';
 import { emit } from '../core/hooks.js';
 import { callLLM } from '../llm/providers.js';
@@ -94,7 +94,8 @@ export function memLog(chat, text, err = false) {
 }
 export function logLines(chat, msgs, ctx) {
   const aiName = ctx.chars.map(c => c.name).join('・') || 'AI';
-  return msgs.map(x => `[${tl(x.turn)}] ${x.role === 'user' ? ctx.user : aiName}: ${txt(x)}`).join('\n\n');
+  const who = x => (x.role === 'user' ? (x.persona ? resolvePersona(chat, x.persona).name : ctx.user) : aiName);
+  return msgs.map(x => `[${tl(x.turn)}] ${who(x)}: ${txt(x)}`).join('\n\n');
 }
 function resolveScope(s, ctx) {
   s = String(s || '').trim();

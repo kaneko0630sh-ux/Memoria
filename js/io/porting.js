@@ -1,5 +1,5 @@
 // 読み込み・書き出し・移行・サンプル
-import { S, DEFAULT_SETTINGS, normalizeStory, normalizeChar, normalizeChat, saveStory, saveSettings } from '../core/store.js';
+import { S, DEFAULT_SETTINGS, normalizeStory, normalizeChar, normalizeChat, saveStory, saveSettings, migratePersonas } from '../core/store.js';
 import { DB } from '../core/db.js';
 import { uid, now, clone, deepMerge, b64utf8 } from '../core/util.js';
 import { stEntriesToLore } from '../engine/lorebook.js';
@@ -93,8 +93,11 @@ export async function importBackupFile() {
     const keys = S.settings.keys;
     S.settings = deepMerge(DEFAULT_SETTINGS, j.settings);
     for (const p of Object.keys(keys)) if (!S.settings.keys[p]) S.settings.keys[p] = keys[p];
-    await saveSettings();
   }
+  const legacyPersona = S.settings.persona;
+  delete S.settings.persona;
+  for (const c of migratePersonas(legacyPersona)) await DB.put('chats', c);
+  await saveSettings();
   toast('バックアップを読み込みました', 'ok');
   return true;
 }

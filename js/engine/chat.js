@@ -1,5 +1,5 @@
 // トークの進行（生成・送信・選択肢・巻き戻し）。UIには hooks で通知する
-import { S, txt, isDialog, lastDialog, maxTurn, chatCtx, macros, touch, saveChat, saveSettings, getStory, newMem } from '../core/store.js';
+import { S, txt, isDialog, lastDialog, maxTurn, chatCtx, macros, touch, saveChat, saveSettings, getStory, newMem, defaultPersonaRef } from '../core/store.js';
 import { uid, now, parseJSON } from '../core/util.js';
 import { emit, notify } from '../core/hooks.js';
 import { callLLM, llmCfg, rememberModel } from '../llm/providers.js';
@@ -11,18 +11,33 @@ const CHOICE_SYS = 'あなたはロールプレイの進行補助です。{{user
 const CHOICE_SCHEMA = { type: 'object', additionalProperties: false, required: ['choices'], properties: { choices: { type: 'array', items: { type: 'string' } } } };
 const isCut = stop => /max_tokens|length|MAX_TOKENS/.test(stop || '');
 
-export function createTalk(story, profile) {
+const transformMsg = chat => ({ id: ++chat.seq, role: 'sys', swipes: [`${chatCtx(chat).user}に変身！`], sw: 0, turn: maxTurn(chat), t: now() });
+
+// persona: { kind: 'mine' | 'plot', id }。省略時は既定のトークプロフィール
+export function createTalk(story, persona) {
   const n = S.chats.filter(c => c.storyId === story.id).length;
-  const persona = S.settings.persona;
   const chat = {
     id: uid(), storyId: story.id, title: story.title + (n ? `（${n + 1}）` : ''),
-    userName: profile?.name || persona.name || 'あなた', userDesc: profile ? profile.desc : persona.desc || '',
+    persona: persona || defaultPersonaRef(),
     note: '', choices: !!story.style?.choices, messages: [], seq: 0, createdAt: now(), updatedAt: now(),
     mem: newMem(), snaps: [], pstate: {},
   };
   const ctx = chatCtx(chat);
+  chat.messages.push(transformMsg(chat));
   if (story.opening?.trim()) chat.messages.push({ id: ++chat.seq, role: 'ai', swipes: [macros(story.opening, ctx).trim()], sw: 0, turn: 0, t: now(), mdl: [] });
   return chat;
+}
+
+// トーク中のプロフィール切り替え。次の返信から新しいプロフィールとして扱われる
+export async function switchPersona(chat, persona) {
+  if (chat.persona?.kind === persona.kind && chat.persona?.id === persona.id) return false;
+  chat.persona = persona;
+  chat.messages.push(transformMsg(chat));
+  chat.lastChoices = null;
+  touch(chat);
+  await saveChat(chat);
+  emit('gen:changed', chat);
+  return true;
 }
 
 export async function generate(chat, { mode = 'reply', regenMsg = null } = {}) {
@@ -99,7 +114,7 @@ export async function sendMessage(chat, text) {
   text = String(text || '').trim();
   if (!text) return aiTurn(chat);
   commitMemory(chat, chat.messages.at(-1)?.id || 0);
-  chat.messages.push({ id: ++chat.seq, role: 'user', swipes: [text], sw: 0, turn: maxTurn(chat) + 1, t: now() });
+  chat.messages.push({ id: ++chat.seq, role: 'user', swipes: [text], sw: 0, turn: maxTurn(chat) + 1, t: now(), persona: { ...chat.persona } });
   touch(chat);
   await saveChat(chat);
   return generate(chat, { mode: 'reply' });

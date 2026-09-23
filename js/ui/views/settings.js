@@ -3,9 +3,10 @@ import { S, saveSettings } from '../../core/store.js';
 import { esc, getPath, setPath, clone, ymd } from '../../core/util.js';
 import { DB } from '../../core/db.js';
 import { PROVIDERS, EFFORTS, llmCfg, callLLM, fetchModels, rememberModel } from '../../llm/providers.js';
-import { ic, avatarHTML, toast, openSheet, closeAllSheets, saveFile, pickFile, fileToImage } from '../dom.js';
+import { ic, toast, openSheet, closeAllSheets, saveFile } from '../dom.js';
 import { defineActions, render, goHome } from '../app.js';
 import { importBackupFile } from '../../io/porting.js';
+import { personaListHTML } from './personas.js';
 
 const opts = (list, cur) => list.map(([v, l]) => `<option value="${esc(v)}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('');
 const provList = same => [...(same ? [['', 'メインと同じ']] : []), ...Object.entries(PROVIDERS).map(([k, v]) => [k, v.label])];
@@ -26,10 +27,9 @@ function modelField(path, provider, value, ph = 'モデルID') {
 export function myPageHTML() {
   const s = S.settings, p = s.provider, mp = s.mem.provider;
   return `
-<section class="card"><h3>プロフィール</h3>
-  <div class="profile-card"><button class="av-pick" data-act="pickPersonaAvatar">${avatarHTML({ name: s.persona.name, avatar: s.persona.avatar }, 64)}<span>${s.persona.avatar ? '変更' : '画像'}</span></button>
-  <div class="grow"><label class="field" style="margin:0"><span>名前</span><input data-set="persona.name" data-rerender="1" value="${esc(s.persona.name)}"></label></div></div>
-  <label class="field"><span>あなたの設定</span><textarea rows="3" data-set="persona.desc" placeholder="外見・立場・性格など（新しいトークに使われます）">${esc(s.persona.desc)}</textarea></label>
+<section class="card"><h3>トークプロフィール</h3>
+  <p class="hint" style="margin-bottom:8px">トークであなたが演じる人物（ペルソナ）です。複数保存でき、トーク中も ☰ →「トークプロフィール」からいつでも切り替えられます。</p>
+  ${personaListHTML({ act: 'editPersona', current: false, editIcons: false })}
 </section>
 <section class="card"><h3>API</h3>
   <label class="field"><span>プロバイダ</span><select data-set="provider" data-rerender="1">${opts(provList(false), p)}</select></label>
@@ -98,7 +98,6 @@ export async function openModelPicker(provider, path) {
 defineActions({
   goMy: () => goHome('my'),
   toggleKey: el => { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; el.textContent = i.type === 'password' ? '表示' : '隠す'; },
-  pickPersonaAvatar: async () => { S.settings.persona.avatar = await fileToImage(await pickFile('image/*'), 256, 256); await saveSettings(); render(); },
   pickModel: el => openModelPicker(el.dataset.p, el.dataset.path),
   chooseModel: async el => {
     const path = el.dataset.path, m = el.dataset.m;

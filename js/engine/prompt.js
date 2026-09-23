@@ -3,7 +3,7 @@
 //   準静的（キャッシュ対象）:   作者メモ → あらすじ
 //   履歴:                      あらすじ化されていない直近の会話
 //   最新の発言の直前 <context>: 発火したロアブック → プラグイン → 記憶（選択済み）→ 現在の状況
-import { S, STYLE_DEFAULTS, txt, isDialog, chatCtx, macros } from '../core/store.js';
+import { S, STYLE_DEFAULTS, txt, isDialog, chatCtx, macros, resolvePersona } from '../core/store.js';
 import { estTokens, attr, tl } from '../core/util.js';
 import { styleText, formatRules } from './style.js';
 import { scanLore, loreText } from './lorebook.js';
@@ -75,9 +75,13 @@ export function buildChatRequest(chat, { end, mode = 'reply' }) {
     avail -= t; histTok += t;
     picked.unshift(pool[i]);
   }
+  // 途中でプロフィールを切り替えた場合、以前の発言が誰としてのものかを添える
+  const cur = chat.persona;
+  const said = x => (x.role === 'user' && x.persona && (x.persona.kind !== cur?.kind || x.persona.id !== cur?.id)
+    ? `（${resolvePersona(chat, x.persona).name}として）\n` : '') + txt(x);
   const msgs = [];
   for (const x of picked) {
-    const r = x.role === 'user' ? 'user' : 'assistant', content = txt(x), last = msgs.at(-1);
+    const r = x.role === 'user' ? 'user' : 'assistant', content = said(x), last = msgs.at(-1);
     if (last && last.role === r) last.content += '\n\n' + content;
     else msgs.push({ role: r, content });
   }

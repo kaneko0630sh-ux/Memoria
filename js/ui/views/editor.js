@@ -7,7 +7,7 @@ import { parseBlocks, textToItems, itemsToText } from '../../engine/parse.js';
 import { loreFromJSON } from '../../engine/lorebook.js';
 import { allPlugins, getPlugin, blockOwners } from '../../plugins/registry.js';
 import { readCardFile } from '../../io/porting.js';
-import { ic, openSheet, closeAllSheets, toast, pickFile, fileToImage, segButtons, draftInput } from '../dom.js';
+import { ic, avatarHTML, openSheet, closeAllSheets, toast, pickFile, fileToImage, segButtons, draftInput } from '../dom.js';
 import { blocksHTML } from '../blocks.js';
 import { defineView, defineActions, go, back, render } from '../app.js';
 
@@ -45,7 +45,8 @@ function promptTab() {
   <hr class="ed-sep">
   <h3 class="ed-h">ユーザーが使用する、<br>トークプロフィールを作成</h3><p class="hint">文字数には含まれません。トーク開始時に選べます。</p>
   ${st.profiles.map((p, i) => `<div class="ed-card"><div class="ed-card-h"><b>プロフィール ${i + 1}</b><button class="icon-btn" data-act="edRemove" data-list="profiles" data-i="${i}" aria-label="削除">${ic('trash', 'sm')}</button></div>
-    ${draftInput(`profiles.${i}.name`, p.name, { label: '名前', max: LIMITS.charName, ph: '例) 瑠奈' })}${draftInput(`profiles.${i}.desc`, p.desc, { label: '設定', rows: 3, ph: '外見・立場・キャラとの関係など' })}</div>`).join('')}
+    <div class="pf-inline"><button class="av-pick" data-act="edProfileImage" data-i="${i}" aria-label="画像">${avatarHTML(p.name || p.avatar ? p : { name: '+' }, 56)}</button><div class="grow">${draftInput(`profiles.${i}.name`, p.name, { label: '名前', max: LIMITS.charName, ph: '例) 瑠奈' })}</div></div>
+    ${draftInput(`profiles.${i}.desc`, p.desc, { label: '設定', rows: 3, ph: '外見・立場・キャラとの関係など' })}</div>`).join('')}
   <button class="btn block add-btn" data-act="edAddProfile" ${st.profiles.length >= LIMITS.profiles ? 'disabled' : ''}>${ic('plus', 'sm')}トークプロフィール追加 ${st.profiles.length}/${LIMITS.profiles}</button>
   <hr class="ed-sep">
   <h3 class="ed-h">状況例でキャラの<br>性格と口調を表現！</h3><p class="hint">全体の字数には含まれません。「こんな状況ならこう返す」の例を書くと、口調が安定します。</p>
@@ -226,7 +227,8 @@ defineActions({
     render();
   },
   edAddChar: () => { d().chars.push(normalizeChar()); dirty(); render(); },
-  edAddProfile: () => { d().profiles.push({ id: uid(), name: '', desc: '' }); dirty(); render(); },
+  edAddProfile: () => { d().profiles.push({ id: uid(), name: '', desc: '', avatar: '' }); dirty(); render(); },
+  edProfileImage: async el => { d().profiles[Number(el.dataset.i)].avatar = await fileToImage(await pickFile('image/*'), 256, 256); dirty(); render(); },
   edAddExample: () => { d().examples.push({ id: uid(), charId: d().chars.find(c => c.name)?.id || '', situation: '', reply: '' }); dirty(); render(); },
   edAddLore: () => { d().lore.push(normalizeLore()); dirty(); render(); },
   edAddImage: async el => {

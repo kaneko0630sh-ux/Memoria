@@ -360,6 +360,15 @@ input[type=checkbox]:not(.tgl) { width: 20px; height: 20px; accent-color: var(--
 .menu small { display: block; color: var(--text3); font-size: 12px; font-weight: 400; }
 .menu button[hidden] { display: none; }
 .model-list { margin-top: 8px; }
+.pr-list { display: flex; flex-direction: column; gap: 2px; margin: 0 -8px 6px; }
+.pr-row { display: flex; align-items: center; border-radius: 14px; }
+.pr-row.on { background: var(--accent-soft); }
+.pr-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 10px; border: 0; background: none; text-align: left; border-radius: 14px; color: var(--text); }
+.pr-main b { font-size: 16px; }
+.pr-main small { display: block; color: var(--text3); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-row.on .pr-main .ic { color: var(--accent-hi); }
+.pf-inline { display: flex; align-items: flex-end; gap: 12px; }
+.pf-inline .av-pick { margin-bottom: 14px; }
 .msg-preview { font-size: 13.5px; color: var(--text2); background: var(--bg); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .edit-area { min-height: 40vh; }
 
