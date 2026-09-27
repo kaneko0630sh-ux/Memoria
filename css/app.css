@@ -300,6 +300,8 @@ input[type=checkbox]:not(.tgl) { width: 20px; height: 20px; accent-color: var(--
 @keyframes flash { 0%, 60% { box-shadow: 0 0 0 2px var(--accent-hi); } }
 .swipe { display: flex; align-items: center; padding: 0 12px 4px 60px; color: var(--text3); font-size: 12.5px; }
 .swipe .icon-btn { width: 36px; height: 34px; color: var(--text3); }
+.swipe .perf { flex: 1; min-width: 0; text-align: center; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
+.msg-perf { margin: -4px 0 10px; }
 .more-btn { display: flex; margin: 8px auto; }
 .to-bottom { position: absolute; right: 14px; top: -56px; width: 44px; height: 44px; border-radius: 50%; background: var(--bg-elev2); border: 1px solid var(--line2); display: grid; place-items: center; color: var(--text); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 4; padding: 0; }
 .to-bottom.on { opacity: 1; pointer-events: auto; }

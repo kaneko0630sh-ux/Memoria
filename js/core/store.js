@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS = {
   maxTokens: 4000,
   temperature: 1,
   effort: 'low',
+  speed: false, // 速度優先: 思考オフ＋原文で送る会話を短く
   streaming: true,
   context: 48000,
   mem: {
@@ -23,6 +24,7 @@ export const DEFAULT_SETTINGS = {
   },
   lore: { depth: 4, budget: 3000 },
   postPrompt: '',
+  adapt: {}, // モデルが受け付けなかった送信オプション（'provider|model' → { ids, t }）。次から最初から外して送る
   personas: [], // トークプロフィール（ペルソナ）: { id, name, desc, avatar }
   defaultPersona: '',
   ui: { theme: 'dark', font: 'gothic', fs: 16 },
@@ -52,6 +54,10 @@ export const S = {
     memTab: 'state', memEditing: null, drafts: {}, showN: {},
   },
 };
+
+// 原文のまま送る直近の会話の量。速度優先のときは短くし、古い分はあらすじと記憶で補う
+export const SPEED_WINDOW = { recent: 12, chunk: 6 };
+export const memWindow = () => (S.settings.speed ? SPEED_WINDOW : { recent: S.settings.mem.recent, chunk: S.settings.mem.chunk });
 
 /* ---------- getters ---------- */
 export const getStory = id => S.stories.find(x => x.id === id);

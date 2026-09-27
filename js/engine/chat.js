@@ -40,7 +40,8 @@ export async function switchPersona(chat, persona) {
   return true;
 }
 
-export async function generate(chat, { mode = 'reply', regenMsg = null } = {}) {
+// onFirst: 本文の最初の文字が届いたとき（届かずに終わったときは最後）に1回だけ呼ぶ
+export async function generate(chat, { mode = 'reply', regenMsg = null, onFirst = null } = {}) {
   if (S.gen) { notify('生成中です'); return; }
   const s = S.settings;
   let target, end, base = '';
@@ -65,22 +66,27 @@ export async function generate(chat, { mode = 'reply', regenMsg = null } = {}) {
   target.mdl[idx] = cfg.def.kind === 'mock' ? 'demo' : cfg.model;
   const setText = t => { target.swipes[idx] = base ? base.trimEnd() + '\n' + t.replace(/^\s+/, '') : t.replace(/^\s+/, ''); };
   const ctrl = new AbortController();
+  const t0 = performance.now();
+  let first = 0;
+  const firstDone = () => { if (!first) first = performance.now(); if (onFirst) { const f = onFirst; onFirst = null; f(); } };
   S.gen = { chatId: chat.id, msgId: target.id, ctrl, status: 'wait', t0: now() };
   chat.lastChoices = null;
-  emit('gen:changed', chat);
   let ok = false;
   try {
     const req = buildChatRequest(chat, { end, mode });
     S.lastPrompt[chat.id] = req;
     target.refs = req.info.refs;
     target.lore = req.info.lore;
-    const res = await callLLM({
+    // リクエストを先に送り出してから画面を描き直す
+    const call = callLLM({
       role: 'main', kind: 'chat', demoName: chatCtx(chat).chars[0]?.name,
       system: req.system, messages: req.messages, maxTokens: s.maxTokens, temperature: s.temperature,
       stream: s.streaming, signal: ctrl.signal,
-      onText: t => { S.gen.status = 'writing'; setText(t); emit('gen:delta', chat, target); },
+      onText: t => { firstDone(); S.gen.status = 'writing'; setText(t); emit('gen:delta', chat, target); },
       onStatus: st => { if (S.gen.status !== 'writing') { S.gen.status = st; emit('gen:status', chat); } },
     });
+    emit('gen:changed', chat);
+    const res = await call;
     const out = String(res.text || '').replace(/<context>[\s\S]*?<\/context>/g, '').replace(/^\s*<\/?(context|instruction)>\s*/g, '');
     setText(out);
     if (!out.trim()) {
@@ -90,17 +96,21 @@ export async function generate(chat, { mode = 'reply', regenMsg = null } = {}) {
     }
     if (isCut(res.stop)) notify('最大出力トークンで途中終了しました（メッセージをタップ →「続きを書かせる」）', 'warn', 4000);
     if (rememberModel(cfg.provider, cfg.model)) saveSettings();
+    // 速さの記録（最初の文字まで / 全体 / 文字数）。候補ごとに持つ
+    const end1 = performance.now();
+    (target.perf ||= [])[idx] = { first: Math.round((first || end1) - t0), total: Math.round(end1 - t0), n: out.length };
     ok = true;
   } catch (e) {
     if (e.name === 'AbortError') ok = txt(target).trim().length > (base ? base.trim().length : 0);
     else notify(e.message, 'err', 9000);
   }
   if (!ok) {
-    if (regenMsg) { target.swipes.splice(idx, 1); target.mdl.splice(idx, 1); target.sw = Math.max(0, target.swipes.length - 1); }
+    if (regenMsg) { target.swipes.splice(idx, 1); target.mdl.splice(idx, 1); target.perf?.splice(idx, 1); target.sw = Math.max(0, target.swipes.length - 1); }
     else if (mode === 'continue') { target.swipes[idx] = base; target.mdl[idx] = prevMdl; }
     else chat.messages.splice(chat.messages.indexOf(target), 1);
   }
   S.gen = null;
+  firstDone();
   touch(chat);
   await saveChat(chat);
   emit('gen:changed', chat);
@@ -113,18 +123,18 @@ export async function sendMessage(chat, text) {
   if (!chat || S.gen) return;
   text = String(text || '').trim();
   if (!text) return aiTurn(chat);
-  commitMemory(chat, chat.messages.at(-1)?.id || 0);
+  const prevId = chat.messages.at(-1)?.id || 0;
   chat.messages.push({ id: ++chat.seq, role: 'user', swipes: [text], sw: 0, turn: maxTurn(chat) + 1, t: now(), persona: { ...chat.persona } });
   touch(chat);
-  await saveChat(chat);
-  return generate(chat, { mode: 'reply' });
+  saveChat(chat).catch(() => {}); // 書き込みの完了は待たない（保存する内容はこの時点で確定している）
+  // 前のターンの記憶処理は、返信が届き始めてから動かす（同じキーへの同時リクエストで返信を待たせない）
+  return generate(chat, { mode: 'reply', onFirst: () => commitMemory(chat, prevId) });
 }
 
 // 自分は発言せず、AIに物語を進めてもらう
 export function aiTurn(chat) {
   const last = lastDialog(chat);
-  if (last?.role === 'ai') commitMemory(chat, last.id);
-  return generate(chat, { mode: 'reply' });
+  return generate(chat, { mode: 'reply', onFirst: last?.role === 'ai' ? () => commitMemory(chat, last.id) : null });
 }
 
 export function regenerate(chat) {

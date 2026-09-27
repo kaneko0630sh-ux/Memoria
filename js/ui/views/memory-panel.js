@@ -1,5 +1,5 @@
 // 記憶パネル（現在の状況・進行度・キャラ/世界/ユーザー記憶・あらすじ・ログ）
-import { S, getChat, curChat, chatCtx, saveChat } from '../../core/store.js';
+import { S, getChat, curChat, chatCtx, saveChat, memWindow } from '../../core/store.js';
 import { esc, tl, hhmm } from '../../core/util.js';
 import { on } from '../../core/hooks.js';
 import { buildChatRequest } from '../../engine/prompt.js';
@@ -67,7 +67,7 @@ function paneHTML(chat, tab, ctx) {
   if (tab === 'chron') {
     const used = m.chronicle.reduce((a, c) => a + c.text.length, 0);
     const coveredTurn = chat.messages.find(x => x.id === m.coveredId)?.turn;
-    return `<p class="note-box">${m.coveredId ? `${tl(coveredTurn || 0)}までの会話はここに要約され、原文はAIへ送られません（画面上には残ります）。` : 'まだ要約はありません。'}直近の約${s.mem.recent}件は常に原文のまま送られます。</p>
+    return `<p class="note-box">${m.coveredId ? `${tl(coveredTurn || 0)}までの会話はここに要約され、原文はAIへ送られません（画面上には残ります）。` : 'まだ要約はありません。'}直近の約${memWindow().recent}件は常に原文のまま送られます。</p>
       ${meterHTML(used, s.mem.budgets.chronicle, `${m.chronicle.length}件`)}
       ${m.chronicle.length ? m.chronicle.map(c => S.ui.memEditing === c.id
         ? `<div class="mem-e editing"><div class="mem-meta"><b>${tl(c.from)}〜${tl(c.to)}</b></div><textarea class="mem-edit" rows="6">${esc(c.text)}</textarea><div class="inline"><span class="grow"></span><button class="btn sm" data-act="memCancelEdit">取消</button><button class="btn sm primary" data-act="chronSave" data-eid="${c.id}">保存</button></div></div>`

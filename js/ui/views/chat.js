@@ -1,8 +1,8 @@
 // トーク画面（メッセージ・入力欄・☰メニュー・各種シート）
-import { S, getChat, getStory, curChat, curChatId, talksOf, txt, lastDialog, maxTurn, chatCtx, resolvePersona, saveChat, removeChat, curView } from '../../core/store.js';
+import { S, getChat, getStory, curChat, curChatId, talksOf, txt, lastDialog, maxTurn, chatCtx, resolvePersona, saveChat, saveSettings, removeChat, curView } from '../../core/store.js';
 import { esc, FINE, relTime, tl, modelShort, safeName, ymd } from '../../core/util.js';
 import { on } from '../../core/hooks.js';
-import { PROVIDERS, EFFORTS, llmCfg } from '../../llm/providers.js';
+import { PROVIDERS, EFFORTS, llmCfg, warmUp } from '../../llm/providers.js';
 import { parseBlocks, plainText, lastLine } from '../../engine/parse.js';
 import { sendMessage, aiTurn, generate, regenerate, swipe, rewindTo } from '../../engine/chat.js';
 import { isMemBusy, scopeLabel, TAGS } from '../../engine/memory.js';
@@ -47,7 +47,8 @@ defineView('chat', {
     const ta = document.getElementById('input'), sc = document.getElementById('msgs');
     ta.value = S.ui.drafts[chat.id] || '';
     autosize(ta);
-    ta.addEventListener('input', () => { autosize(ta); S.ui.drafts[chat.id] = ta.value; });
+    warmUp(); // APIサーバーへの接続を先に済ませておく（入力を始めたときにも。間隔は warmUp 側で調整）
+    ta.addEventListener('input', () => { autosize(ta); S.ui.drafts[chat.id] = ta.value; warmUp(); });
     ta.addEventListener('keydown', e => {
       if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
       if (e.ctrlKey || e.metaKey || (FINE && !e.shiftKey)) { e.preventDefault(); submit(); }
@@ -60,6 +61,15 @@ defineView('chat', {
 
 const scrollBottom = () => { const sc = document.getElementById('msgs'); if (sc) sc.scrollTop = sc.scrollHeight; };
 const isStreaming = (chat, x) => S.gen && S.gen.chatId === chat.id && S.gen.msgId === x.id;
+// 応答の速さ（最初の文字まで / 全体）。記録のない古いメッセージは空
+const sec = ms => (ms / 1000).toFixed(ms < 10000 ? 1 : 0) + '秒';
+function perfText(x, long = false) {
+  const p = x.perf?.[x.sw];
+  if (!p) return '';
+  if (!long) return `最初 ${sec(p.first)} / 全体 ${sec(p.total)}`;
+  const gen = p.total - p.first, rate = gen > 300 && p.n ? `・約${Math.round(p.n / (gen / 1000))}字/秒` : '';
+  return `最初の文字まで ${sec(p.first)}・全体 ${sec(p.total)}（${p.n}字${rate}）`;
+}
 function genLabel() {
   if (!S.gen || S.gen.status === 'writing') return '';
   const sec = Math.floor((Date.now() - S.gen.t0) / 1000);
@@ -79,7 +89,7 @@ function msgHTML(chat, x, ctx, lastD) {
   const inner = streaming && !blocks.length
     ? `<div class="say">${avatarHTML(ctx.chars[0], 40)}<div class="say-main"><div class="say-name">${esc(ctx.chars[0]?.name || '')}</div><div class="brow"><div class="bubble ai">${TYPING}<div class="gen-status">${genLabel()}</div></div></div></div></div>`
     : blocksHTML(blocks, ctx, { tag: streaming ? '' : modelShort(x.mdl?.[x.sw]), caret: streaming, env: { chat, msg: x, isLast: isLast && !streaming, ctx } });
-  const swipeBar = isLast && !streaming ? `<div class="swipe"><button class="icon-btn" data-act="swipe" data-id="${x.id}" data-dir="-1" ${x.sw === 0 ? 'disabled' : ''} aria-label="前の候補">${ic('left', 'sm')}</button><span>${x.sw + 1}/${x.swipes.length}</span><button class="icon-btn" data-act="swipe" data-id="${x.id}" data-dir="1" aria-label="次の候補">${ic('right', 'sm')}</button><span class="grow"></span><button class="icon-btn" data-act="contMsg" aria-label="続きを書かせる">${ic('forward', 'sm')}</button><button class="icon-btn" data-act="regen" aria-label="再生成">${ic('refresh', 'sm')}</button></div>` : '';
+  const swipeBar = isLast && !streaming ? `<div class="swipe"><button class="icon-btn" data-act="swipe" data-id="${x.id}" data-dir="-1" ${x.sw === 0 ? 'disabled' : ''} aria-label="前の候補">${ic('left', 'sm')}</button><span>${x.sw + 1}/${x.swipes.length}</span><button class="icon-btn" data-act="swipe" data-id="${x.id}" data-dir="1" aria-label="次の候補">${ic('right', 'sm')}</button><span class="perf">${perfText(x)}</span><button class="icon-btn" data-act="contMsg" aria-label="続きを書かせる">${ic('forward', 'sm')}</button><button class="icon-btn" data-act="regen" aria-label="再生成">${ic('refresh', 'sm')}</button></div>` : '';
   return `<div class="msg ai${covered}" data-id="${x.id}">${inner}${swipeBar}</div>`;
 }
 
@@ -190,13 +200,16 @@ function modelSheetHTML() {
   return `<p class="hint" style="margin:0 0 10px">${esc(PROVIDERS[p].label)}（プロバイダはマイページで変更）</p>
     <div class="menu">${list.map(m => `<button class="${m === cur ? 'on' : ''}" data-act="chooseModel" data-m="${esc(m)}" data-path="models.${p}">${m === cur ? ic('check', 'sm') : '<span class="ic sm"></span>'}${esc(m)}</button>`).join('')}</div>
     <div class="btn-row"><button class="btn sm" data-act="pickModel" data-p="${p}" data-path="models.${p}">${ic('search', 'sm')}一覧から選ぶ</button><button class="btn sm" data-act="goMy">${ic('user', 'sm')}API設定</button></div>
-    <label class="field"><span>思考（考えてから書く）</span><select data-set="effort">${EFFORTS.map(([v, l]) => `<option value="${v}" ${s.effort === v ? 'selected' : ''}>${l}</option>`).join('')}</select><div class="hint">返信が遅いときは「オフ」にすると速くなります。</div></label>`;
+    <label class="switch"><span>速度優先</span><input type="checkbox" class="tgl" data-act="toggleSpeed" ${s.speed ? 'checked' : ''}></label>
+    <p class="hint" style="margin-top:-6px">思考をオフにし、原文で送る会話を短くします（古い会話は記憶とあらすじで補います）。</p>
+    <label class="field"><span>思考（考えてから書く）</span><select data-set="effort" ${s.speed ? 'disabled' : ''}>${EFFORTS.map(([v, l]) => `<option value="${v}" ${(s.speed ? 'off' : s.effort) === v ? 'selected' : ''}>${l}</option>`).join('')}</select><div class="hint">${s.speed ? '速度優先がオンのため、オフで送ります。' : '返信が遅いときは「オフ」にすると速くなります。'}</div></label>`;
 }
 function openMsgMenu(chat, msg) {
   const isLastAi = msg.role === 'ai' && lastDialog(chat)?.id === msg.id, processed = msg.id <= chat.mem.lastId;
   const refs = (msg.refs?.length || 0) + (msg.lore?.length || 0);
   openSheet({ id: 'msgmenu', title: `${msg.role === 'user' ? chatCtx(chat).user : 'AI'} · ${tl(msg.turn)}${processed ? ' · 記憶済' : ''}`, data: { chat: chat.id, msg: msg.id }, html: `
     <div class="msg-preview">${esc(plainText(txt(msg)).slice(0, 200))}</div>
+    ${msg.role === 'ai' && msg.perf?.[msg.sw] ? `<p class="hint msg-perf">${esc(modelShort(msg.mdl?.[msg.sw]))} ・ ${perfText(msg, true)}</p>` : ''}
     <div class="menu">
       <button data-act="mCopy">${ic('copy')}コピー</button>
       <button data-act="mBookmark" class="${msg.bm ? 'on' : ''}">${ic('bookmark')}${msg.bm ? 'ブックマークを外す' : 'ブックマーク'}</button>
@@ -296,6 +309,7 @@ defineActions({
   drawer: () => { const c = curChat(); if (c) openSheet({ id: 'drawer', side: 'right', data: { chat: c.id }, html: drawerHTML(c) }); },
   exitRoom: () => goHome(),
   modelSheet: () => { closeAllSheets(); openSheet({ id: 'model', title: 'モデルを切り替え', html: modelSheetHTML() }); },
+  toggleSpeed: async () => { S.settings.speed = !S.settings.speed; await saveSettings(); setSheetBody('model', modelSheetHTML()); },
   editStoryFromChat: el => { const c = chatOf(el); closeAllSheets(); openEditor(c.storyId); },
   resumeSheet: el => {
     const chat = chatOf(el), talks = talksOf(chat.storyId);

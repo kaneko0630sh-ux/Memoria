@@ -1,5 +1,5 @@
 // マイページ（プロフィール・API・生成・記憶エンジン・表示・データ）
-import { S, saveSettings } from '../../core/store.js';
+import { S, saveSettings, SPEED_WINDOW } from '../../core/store.js';
 import { esc, getPath, setPath, clone, ymd } from '../../core/util.js';
 import { DB } from '../../core/db.js';
 import { PROVIDERS, EFFORTS, llmCfg, callLLM, fetchModels, rememberModel } from '../../llm/providers.js';
@@ -41,7 +41,9 @@ export function myPageHTML() {
   <p class="hint">APIキーはこの端末のブラウザ内にだけ保存され、選んだAPIへ直接送信されます。</p>
 </section>
 <section class="card"><h3>生成</h3>
-  <label class="field"><span>思考（考えてから書く）</span><select data-set="effort">${opts(EFFORTS, s.effort)}</select><div class="hint">オフにすると返信が大幅に速くなります（DeepSeek・NanoGPT の思考モデル・Claude Sonnet 5 など）。DeepSeek は既定で長く考えるので、速さ重視ならオフがおすすめです。</div></label>
+  <label class="switch"><span>速度優先</span><input type="checkbox" class="tgl" data-set="speed" data-rerender="1" ${s.speed ? 'checked' : ''}></label>
+  <p class="hint" style="margin-top:-6px">思考をオフにし、原文のまま送る会話を直近${SPEED_WINDOW.recent}件ほどに絞ります（古い会話は記憶とあらすじで補います）。送る量が減るので、キャッシュのないモデル（NanoGPT 経由のオープンモデルなど）ほど速くなります。応答の長さは、プロットの「スタイル」で「一言」「短い」にするとさらに速くなります。</p>
+  <label class="field"><span>思考（考えてから書く）</span><select data-set="effort" ${s.speed ? 'disabled' : ''}>${opts(EFFORTS, s.speed ? 'off' : s.effort)}</select><div class="hint">${s.speed ? '速度優先がオンのため、オフで送ります。' : 'オフにすると返信が大幅に速くなります（DeepSeek・NanoGPT の思考モデル・Claude Sonnet 5 など）。DeepSeek は既定で長く考えるので、速さ重視ならオフがおすすめです。'}</div></label>
   <div class="grid2">${num('maxTokens', '最大出力トークン', { min: 256 })}${num('temperature', '温度', { step: 0.05, dec: true, min: 0 })}</div>
   ${num('context', '入力の上限目安（トークン）', { min: 4000, hint: '設定・記憶・履歴を合わせた送信量の上限。超える分は古い履歴から省かれます（省いた分もあらすじで補われます）。' })}
   <label class="switch"><span>ストリーミング表示</span><input type="checkbox" class="tgl" data-set="streaming" ${s.streaming ? 'checked' : ''}></label>
@@ -55,6 +57,7 @@ export function myPageHTML() {
   <label class="field"><span>記憶処理に使うモデル</span>${modelField('mem.model', mp || p, s.mem.model, '空欄＝メインと同じ')}<div class="hint">記憶の抽出・整理・要約と、選択肢・日記に使います。裏で動くので返信の速さには影響しません。</div></label>
   <label class="field"><span>記憶処理の思考</span><select data-set="mem.effort">${opts(EFFORTS, s.mem.effort)}</select></label>
   <div class="grid2">${num('mem.recent', '原文で送る直近の件数', { min: 6 })}${num('mem.chunk', 'あらすじ化の単位（件）', { min: 4 })}</div>
+  ${s.speed ? `<p class="hint" style="margin-top:-4px">速度優先がオンの間は ${SPEED_WINDOW.recent}件・${SPEED_WINDOW.chunk}件 で動きます。</p>` : ''}
   <div class="lbl" style="margin-top:8px">記憶の容量（字）— 超えると自動で統合・圧縮</div>
   <div class="grid2">${num('mem.budgets.char', 'キャラ記憶（1人あたり）', { min: 300 })}${num('mem.budgets.world', '世界記憶', { min: 300 })}${num('mem.budgets.user', 'ユーザー記憶', { min: 200 })}${num('mem.budgets.chronicle', 'あらすじ', { min: 500 })}${num('mem.budgets.state', '現在の状況', { min: 200 })}</div>
   <div class="lbl" style="margin-top:8px">ロアブック（キーワード発火）</div>

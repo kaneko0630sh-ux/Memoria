@@ -4,7 +4,7 @@
 // - 容量超過: その記憶帳だけを統合・圧縮して一定量に保つ（ピン留めは保護）
 // - 直近ウィンドウから外れた会話: 「あらすじ」に要約して引き継ぐ
 // - 注入時: 常駐（固定・★5・進行度）＋記憶係が選んだ記憶＋場面の要素に結びつく記憶だけを渡す
-import { S, txt, isDialog, chatCtx, macros, charOf, findChar, saveChat, newMem, resolvePersona } from '../core/store.js';
+import { S, txt, isDialog, chatCtx, macros, charOf, findChar, saveChat, newMem, resolvePersona, memWindow } from '../core/store.js';
 import { clone, clamp, now, uid, tl, estTokens, parseJSON } from '../core/util.js';
 import { emit } from '../core/hooks.js';
 import { callLLM } from '../llm/providers.js';
@@ -289,9 +289,10 @@ async function updateChronicle(chat) {
     const m = chat.mem;
     const raw = chat.messages.filter(x => isDialog(x) && x.id > m.coveredId);
     const rawTok = raw.reduce((a, x) => a + estTokens(txt(x)), 0);
-    const over = raw.length > s.mem.recent + s.mem.chunk || (rawTok > s.context * 0.6 && raw.length > 8);
+    const win = memWindow();
+    const over = raw.length > win.recent + win.chunk || (rawTok > s.context * 0.6 && raw.length > 8);
     if (!over) break;
-    const chunk = raw.slice(0, Math.max(2, Math.min(s.mem.chunk, raw.length - 6)));
+    const chunk = raw.slice(0, Math.max(2, Math.min(win.chunk, raw.length - 6)));
     if (chunk.at(-1).id > m.lastId) break; // 事実抽出が済んでから要約する
     const rev = m.rev;
     const text = await summarizeChunk(chat, chunk);

@@ -1,5 +1,5 @@
 // LLM プロバイダの登録と呼び出し。プロバイダを増やすときは PROVIDERS に1件足すだけでよい
-import { S } from '../core/store.js';
+import { S, saveSettings } from '../core/store.js';
 import { sleep, clamp } from '../core/util.js';
 import { plainText } from '../engine/parse.js';
 
@@ -40,9 +40,32 @@ export function llmCfg(role = 'main') {
     if (s.mem.provider) { provider = s.mem.provider; model = s.mem.model || s.models[provider]; }
     else if (s.mem.model) model = s.mem.model;
     effort = s.mem.effort;
-  }
+  } else if (s.speed) effort = 'off'; // 速度優先
   if (!PROVIDERS[provider]) provider = 'mock';
   return { provider, def: PROVIDERS[provider], model: (model || '').trim(), key: (s.keys[provider] || '').trim(), effort };
+}
+
+/* ---------- 接続の先読み ----------
+   トーク画面を開いたときや入力を始めたときに、APIサーバーへの接続（DNS・TLS）を先に済ませておく */
+function apiOrigin(cfg) {
+  try {
+    if (cfg.def.kind === 'anthropic') return 'https://api.anthropic.com';
+    if (cfg.def.kind === 'gemini') return 'https://generativelanguage.googleapis.com';
+    if (cfg.def.kind === 'compat') return new URL(cfg.def.base()).origin;
+  } catch { /* URL未設定 */ }
+  return '';
+}
+const warmed = new Map();
+export function warmUp() {
+  for (const role of ['main', 'mem']) {
+    const o = apiOrigin(llmCfg(role));
+    if (!o || Date.now() - (warmed.get(o) || 0) < 30000) continue;
+    warmed.set(o, Date.now());
+    document.querySelector(`link[rel=preconnect][href="${o}"]`)?.remove();
+    const l = document.createElement('link');
+    l.rel = 'preconnect'; l.href = o; l.crossOrigin = 'anonymous';
+    document.head.appendChild(l);
+  }
 }
 
 /* ---------- 共通の通信処理 ---------- */
@@ -78,16 +101,24 @@ async function* sseEvents(res, io) {
   }
 }
 
-// 400系で弾かれたオプションを外して再送する（モデルごとの対応差を吸収）
-async function withAdapt(body, attempt, adapters) {
+// 400系で弾かれたオプションを外して再送する（モデルごとの対応差を吸収）。
+// 外したものはモデルごとに覚えておき、次からは最初から外して送る（失敗1回分の往復を省く）
+const ADAPT_TTL = 7 * 86400000;
+async function withAdapt(cfg, body, attempt, adapters) {
+  const key = `${cfg.provider}|${cfg.model}`, learned = S.settings.adapt?.[key];
+  const known = learned && Date.now() - learned.t < ADAPT_TTL ? learned.ids : [];
+  for (const a of adapters) if (known.includes(a.id) && a.has(body)) a.apply(body);
   const used = new Set();
   for (;;) {
     try { return await attempt(body); } catch (e) {
       if (e.status !== 400 && e.status !== 422) throw e;
-      const i = adapters.findIndex((a, k) => !used.has(k) && a.test(body, e.message || ''));
-      if (i < 0) throw e;
-      used.add(i);
-      adapters[i].apply(body);
+      const a = adapters.find(x => !used.has(x.id) && x.has(body) && x.match.test(e.message || ''));
+      if (!a) throw e;
+      used.add(a.id);
+      a.apply(body);
+      S.settings.adapt ||= {};
+      S.settings.adapt[key] = { ids: [...new Set([...known, a.id])], t: Date.now() };
+      saveSettings();
     }
   }
 }
@@ -170,12 +201,12 @@ async function callAnthropic(cfg, o, io) {
     return { text, stop, usage };
   };
   const dropOC = (b, k) => { delete b.output_config[k]; if (!Object.keys(b.output_config).length) delete b.output_config; };
-  return withAdapt(body, attempt, [
-    { test: (b, msg) => b.fallbacks && /fallback|beta/i.test(msg), apply: b => delete b.fallbacks },
-    { test: (b, msg) => b.thinking && /thinking/i.test(msg), apply: b => delete b.thinking },
-    { test: (b, msg) => b.output_config?.format && /format|schema|output_config/i.test(msg), apply: b => dropOC(b, 'format') },
-    { test: (b, msg) => b.output_config?.effort && /effort/i.test(msg), apply: b => dropOC(b, 'effort') },
-    { test: (b, msg) => b.temperature != null && /temperature/i.test(msg), apply: b => delete b.temperature },
+  return withAdapt(cfg, body, attempt, [
+    { id: 'fallbacks', has: b => !!b.fallbacks, match: /fallback|beta/i, apply: b => delete b.fallbacks },
+    { id: 'thinking', has: b => !!b.thinking, match: /thinking/i, apply: b => delete b.thinking },
+    { id: 'format', has: b => !!b.output_config?.format, match: /format|schema|output_config/i, apply: b => dropOC(b, 'format') },
+    { id: 'effort', has: b => !!b.output_config?.effort, match: /effort/i, apply: b => dropOC(b, 'effort') },
+    { id: 'temperature', has: b => b.temperature != null, match: /temperature/i, apply: b => delete b.temperature },
   ]);
 }
 
@@ -216,12 +247,13 @@ async function callCompat(cfg, o, io) {
     }
     return { text, stop, usage };
   };
-  return withAdapt(body, attempt, [
-    { test: (b, m) => 'max_tokens' in b && /max_tokens|max_completion_tokens/i.test(m), apply: b => { b.max_completion_tokens = b.max_tokens; delete b.max_tokens; } },
-    { test: (b, m) => 'max_completion_tokens' in b && /max_completion_tokens/i.test(m), apply: b => { b.max_tokens = b.max_completion_tokens; delete b.max_completion_tokens; } },
-    { test: (b, m) => 'temperature' in b && /temperature/i.test(m), apply: b => delete b.temperature },
-    { test: (b, m) => b.response_format && /response_format|json/i.test(m), apply: b => delete b.response_format },
-    { test: (b, m) => (b.reasoning_effort || b.thinking) && /reasoning|thinking/i.test(m), apply: b => { delete b.reasoning_effort; delete b.thinking; } },
+  return withAdapt(cfg, body, attempt, [
+    { id: 'to_mct', has: b => 'max_tokens' in b, match: /max_tokens|max_completion_tokens/i, apply: b => { b.max_completion_tokens = b.max_tokens; delete b.max_tokens; } },
+    { id: 'to_mt', has: b => 'max_completion_tokens' in b, match: /max_completion_tokens/i, apply: b => { b.max_tokens = b.max_completion_tokens; delete b.max_completion_tokens; } },
+    { id: 'temperature', has: b => 'temperature' in b, match: /temperature/i, apply: b => delete b.temperature },
+    { id: 'response_format', has: b => !!b.response_format, match: /response_format|json/i, apply: b => delete b.response_format },
+    { id: 'reasoning', has: b => 'reasoning_effort' in b, match: /reasoning/i, apply: b => delete b.reasoning_effort },
+    { id: 'thinking', has: b => 'thinking' in b, match: /thinking/i, apply: b => delete b.thinking },
   ]);
 }
 
@@ -238,6 +270,7 @@ async function callGemini(cfg, o, io) {
   if (o.temperature != null) body.generationConfig.temperature = o.temperature;
   if (sysText) body.systemInstruction = { parts: [{ text: sysText }] };
   if (o.schema) body.generationConfig.responseMimeType = 'application/json';
+  if (cfg.effort === 'off') body.generationConfig.thinkingConfig = { thinkingBudget: 0 }; // 思考を切れないモデルでは下で外す
   const pick = j => (j.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join('');
 
   const attempt = async b => {
@@ -261,8 +294,9 @@ async function callGemini(cfg, o, io) {
     }
     return { text, stop, usage };
   };
-  return withAdapt(body, attempt, [
-    { test: (b, m) => b.generationConfig.responseMimeType && /mime|json/i.test(m), apply: b => delete b.generationConfig.responseMimeType },
+  return withAdapt(cfg, body, attempt, [
+    { id: 'mime', has: b => !!b.generationConfig.responseMimeType, match: /mime|json/i, apply: b => delete b.generationConfig.responseMimeType },
+    { id: 'thinking', has: b => !!b.generationConfig.thinkingConfig, match: /thinking|budget/i, apply: b => delete b.generationConfig.thinkingConfig },
   ]);
 }
 
