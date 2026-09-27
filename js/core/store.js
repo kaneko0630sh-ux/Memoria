@@ -36,7 +36,7 @@ export const STYLE_DEFAULTS = {
   pov: '3rd', tense: 'past', length: 'auto', expr: 'basic', mood: [], prose: 'real',
 };
 
-export const LIMITS = { title: 30, charName: 20, chars: 10, images: 5, profiles: 5, promptSoft: 4000 };
+export const LIMITS = { title: 30, charName: 20, chars: 10, images: 5, profiles: 5, promptSoft: 6000 };
 
 export const S = {
   settings: null,
