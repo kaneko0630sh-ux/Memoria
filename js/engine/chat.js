@@ -77,6 +77,7 @@ export async function generate(chat, { mode = 'reply', regenMsg = null, onFirst 
     S.lastPrompt[chat.id] = req;
     target.refs = req.info.refs;
     target.lore = req.info.lore;
+    target.loreAi = req.info.loreAi;
     // リクエストを先に送り出してから画面を描き直す
     const call = callLLM({
       role: 'main', kind: 'chat', demoName: chatCtx(chat).chars[0]?.name,

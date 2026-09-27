@@ -22,7 +22,7 @@ export const DEFAULT_SETTINGS = {
     recent: 30, chunk: 10,
     budgets: { char: 2000, world: 2500, user: 1200, chronicle: 3500, state: 700 },
   },
-  lore: { depth: 4, budget: 3000 },
+  lore: { depth: 4, budget: 3000, ai: true }, // ai: キーワードに加えて、記憶係が場面に合う項目も選ぶ
   postPrompt: '',
   adapt: {}, // モデルが受け付けなかった送信オプション（'provider|model' → { ids, t }）。次から最初から外して送る
   personas: [], // トークプロフィール（ペルソナ）: { id, name, desc, avatar }
@@ -120,7 +120,7 @@ export function macros(s, ctx) {
 export const newMem = () => ({
   rev: 0, seq: 0, lastId: 0, coveredId: 0, turn: 0,
   state: '', entries: [], chronicle: [], log: [],
-  arc: '', threads: [], rel: [], scene: [], recall: [], brief: '',
+  arc: '', threads: [], rel: [], scene: [], recall: [], loreRecall: [], brief: '',
 });
 
 export function normalizeChar(c = {}) {

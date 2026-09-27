@@ -60,7 +60,7 @@ export function buildChatRequest(chat, { end, mode = 'reply' }) {
   const semiText = semi.join('\n\n');
 
   const lastUser = chat.messages.slice(0, end).reverse().find(x => x.role === 'user');
-  const lore = scanLore(st0, chat, end);
+  const loreHits = scanLore(st0, chat, end), lore = loreHits.map(h => h.entry);
   const sel = selectMemories(chat, ctx, lastUser ? txt(lastUser) : '');
   const dyn = [loreText(lore, M), ...collect(st0, 'context', ctx, chat).map(M), memoryText(chat, ctx, sel)].filter(Boolean).join('\n');
   const post = M(s.postPrompt || '').trim();
@@ -98,7 +98,7 @@ export function buildChatRequest(chat, { end, mode = 'reply' }) {
     info: {
       system: estTokens(sysText) + estTokens(semiText), memory: estTokens(dyn), history: histTok,
       msgs: picked.length, dropped: pool.length - picked.length,
-      refs: sel.list.map(e => e.id), lore: lore.map(e => e.id), used: sel.list.length, total: m.entries.length, all: sel.all,
+      refs: sel.list.map(e => e.id), lore: lore.map(e => e.id), loreAi: loreHits.filter(h => h.by === 'ai').map(h => h.entry.id), used: sel.list.length, total: m.entries.length, all: sel.all,
       plugins: plugs.map(x => x.p.id),
     },
   };

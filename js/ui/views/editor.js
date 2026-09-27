@@ -76,7 +76,7 @@ function loreTab() {
   return `<h3 class="ed-h">常に参照する設定</h3>
   <div class="ed-card">${draftInput('world', st.world, { rows: 10, ph: '世界観・地理・勢力・ルールなど。キーワードに関係なく毎回AIに渡されます。', hint: '長いほど毎回の送信量が増えます。細かい設定は下のキーワード設定に分けるのがおすすめです。' })}</div>
   <h3 class="ed-h">キーワード設定（ロアブック）</h3>
-  <p class="hint">会話にキーワードが出たときだけ呼び出される設定です（直近${S.settings.lore.depth}件の会話を見ます）。</p>
+  <p class="hint">会話にキーワードが出たとき（直近${S.settings.lore.depth}件の会話を見ます）${S.settings.lore.ai ? 'と、記憶係のAIが今の場面に必要と判断したとき' : ''}に呼び出される設定です。</p>
   ${st.lore.map((e, i) => `<div class="ed-card ${e.on ? '' : 'off'}">
     <div class="ed-card-h"><input class="lore-title" data-draft="lore.${i}.title" value="${esc(e.title)}" placeholder="項目名（例: 灰の手）"><button class="icon-btn" data-act="edRemove" data-list="lore" data-i="${i}" aria-label="削除">${ic('trash', 'sm')}</button></div>
     <label class="field"><span>キーワード（カンマ区切り）</span><input data-draft="lore.${i}.keys" data-list="1" value="${esc(e.keys.join(', '))}" placeholder="例: 灰の手, 密輸組合"></label>

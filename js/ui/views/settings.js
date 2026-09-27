@@ -60,7 +60,9 @@ export function myPageHTML() {
   ${s.speed ? `<p class="hint" style="margin-top:-4px">速度優先がオンの間は ${SPEED_WINDOW.recent}件・${SPEED_WINDOW.chunk}件 で動きます。</p>` : ''}
   <div class="lbl" style="margin-top:8px">記憶の容量（字）— 超えると自動で統合・圧縮</div>
   <div class="grid2">${num('mem.budgets.char', 'キャラ記憶（1人あたり）', { min: 300 })}${num('mem.budgets.world', '世界記憶', { min: 300 })}${num('mem.budgets.user', 'ユーザー記憶', { min: 200 })}${num('mem.budgets.chronicle', 'あらすじ', { min: 500 })}${num('mem.budgets.state', '現在の状況', { min: 200 })}</div>
-  <div class="lbl" style="margin-top:8px">ロアブック（キーワード発火）</div>
+  <div class="lbl" style="margin-top:8px">ロアブック（設定集のキーワード設定）</div>
+  <label class="switch"><span>キーワードに加えて、AIも場面に合う項目を選ぶ</span><input type="checkbox" class="tgl" data-set="lore.ai" ${s.lore.ai ? 'checked' : ''}></label>
+  <p class="hint" style="margin-top:-6px">記憶係が毎ターン、次の場面に必要な項目を最大5件選びます。キーワードが会話に出ていなくても、流れで必要なら入ります。</p>
   <div class="grid2">${num('lore.depth', '走査する直近の件数', { min: 1 })}${num('lore.budget', '1回に入れる上限（字）', { min: 500 })}</div>
   <div class="btn-row"><button class="btn sm" data-act="testApi" data-role="mem">記憶モデルを接続テスト</button></div>
 </section>

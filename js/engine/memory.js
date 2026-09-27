@@ -1,6 +1,6 @@
 // 記憶エンジン
 // - 毎ターン: 確定したやり取りから事実を抽出し、キャラ/世界/ユーザー別の記憶帳に積む。
-//   同時に「現在の状況」「進行度（局面・未解決の筋・関係）」「次の場面で使う記憶」「演出メモ」を更新する
+//   同時に「現在の状況」「進行度（局面・未解決の筋・関係）」「次の場面で使う記憶・設定集の項目」「演出メモ」を更新する
 // - 容量超過: その記憶帳だけを統合・圧縮して一定量に保つ（ピン留めは保護）
 // - 直近ウィンドウから外れた会話: 「あらすじ」に要約して引き継ぐ
 // - 注入時: 常駐（固定・★5・進行度）＋記憶係が選んだ記憶＋場面の要素に結びつく記憶だけを渡す
@@ -8,6 +8,7 @@ import { S, txt, isDialog, chatCtx, macros, charOf, findChar, saveChat, newMem, 
 import { clone, clamp, now, uid, tl, estTokens, parseJSON } from '../core/util.js';
 import { emit } from '../core/hooks.js';
 import { callLLM } from '../llm/providers.js';
+import { loreCatalog } from './lorebook.js';
 
 export const TAGS = { event: '出来事', relation: '関係', promise: '約束', secret: '秘密', status: '状態', lore: '設定', item: '所持品' };
 const TAG_KEYS = Object.keys(TAGS);
@@ -37,11 +38,12 @@ const EXTRACT_SYS = `あなたはロールプレイ小説の「記憶係」で�
 13. rel: 登場キャラごとに、{{user}}との関係の現在地を1文（感情、信頼の段階、呼び方の変化など）。
 14. scene: 直近の場面に出ている要素（場所・物・その場の脇役・話題）を短い名詞で最大8個。表記は ents とそろえる。
 15. recall: existing_memory の中から、次の場面の応答で踏まえるべき記憶のIDを最大12件。今の話題・場所・人物・未解決の筋に関わるもの、今こそ効いてくる伏線や約束を優先する。
-16. brief: 次の応答で書き手が意識すべきことを150字以内で（例: 約束の期限が今夜に迫っている／ミオはまだ竜の名前を明かしていない）。
-17. 追加するものがなければ空配列にする。
+16. lore: lore_catalog（作者が書いた設定集の目録）の中から、次の場面の応答で参照すべき項目のIDを最大5件。今の話題・場所・人物・未解決の筋に関わるものを選ぶ。会話にその名前が出ていなくても、背景として効くものは選んでよい。目録がなければ空配列。設定集の内容は記憶として add しない。
+17. brief: 次の応答で書き手が意識すべきことを150字以内で（例: 約束の期限が今夜に迫っている／ミオはまだ竜の名前を明かしていない）。
+18. 追加するものがなければ空配列にする。
 
 出力形式:
-{"state":"...","arc":"...","threads":[{"t":"...","s":"進行中","n":"..."}],"rel":[{"name":"...","text":"..."}],"scene":["..."],"recall":["m3"],"brief":"...","add":[{"scope":"...","text":"...","imp":3,"tag":"event","ents":["..."]}],"update":[{"id":"m12","text":"...","imp":4,"ents":["..."]}],"remove":["m3"]}`;
+{"state":"...","arc":"...","threads":[{"t":"...","s":"進行中","n":"..."}],"rel":[{"name":"...","text":"..."}],"scene":["..."],"recall":["m3"],"lore":["l2"],"brief":"...","add":[{"scope":"...","text":"...","imp":3,"tag":"event","ents":["..."]}],"update":[{"id":"m12","text":"...","imp":4,"ents":["..."]}],"remove":["m3"]}`;
 
 const CONS_SYS = 'あなたはロールプレイ小説の記憶を整理する編集者です。重要な情報を失わずに記憶を統合・圧縮します。出力はJSONのみです。';
 const CHRON_SYS = `あなたはロールプレイ小説のあらすじ編集者です。後から物語を続ける作者が読むための要約を書きます。
@@ -57,7 +59,7 @@ function extractSchema(names) {
     state: { type: 'string' }, arc: { type: 'string' },
     threads: { type: 'array', items: obj({ t: { type: 'string' }, s: { type: 'string', enum: ['未着手', '進行中'] }, n: { type: 'string' } }) },
     rel: { type: 'array', items: obj({ name: { type: 'string' }, text: { type: 'string' } }) },
-    scene: strArr, recall: strArr, brief: { type: 'string' },
+    scene: strArr, recall: strArr, lore: strArr, brief: { type: 'string' },
     add: { type: 'array', items: obj({ scope: { type: 'string', enum: [...new Set(['world', 'user', ...names])] }, text: { type: 'string' }, imp: { type: 'integer' }, tag: { type: 'string', enum: TAG_KEYS }, ents: strArr }) },
     update: { type: 'array', items: obj({ id: { type: 'string' }, text: { type: 'string' }, imp: { type: 'integer' }, ents: strArr }) },
     remove: strArr,
@@ -192,10 +194,12 @@ async function extractFacts(chat, batch) {
     st?.world?.trim() ? `【世界観・設定】\n${M(st.world).slice(0, 1500)}` : '',
     ...ctx.chars.map(c => `【${c.name}】\n${M([c.profile, c.personality].filter(Boolean).join('\n')).slice(0, 800)}`),
   ].filter(Boolean).join('\n\n');
+  const cat = S.settings.lore.ai ? loreCatalog(st, M) : { text: '', ids: {} };
   const sys = M(EXTRACT_SYS.replaceAll('{{chars}}', names.join('、') || '（なし）').replaceAll('{{stateBudget}}', String(s.mem.budgets.state)));
   const user = `登場キャラクター: ${names.join('、') || '（なし）'}\nユーザーの名前: ${ctx.user}\n\n`
     + (statics ? `<static_settings>（既に設定済み。重複して記憶しない）\n${statics}\n</static_settings>\n\n` : '')
     + `<existing_memory>\n${existing || '（なし）'}\n</existing_memory>\n\n`
+    + (cat.text ? `<lore_catalog>（設定集の目録。選ぶだけで、記憶として追加しない）\n${cat.text}\n</lore_catalog>\n\n` : '')
     + `<current_state>\n${m.state || '（未記録）'}\n</current_state>\n\n<current_progress>\n${progressText(m) || '（未記録）'}\n</current_progress>\n\n`
     + (prev.length ? `<previous_context>（参考のみ・抽出対象外）\n${logLines(chat, prev, ctx)}\n</previous_context>\n\n` : '')
     + `<new_log>（ここから抽出する）\n${logLines(chat, batch, ctx)}\n</new_log>`;
@@ -203,6 +207,7 @@ async function extractFacts(chat, batch) {
   let j = parseJSON((await call(user)).text);
   if (!j) j = parseJSON((await call(user + '\n\n※出力は有効なJSONオブジェクトのみ。前置きやコードブロックは付けない。')).text);
   if (!j) throw new Error('記憶抽出の結果をJSONとして読み取れませんでした');
+  j._loreIds = cat.ids;
   return j;
 }
 
@@ -216,6 +221,7 @@ function applyExtraction(chat, res, batch) {
   if (Array.isArray(res.rel)) m.rel = res.rel.filter(x => str(x?.name) && str(x?.text)).slice(0, 8).map(x => ({ name: str(x.name), text: str(x.text) }));
   if (Array.isArray(res.scene)) m.scene = res.scene.map(x => str(String(x))).filter(x => x && x.length <= 24).slice(0, 10);
   if (typeof res.brief === 'string') m.brief = str(res.brief).slice(0, 300);
+  if (Array.isArray(res.lore)) m.loreRecall = [...new Set(res.lore.map(x => res._loreIds?.[str(String(x))]).filter(Boolean))].slice(0, 5);
   for (const a of Array.isArray(res.add) ? res.add : []) {
     const text = str(a?.text);
     if (!text) continue;
@@ -350,7 +356,7 @@ export function rebuildMemory(chat) {
   updateNow(chat);
 }
 export function resetMemoryItems(chat) {
-  Object.assign(chat.mem, { entries: [], state: '', arc: '', threads: [], rel: [], scene: [], recall: [], brief: '' });
+  Object.assign(chat.mem, { entries: [], state: '', arc: '', threads: [], rel: [], scene: [], recall: [], loreRecall: [], brief: '' });
   chat.mem.rev++;
   chat.mem.lastId = Math.max(chat.mem.lastId, chat.messages.at(-1)?.id || 0);
   memLog(chat, '記憶項目をすべて消去しました');

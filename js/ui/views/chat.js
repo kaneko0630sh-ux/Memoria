@@ -279,7 +279,7 @@ defineActions({
     const mems = (msg.refs || []).map(id => chat.mem.entries.find(e => e.id === id)).filter(Boolean);
     const lore = (msg.lore || []).map(id => ctx.story?.lore.find(e => e.id === id)).filter(Boolean);
     openSheet({ id: 'refs', title: 'この応答で参照した記憶・設定', full: true, html: `
-      ${lore.length ? `<div class="lbl">キーワード設定（${lore.length}）</div>${lore.map(e => `<div class="mem-e"><div class="mem-text"><b>${esc(e.title || e.keys[0] || '設定')}</b>　<span class="meta">${esc(e.keys.join(', '))}</span></div></div>`).join('')}` : ''}
+      ${lore.length ? `<div class="lbl">設定集（${lore.length}）</div>${lore.map(e => `<div class="mem-e"><div class="mem-text"><b>${esc(e.title || e.keys[0] || '設定')}</b>　<span class="tag">${e.always ? '常時' : (msg.loreAi || []).includes(e.id) ? 'AIが選択' : 'キーワード'}</span>　<span class="meta">${esc(e.keys.join(', '))}</span></div></div>`).join('')}` : ''}
       <div class="lbl" style="margin-top:12px">記憶（${mems.length}）</div>
       ${mems.map(e => `<div class="mem-e ${e.pinned ? 'pinned' : ''}"><div class="mem-text">${esc(e.text)}</div><div class="mem-meta"><span class="tag">${esc(scopeLabel(e.scope, ctx))}</span>${e.tag ? `<span class="tag">${TAGS[e.tag] || ''}</span>` : ''}<span>${tl(e.turn)}</span></div></div>`).join('') || '<p class="empty-s">記憶はまだありません</p>'}
       <p class="hint">記憶の選び方はマイページ →「記憶の渡し方」で変えられます。確実に入れたい記憶は記憶パネルでピン留めしてください。</p>` });
