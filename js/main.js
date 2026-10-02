@@ -4,6 +4,7 @@ import { S, DEFAULT_SETTINGS, normalizeStory, normalizeChat, migratePersonas, sa
 import { deepMerge } from './core/util.js';
 import { migrateLegacy } from './io/porting.js';
 import { startApp } from './ui/app.js';
+import './ui/install.js'; // インストールの合図（beforeinstallprompt）を早めに受け取る
 // 画面とプラグインは読み込むだけで登録される
 import './ui/views/home.js';
 import './ui/views/story.js';

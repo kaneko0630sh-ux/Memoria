@@ -2,9 +2,11 @@
 import { S, saveSettings, SPEED_WINDOW } from '../../core/store.js';
 import { esc, getPath, setPath, clone, ymd } from '../../core/util.js';
 import { DB } from '../../core/db.js';
+import { on } from '../../core/hooks.js';
 import { PROVIDERS, EFFORTS, llmCfg, callLLM, fetchModels, rememberModel } from '../../llm/providers.js';
 import { ic, toast, openSheet, closeAllSheets, saveFile } from '../dom.js';
-import { defineActions, render, goHome } from '../app.js';
+import { defineActions, render, goHome, isView } from '../app.js';
+import { canInstall, isInstalled, promptInstall } from '../install.js';
 import { importBackupFile } from '../../io/porting.js';
 import { personaListHTML } from './personas.js';
 
@@ -70,6 +72,11 @@ export function myPageHTML() {
   <label class="field"><span>テーマ</span><select data-set="ui.theme">${opts([['dark', 'ダーク'], ['light', 'ライト'], ['auto', '端末に合わせる']], s.ui.theme)}</select></label>
   <div class="grid2"><label class="field"><span>本文フォント</span><select data-set="ui.font">${opts([['gothic', 'ゴシック'], ['serif', '明朝']], s.ui.font)}</select></label>${num('ui.fs', '文字サイズ（px）', { min: 12 })}</div>
 </section>
+<section class="card"><h3>アプリとして使う</h3>
+  ${isInstalled() ? '<p class="hint">アプリとして起動しています。</p>'
+    : canInstall() ? `<button class="btn primary sm" data-act="installApp">${ic('download', 'sm')}このPCにアプリとしてインストール</button><p class="hint">ブラウザではなく専用のウィンドウで開き、スタートメニューやタスクバーから起動できます。データは今のブラウザと共通です。</p>`
+    : '<p class="hint">PC: Chrome か Edge で開き、アドレスバー右端のインストールのアイコン（またはメニュー →「キャスト、保存、共有」→「ページをアプリとしてインストール」）から、専用のウィンドウで使えます。データはインストールしたブラウザと共通です。<br>iPhone: Safari の共有ボタン →「ホーム画面に追加」。</p>'}
+</section>
 <section class="card"><h3>データ</h3>
   <p class="hint" id="storageInfo">&nbsp;</p>
   <div class="btn-row"><button class="btn sm" data-act="exportAll">${ic('download', 'sm')}バックアップを書き出す</button><button class="btn sm" data-act="importBackup">${ic('upload', 'sm')}バックアップを読み込む</button></div>
@@ -100,7 +107,11 @@ export async function openModelPicker(provider, path) {
   });
 }
 
+// インストールできるようになったら、マイページを開いていればボタンを出し直す
+on('install:changed', () => { if (isView('home') && S.ui.tab === 'my') render(); });
+
 defineActions({
+  installApp: async () => { if (await promptInstall()) toast('インストールしました。スタートメニューから「Memoria」で起動できます', 'ok', 5000); render(); },
   goMy: () => goHome('my'),
   toggleKey: el => { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; el.textContent = i.type === 'password' ? '表示' : '隠す'; },
   pickModel: el => openModelPicker(el.dataset.p, el.dataset.path),
