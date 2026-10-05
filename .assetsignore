@@ -1,0 +1,7 @@
+# Cloudflare（Workers の静的アセット）に公開しないもの
+.git
+.github
+.gitignore
+.nojekyll
+.assetsignore
+wrangler.*
