@@ -39,7 +39,7 @@ export function cardHTML(card, e, env = {}, iconOf = () => '') {
   const fresh = env.fresh ? ' fresh' : '';
   if (card.kind === 'loot') {
     const best = RANK[Math.max(-1, ...card.finds.map(f => RANK.indexOf(f.rar)))] || 'N';
-    return `<div class="lcard r-${best}${fresh}"><div class="lc-head"><span>🎁 探索の成果</span>${card.depth ? `<small>${esc(card.depth)}</small>` : ''}</div>
+    return `<div class="lcard r-${best}${fresh}"><div class="lc-head"><span>🎁 ${card.what ? esc(card.what) : '探索の成果'}</span>${card.depth ? `<small>${esc(card.depth)}</small>` : ''}</div>
       <div class="lc-grid">${card.finds.map(f => lootTile(f, e, iconOf)).join('')}</div>${card.danger ? '<div class="lc-danger">⚠ 近くで何かが動く気配がした</div>' : ''}</div>`;
   }
   if (card.kind === 'appraise') {
@@ -68,6 +68,17 @@ export function noteHTML(note) {
   const lv = note?.lvup ? `<div class="lvup"><div class="lv-h">LEVEL UP</div><div class="lv-n">Lv ${note.lvup.from} <i>→</i> <b>Lv ${note.lvup.to}</b></div>${Object.keys(note.lvup.gains || {}).length ? `<div class="lv-g">${Object.entries(note.lvup.gains).map(([n, d]) => `<span>${esc(n)} +${d}</span>`).join('')}</div>` : ''}</div>` : '';
   const notes = (note?.notes || []).filter(n => !/^⭐/.test(n));
   return `${lv}${notes.length ? `<div class="pnote"><span class="pn-h">🎒 記録</span>${notes.map(n => `<span class="pn ${cls(n)}">${esc(n)}</span>`).join('')}</div>` : ''}`;
+}
+
+/* ---------- 物語の中のブロック（AIが出す【戦利品】【鑑定】） ---------- */
+export function lootBlockHTML({ what, done, active, msgId }) {
+  const foot = done ? '<div class="pc-result ok">調べた（結果は下のカード）</div>'
+    : active ? btn('lootAt', '🎁 調べる', { msg: msgId, what }, 'btn primary sm') : '';
+  return `<div class="pcard loot-b"><div class="pc-head">🎁 何かありそうだ</div><div class="pc-body">${esc(what || 'この場所')}<small>中身とレア度はアプリがサイコロで決めます</small></div>${foot}</div>`;
+}
+export function appraiseBlockHTML({ what, items, e, active }) {
+  const list = active ? (items.length ? `<div class="ab-list">${items.map(i => btn('appraise', `🔍 ${esc(i.name)}<span class="rar r-${i.rar}">${esc(rarLabel(i.rar, e))}</span>`, { id: i.id }, `btn sm ab-item r-${i.rar}`)).join('')}</div>` : '<small>未鑑定の品を持っていません</small>') : '';
+  return `<div class="pcard appraise-b"><div class="pc-head">🔍 鑑定</div><div class="pc-body">${esc(what || '鑑定できる')}<small>査定額はアプリがサイコロで決め、正体はAIが描きます</small></div>${list}</div>`;
 }
 
 /* ---------- お店のシート ---------- */
@@ -106,7 +117,7 @@ function itemsTab(st, e, base) {
   const c = carryOf(st, e), lvl = depthLevel(st.depth);
   return `<div class="st-money"><b>💰 ${esc(fmtMoney(st.money, e))}</b>${btn('form', '編集', { kind: 'money' }, 'btn sm ghost')}</div>
     ${c ? `<div class="st-row"><span>積載</span><b class="${c.used > c.max ? 'warn' : ''}">${c.used} / ${c.max}</b></div>${meter(c.used, c.max, c.used > c.max ? 'over' : '')}` : ''}
-    ${e.explore === 'on' ? `<div class="st-explore">${btn('loot', `${ic('search', 'sm')}探索する・戦利品を確認`, {}, 'btn primary sm')}<small>${esc(st.depth || '現在地未設定')}・危険度 ${dangerLabel(lvl)}。見つかる物と当たりはアプリがサイコロで決めます</small></div>` : ''}
+    ${e.explore === 'on' ? `<div class="st-explore">${btn('loot', `${ic('search', 'sm')}その場を調べる（戦利品）`, {}, 'btn primary sm')}<small>${esc(st.depth || '現在地未設定')}・危険度 ${dangerLabel(lvl)}。見つかる物と当たりはアプリがサイコロで決めます（深いほど当たりやすい）。宝箱や倒した敵など、物語の中で「🎁 調べる」が出たときはそちらからどうぞ</small></div>` : ''}
     ${cats.map(cat => {
       const items = carried.filter(i => (i.cat || '') === cat);
       return items.length ? `<div class="lbl">${esc(cat || 'その他')}</div><div class="st-list">${items.map(it => itemRow(it, e, pend(it))).join('')}</div>` : '';

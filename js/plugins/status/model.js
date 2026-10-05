@@ -140,7 +140,8 @@ const catLike = (e, re, fallback) => list(e.cats).find(c => re.test(c)) || fallb
 
 // 探索・戦利品: 見つけた物を決めて { ops, text, card } を返す（card は画面のカード表示用）
 // lib: アイテム図鑑のうち「戦利品に出す」もの [{ name, cat, rar, price }]
-export function rollLoot(st, e, lib = []) {
+// what: 何を調べたか（AIの【戦利品】ブロックから。例: 倒した機械兵の残骸）
+export function rollLoot(st, e, lib = [], what = '') {
   const lvl = depthLevel(st.depth), ops = [], parts = [], finds = [];
   const n = 1 + (Math.random() < 0.55) + (Math.random() < 0.2);
   const kinds = [['relic', 0.22 + lvl * 0.03], ['material', 0.42], ['consumable', 0.16], ['money', 0.2]];
@@ -182,8 +183,8 @@ export function rollLoot(st, e, lib = []) {
   ops.push({ op: 'log', text: `🎁 ${parts.join('、')}` });
   return {
     ops, danger,
-    text: `*🎁 探索の成果: ${parts.join('、')}*${danger ? '\n*⚠ 近くで何かが動く気配がした*' : ''}`,
-    card: { plugin: 'status', kind: 'loot', depth: st.depth, finds, danger },
+    text: `*🎁 ${what ? `${what}を調べた` : '探索の成果'}: ${parts.join('、')}*${danger ? '\n*⚠ 近くで何かが動く気配がした*' : ''}`,
+    card: { plugin: 'status', kind: 'loot', depth: st.depth, finds, danger, what },
   };
 }
 

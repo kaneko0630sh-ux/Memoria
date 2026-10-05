@@ -12,7 +12,7 @@ import { openSheet, closeSheet, closeAllSheets, setSheetBody, sheetById, sheetOf
 import { PRESET_OPTIONS, effective } from './presets.js';
 import * as M from './model.js';
 import { libraryOf, findLibItem } from '../../core/items.js';
-import { sheetHTML, itemSheetHTML, barHTML, formHTML, cardHTML, noteHTML, shopHTML, craftHTML } from './view.js';
+import { sheetHTML, itemSheetHTML, barHTML, formHTML, cardHTML, noteHTML, shopHTML, craftHTML, lootBlockHTML, appraiseBlockHTML } from './view.js';
 import { callLLM } from '../../llm/providers.js';
 import { parseJSON } from '../../core/util.js';
 import { chatCtx, macros } from '../../core/store.js';
@@ -316,6 +316,18 @@ definePlugin({
   desc: '所持金・持ち物・装備・スキル・体力などを管理します。生活（拠点・家賃・建設・依頼・日付）と探索（現在地・戦利品・鑑定・評判）も選べます',
   help: '会話の中で起きた売買・入手・消費・負傷などは、記憶係が次の発言のあとに自動で反映します（APIの呼び出しは増えません）。トーク画面の上部か ☰ →「ステータス」で確認・編集できます。探索をオンにすると、戦利品の中身とレア度（手に入れた時点で枠の色で分かります）、鑑定の査定額をアプリがサイコロで決め、鑑定した品の正体と名前はAIが描きます。空欄の項目は、選んだひな型の値になります。',
   defaults: { preset: 'adventurer', bar: 'on' },
+  blocks: ['戦利品', '鑑定'],
+
+  // AIが物語の中に置く【戦利品】【鑑定】。その場にボタンを出す
+  renderBlock(b, env) {
+    const e = effective(env.cfg), what = b.paras.map(p => p.t).join(' ').trim();
+    if (b.speaker === '戦利品') {
+      const done = env.chat.messages.some(m => m.card?.plugin === ID && m.card.src === env.msg.id);
+      return lootBlockHTML({ what, done, active: env.isLast && !S.gen, msgId: env.msg.id });
+    }
+    const items = env.isLast ? view(env.chat, e).items.filter(i => i.unid) : [];
+    return appraiseBlockHTML({ what, items, e, active: env.isLast && !S.gen });
+  },
   fields: [
     { key: 'preset', label: 'ひな型', type: 'select', options: PRESET_OPTIONS, rerender: true, hint: '空欄の項目は、ひな型の値を使います（薄く表示されている値）' },
     { key: 'currency', label: '通貨の単位', type: 'text', ph: c => effective(c).currency },
@@ -350,7 +362,9 @@ definePlugin({
 - 🔍 の鑑定結果・🔨 の作成結果は、ランク（と査定額）に見合う出来として描く。🛒 の売買は店の人物とのやり取りとして描く${e.xp === 'on' ? `
 - <status> に「直前にレベルアップした」とあれば、成長を実感する一瞬を短く描く（数値は書かない）` : ''}${e.life === 'on' ? `
 - 日付が進むときは本文で分かるように描く（翌朝、三日後など）。家賃・宿代の支払いはアプリが自動で行う` : ''}${e.explore === 'on' ? `
-- 深い場所ほど危険で実入りがよい。<status> の危険度に合わせる。⚠ の気配が出たら、危険（敵・罠・崩落など）を登場させる` : ''}${String(e.prices).trim() ? `
+- 深い場所ほど危険で実入りがよい。<status> の危険度に合わせる。⚠ の気配が出たら、危険（敵・罠・崩落など）を登場させる
+- 宝箱を開ける・倒した敵を調べる・瓦礫や遺構を漁るなど、何かを拾える瞬間には、応答の最後に【戦利品】ブロックを置いてそこで止める。中身は1行目に「何を調べるか」（例: 倒した機械兵の残骸）だけを書き、手に入る物は書かない（アプリが決める）。毎回は出さない
+- {{user}}が鑑定屋などに品物の鑑定を頼んだら、応答の最後に【鑑定】ブロックを置く。1行目に鑑定する人や場所を書き、結果は書かない（アプリが決める）` : ''}${String(e.prices).trim() ? `
 ## 相場表
 ${String(e.prices).trim()}` : ''}`;
   },
@@ -452,6 +466,14 @@ ${String(e.prices).trim()}` : ''}`;
       if (r) act(chat, r);
     },
     loot() { const chat = curChat(); act(chat, M.rollLoot(view(chat), cfgOf(chat), dropLib(getStory(chat.storyId)))); },
+    // 物語の中の【戦利品】ブロックから
+    lootAt(el) {
+      const chat = curChat();
+      if (!chat) return;
+      const r = M.rollLoot(view(chat), cfgOf(chat), dropLib(getStory(chat.storyId)), el.dataset.what || '');
+      r.card.src = Number(el.dataset.msg);
+      act(chat, r);
+    },
     appraise(el) { const chat = curChat(), it = itemOf(chat, el.dataset.id); if (it?.unid) act(chat, M.appraiseOps(view(chat), it, cfgOf(chat))); },
     sell(el) { const chat = curChat(), it = itemOf(chat, el.dataset.id), price = it && sellOf(chat, it); if (price) act(chat, M.sellOps(it, cfgOf(chat), price)); },
     use(el) { const chat = curChat(), it = itemOf(chat, el.dataset.id); if (it) act(chat, M.useOps(it)); },

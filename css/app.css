@@ -599,3 +599,8 @@ pre.prompt { white-space: pre-wrap; word-break: break-word; font-size: 11.5px; l
 .dc-total { display: flex; justify-content: center; align-items: baseline; gap: 12px; font-size: 14px; color: var(--text2); }
 .dc-total b { font-size: 20px; color: var(--text); }
 .dc-res { font-weight: 900; font-size: 16px; color: var(--rc); }
+/* 物語の中の【戦利品】【鑑定】 */
+.pcard.loot-b { border-color: #e8c05a; background: rgba(232, 192, 90, .08); }
+.pcard.loot-b .pc-head { color: #e8c05a; }
+.ab-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.ab-item { border-color: var(--rc) !important; color: var(--rc) !important; box-shadow: 0 0 8px var(--rcg); gap: 6px; }
