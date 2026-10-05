@@ -1,10 +1,10 @@
 // ステータス管理: 画面（☰ →「ステータス」のシートと、トーク上部のバー）
 import { esc } from '../../core/util.js';
 import { ic } from '../../ui/dom.js';
-import { list, fmtMoney, rarLabel, depthLevel, dangerLabel, repLabel, weekday, carryOf } from './model.js';
+import { list, fmtMoney, rarLabel, depthLevel, dangerLabel, repLabel, weekday, carryOf, needXp, needsName, signed } from './model.js';
 
 const A = name => `p:status:${name}`;
-const btn = (act, label, data = {}, cls = 'btn sm') => `<button class="${cls}" data-act="${A(act)}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}>${label}</button>`;
+const btn = (act, label, data = {}, cls = 'btn sm', disabled = false) => `<button class="${cls}" data-act="${A(act)}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}${disabled ? ' disabled' : ''}>${label}</button>`;
 const rarBadge = (it, e) => `${it.rar ? `<span class="rar r-${it.rar}">${esc(rarLabel(it.rar, e))}</span>` : ''}${it.unid ? '<span class="rar r-q">未鑑定</span>' : ''}`;
 const RANK = ['C', 'U', 'R', 'E', 'L'];
 const iconHTML = (src, cls = 'st-ic') => (src ? `<span class="${cls}"><img src="${esc(src)}" alt=""></span>` : '');
@@ -15,6 +15,7 @@ export const TABS = e => [['items', '持ち物'], ['gear', '装備・スキル']
 export function barHTML(st, e) {
   const g = Object.entries(st.gauges)[0];
   const parts = [`💰 ${esc(fmtMoney(st.money, e))}`];
+  if (e.xp === 'on') parts.push(`Lv${st.lv}`);
   if (g) parts.push(`${esc(g[0])} ${g[1].v}/${g[1].max}`);
   if (e.life === 'on') parts.push(`${st.day}日目`);
   if (e.explore === 'on' && st.depth) parts.push(esc(st.depth));
@@ -24,7 +25,7 @@ export function barHTML(st, e) {
 }
 
 function itemRow(it, e, pending) {
-  return `<button class="st-item${it.rar ? ` rf r-${it.rar}` : ''}" data-act="${A('item')}" data-id="${it.id}">${iconHTML(it.icon)}<span class="nm">${esc(it.name)}</span>${rarBadge(it, e)}${pending ? '<span class="tag">反映待ち</span>' : ''}<span class="q">×${it.qty}</span></button>`;
+  return `<button class="st-item${it.rar ? ` rf r-${it.rar}` : ''}" data-act="${A('item')}" data-id="${it.id}">${iconHTML(it.icon)}<span class="nm">${esc(it.name)}</span>${rarBadge(it, e)}${needsName(it) && !it.unid ? '<span class="tag">名前未定</span>' : ''}${pending ? '<span class="tag">反映待ち</span>' : ''}<span class="q">×${it.qty}</span></button>`;
 }
 
 /* ---------- トーク中のカード（戦利品・鑑定・売却・使用）と、記憶係の記録 ---------- */
@@ -47,11 +48,55 @@ export function cardHTML(card, e, env = {}, iconOf = () => '') {
   }
   if (card.kind === 'sell') return `<div class="lcard mini${card.rar ? ` r-${card.rar}` : ''}${fresh}"><span class="mi-h">💰 売却</span>${iconHTML(iconOf(card.name), 'mi-ic')}<b class="mi-name">${esc(card.name)}</b><span class="mi-plus">+${esc(fmtMoney(card.val, e))}</span></div>`;
   if (card.kind === 'use') return `<div class="lcard mini${card.rar ? ` r-${card.rar}` : ''}${fresh}"><span class="mi-h">🧪 使用</span>${iconHTML(iconOf(card.name), 'mi-ic')}<b class="mi-name">${esc(card.name)}</b></div>`;
+  if (card.kind === 'trade') {
+    const row = (x, sign) => `<div class="tr-row${x.rar ? ` r-${x.rar}` : ''}">${iconHTML(iconOf(x.name), 'mi-ic')}<span class="tr-nm">${esc(x.name)}${x.qty > 1 ? ` ×${x.qty}` : ''}${x.service ? ' <small>サービス</small>' : ''}</span><span class="tr-p ${sign > 0 ? 'plus' : ''}">${sign > 0 ? '+' : '−'}${esc(fmtMoney(x.price * x.qty, e))}</span></div>`;
+    return `<div class="lcard trade${fresh}"><div class="lc-head"><span>🛒 ${card.shop ? esc(card.shop) : 'お店'}での取引</span></div>
+      ${card.buy.map(x => row(x, -1)).join('')}${card.sell.map(x => row(x, 1)).join('')}
+      <div class="tr-total"><span>差し引き</span><b class="${card.total >= 0 ? 'plus' : ''}">${signed(card.total)}${esc(e.currency)}</b></div></div>`;
+  }
+  if (card.kind === 'craft') {
+    const mats = card.mats.map(m => `<span class="cr-mat${m.rar ? ` r-${m.rar}` : ''}">${esc(m.name)}×${m.qty}</span>`).join('<i>＋</i>');
+    if (!card.ok) return `<div class="lcard craft fail${fresh}"><div class="lc-head"><span>🔨 作成</span><small>出目 ${card.d20}</small></div><div class="cr-mats">${mats}</div><div class="cr-fail">失敗… 素材の半分を失った</div></div>`;
+    return `<div class="lcard craft r-${card.rar}${fresh}"><div class="lc-head"><span>🔨 作成</span><small>出目 ${card.d20}${card.skill ? `・${esc(card.skill)}` : ''}</small></div>
+      <div class="cr-mats">${mats}</div><div class="cr-arrow">▼</div>
+      <div class="lt r-${card.rar} cr-out"><span class="lt-rar">${esc(rarLabel(card.rar, e))}</span><b class="lt-name">${esc(card.wish || '何かができた')}</b><span class="lt-q">${card.wish ? '' : '正体は本文で'}</span></div></div>`;
+  }
   return '';
 }
 export function noteHTML(note) {
-  const cls = n => (/\+\d|受けた|習得|達成/.test(n) ? 'gain' : /−\d|不足|失敗/.test(n) ? 'loss' : '');
-  return note?.notes?.length ? `<div class="pnote"><span class="pn-h">🎒 記録</span>${note.notes.map(n => `<span class="pn ${cls(n)}">${esc(n)}</span>`).join('')}</div>` : '';
+  const cls = n => (/\+\d|受けた|習得|達成|レベルアップ/.test(n) ? 'gain' : /−\d|不足|失敗/.test(n) ? 'loss' : '');
+  const lv = note?.lvup ? `<div class="lvup"><div class="lv-h">LEVEL UP</div><div class="lv-n">Lv ${note.lvup.from} <i>→</i> <b>Lv ${note.lvup.to}</b></div>${Object.keys(note.lvup.gains || {}).length ? `<div class="lv-g">${Object.entries(note.lvup.gains).map(([n, d]) => `<span>${esc(n)} +${d}</span>`).join('')}</div>` : ''}</div>` : '';
+  const notes = (note?.notes || []).filter(n => !/^⭐/.test(n));
+  return `${lv}${notes.length ? `<div class="pnote"><span class="pn-h">🎒 記録</span>${notes.map(n => `<span class="pn ${cls(n)}">${esc(n)}</span>`).join('')}</div>` : ''}`;
+}
+
+/* ---------- お店のシート ---------- */
+const step = (act, data, n, max) => `<span class="st-step">${btn(act, '−', { ...data, d: -1, max }, 'icon-btn sm')}<b class="qn">${n}</b>${btn(act, '＋', { ...data, d: 1, max }, 'icon-btn sm')}</span>`;
+export function shopHTML({ c, stock, sellables, money, e, busy, iconOf }) {
+  const buyTotal = stock.reduce((a, x) => a + (c.buy[x.name] || 0) * x.price, 0);
+  const sellTotal = sellables.reduce((a, i) => a + (c.sell[i.id] || 0) * i.sellAt, 0);
+  const after = money - buyTotal + sellTotal, any = buyTotal || sellTotal;
+  const buyRow = x => `<div class="sh-row${x.rar ? ` rf r-${x.rar}` : ''}">${iconHTML(x.icon || iconOf(x.name))}<div class="sh-main"><b class="nm">${esc(x.name)}</b>${x.rar ? `<span class="rar r-${x.rar}">${esc(rarLabel(x.rar, e))}</span>` : ''}${x.service ? '<span class="tag">サービス</span>' : ''}${x.note ? `<small>${esc(x.note)}</small>` : ''}</div><span class="sh-p">${esc(fmtMoney(x.price, e))}</span>${step('shopQty', { kind: 'buy', key: x.name }, c.buy[x.name] || 0, 99)}</div>`;
+  const sellRow = i => `<div class="sh-row${i.rar ? ` rf r-${i.rar}` : ''}">${iconHTML(i.icon)}<div class="sh-main"><b class="nm">${esc(i.name)}</b><small>所持 ${i.qty}</small></div><span class="sh-p plus">${esc(fmtMoney(i.sellAt, e))}</span>${step('shopQty', { kind: 'sell', key: i.id }, c.sell[i.id] || 0, i.qty)}</div>`;
+  return `<div class="sh-top"><input id="shopName" value="${esc(c.name)}" placeholder="店の名前（例: 鍛冶屋グロム、闇市）" autocomplete="off">${btn('shopSwitch', '切替', {}, 'btn sm ghost')}</div>
+    <div class="btn-row">${btn('shopGen', c.gen ? '品ぞろえを考えています…' : '✨ この店の品ぞろえをAIに出してもらう', {}, 'btn sm', c.gen)}</div>
+    <p class="hint">今の場面と相場表から、その店らしい品をAIが並べます（記憶用のモデルを1回使います）。アイテム図鑑と相場表の品は、いつでも買えます。</p>
+    <div class="lbl">買う</div><div class="st-list">${stock.map(buyRow).join('') || '<p class="empty-s">品物がありません（相場表かアイテム図鑑に値段を書くか、AIに品ぞろえを出してもらってください）</p>'}</div>
+    <div class="lbl" style="margin-top:12px">売る</div><div class="st-list">${sellables.map(sellRow).join('') || '<p class="empty-s">値段の分かる持ち物がありません</p>'}</div>
+    <div class="sh-sum"><div class="st-row"><span>買う</span><b>−${esc(fmtMoney(buyTotal, e))}</b></div><div class="st-row"><span>売る</span><b class="plus">+${esc(fmtMoney(sellTotal, e))}</b></div>
+      <div class="st-row"><span>取引後の所持金</span><b class="${after < 0 ? 'warn' : ''}">${esc(fmtMoney(after, e))}</b></div>
+      ${btn('shopDeal', '取引する', {}, 'btn primary block', !any || after < 0 || busy)}</div>`;
+}
+
+/* ---------- クラフトのシート ---------- */
+export function craftHTML({ c, items, skills, e, busy }) {
+  const picked = Object.values(c.pick).reduce((a, b) => a + b, 0);
+  return `<p class="hint">素材を選んで作ります。完成品は登録していなくても作れます。出来（ランク）はアプリがサイコロで決め、素材のランク・数とスキルが高いほど良い物になります。何ができたかはAIが描きます。失敗すると素材の半分を失います。</p>
+    <label class="field"><span>作りたい物（任意・空欄ならおまかせ）</span><input id="craftWish" value="${esc(c.wish)}" placeholder="例: 解毒薬、即席の盾、改造スコープ" autocomplete="off"></label>
+    <label class="field"><span>使うスキル（任意）</span><select id="craftSkill"><option value="">なし</option>${skills.map(k => `<option value="${esc(k.name)}" ${c.skill === k.name ? 'selected' : ''}>${esc(k.name)}${k.level ? `（${esc(k.level)}）` : ''}</option>`).join('')}</select></label>
+    <div class="lbl">素材（${picked}個）</div>
+    <div class="st-list">${items.map(i => `<div class="sh-row${i.rar ? ` rf r-${i.rar}` : ''}">${iconHTML(i.icon)}<div class="sh-main"><b class="nm">${esc(i.name)}</b>${i.rar ? `<span class="rar r-${i.rar}">${esc(rarLabel(i.rar, e))}</span>` : ''}<small>所持 ${i.qty}</small></div>${step('craftQty', { id: i.id }, c.pick[i.id] || 0, i.qty)}</div>`).join('') || '<p class="empty-s">持ち物がありません</p>'}</div>
+    <div class="sh-sum">${btn('craftGo', '🔨 作る', {}, 'btn primary block', !picked || busy)}</div>`;
 }
 
 function itemsTab(st, e, base) {
@@ -66,7 +111,7 @@ function itemsTab(st, e, base) {
       const items = carried.filter(i => (i.cat || '') === cat);
       return items.length ? `<div class="lbl">${esc(cat || 'その他')}</div><div class="st-list">${items.map(it => itemRow(it, e, pend(it))).join('')}</div>` : '';
     }).join('') || '<p class="empty-s">持ち物はありません</p>'}
-    <div class="btn-row">${btn('form', `${ic('plus', 'sm')}持ち物を追加`, { kind: 'item' })}</div>`;
+    <div class="btn-row">${btn('shop', '🛒 お店', {}, 'btn sm')}${btn('craft', '🔨 作る', {}, 'btn sm')}${btn('form', `${ic('plus', 'sm')}持ち物を追加`, { kind: 'item' }, 'btn sm ghost')}</div>`;
 }
 
 function gearTab(st, e) {
@@ -79,7 +124,9 @@ function gearTab(st, e) {
 function stateTab(st, e) {
   const g = Object.entries(st.gauges);
   const rep = Object.entries(st.rep);
-  return `${g.length ? `<div class="lbl">ゲージ</div>${g.map(([n, x]) => `<div class="st-gauge"><div class="st-row"><span>${esc(n)}</span><span class="st-step">${btn('gauge', '−', { name: n, d: -1 }, 'icon-btn sm')}<b>${x.v} / ${x.max}</b>${btn('gauge', '＋', { name: n, d: 1 }, 'icon-btn sm')}</span></div>${meter(x.v, x.max)}</div>`).join('')}` : ''}
+  const need = needXp(st.lv);
+  return `${e.xp === 'on' ? `<div class="st-lv"><b>Lv ${st.lv}</b><span>次のレベルまで ${need - st.xp}</span>${btn('form', '編集', { kind: 'level' }, 'btn sm ghost')}</div>${meter(st.xp, need, 'xp')}` : ''}
+    ${g.length ? `<div class="lbl">ゲージ</div>${g.map(([n, x]) => `<div class="st-gauge"><div class="st-row"><span>${esc(n)}</span><span class="st-step">${btn('gauge', '−', { name: n, d: -1 }, 'icon-btn sm')}<b>${x.v} / ${x.max}</b>${btn('gauge', '＋', { name: n, d: 1 }, 'icon-btn sm')}</span></div>${meter(x.v, x.max)}</div>`).join('')}` : ''}
     <div class="btn-row">${btn('form', 'ゲージを編集', { kind: 'gauges' }, 'btn sm ghost')}</div>
     ${e.life === 'on' ? `<div class="lbl" style="margin-top:14px">日付</div><div class="st-row"><span>${st.day}日目（${weekday(st.day)}）</span><span class="st-step">${btn('day', '−', { d: -1 }, 'icon-btn sm')}${btn('day', '＋', { d: 1 }, 'icon-btn sm')}</span></div>` : ''}
     ${e.explore === 'on' ? `<div class="lbl" style="margin-top:14px">現在地</div><div class="st-row"><span>${esc(st.depth || '未設定')}（危険度 ${dangerLabel(depthLevel(st.depth))}）</span>${btn('form', '変更', { kind: 'depth' }, 'btn sm ghost')}</div>
@@ -115,12 +162,12 @@ export function sheetHTML(st, e, base, tab) {
     <p class="hint">会話の中の売買・入手・消費・負傷などは、記憶係が次の発言のあとに自動で反映します。違っていたら直接直せます。</p>`;
 }
 
-export function itemSheetHTML(it, e, { inBase, life, busy }) {
+export function itemSheetHTML(it, e, { inBase, life, busy, sellAt }) {
   const facts = [it.cat && `種類: ${it.cat}`, it.val && !it.unid && `査定額: ${fmtMoney(it.val, e)}`, it.note].filter(Boolean);
   const acts = [
     !it.unid && btn('use', `${ic('forward', 'sm')}使う`, { id: it.id }),
     it.unid && btn('appraise', `${ic('search', 'sm')}鑑定する`, { id: it.id }, 'btn primary sm'),
-    it.val && !it.unid && btn('sell', `${ic('download', 'sm')}売る（${esc(fmtMoney(it.val, e))}）`, { id: it.id }),
+    sellAt && btn('sell', `${ic('download', 'sm')}売る（${esc(fmtMoney(sellAt, e))}）`, { id: it.id }),
   ].filter(Boolean).join('');
   const edits = inBase ? `<div class="btn-row">${btn('qty', '−1', { id: it.id, d: -1 })}${btn('qty', '＋1', { id: it.id, d: 1 })}${life ? btn('move', it.at === 'home' ? '持ち物へ移す' : '拠点に置く', { id: it.id }) : ''}${btn('form', '編集', { kind: 'item', id: it.id }, 'btn sm ghost')}${btn('qty', '捨てる', { id: it.id, d: -it.qty }, 'btn sm danger')}</div>`
     : '<p class="hint">この品はまだ反映待ちです。次の発言のあとに編集できます。</p>';

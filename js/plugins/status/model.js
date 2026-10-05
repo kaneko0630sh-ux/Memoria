@@ -58,16 +58,24 @@ export function initState(e) {
     gauges: parseGauges(e.gauges),
     day: 1, home: null, projects: [], quests: [],
     depth: '', rep: Object.fromEntries(list(e.factions).map(f => [f, 0])),
+    lv: 1, xp: 0, shops: {},
     log: [], prev: null,
   };
+}
+// 古い版で作られた状態に、後から増えた項目を足す
+export function upgrade(st) {
+  st.lv ??= 1; st.xp ??= 0; st.shops ||= {};
+  return st;
 }
 
 export const fmtMoney = (n, e) => `${Math.round(n).toLocaleString()}${e.currency}`;
 export const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(Math.round(n)).toLocaleString();
 export const rarity = k => RARITY.find(r => r.k === k);
 export const rarLabel = (k, e) => (k === 'L' ? e.legend : rarity(k)?.label || '');
-// レア度は手に入れた時点で分かる（ハクスラと同じ）。正体と値段は鑑定で分かり、名前はAIが付ける
-export const itemLabel = (it, e) => (it.rar && !it.named ? `${it.name}【${rarLabel(it.rar, e)}】` : it.name);
+// 名前未定の品（鑑定した遺品・名前を決めずに作った物・その場で見つけた素材）。本文でAIが描き、記憶係が名前を付ける
+export const needsName = it => !!(it.tbd || (it.rar && !it.unid && !it.named));
+// レア度は手に入れた時点で分かる（ハクスラと同じ）。正体と値段は鑑定で分かる
+export const itemLabel = (it, e) => `${it.name}${it.rar ? `【${rarLabel(it.rar, e)}】` : ''}${it.unid ? (it.name.includes('未鑑定') ? '' : '（未鑑定）') : needsName(it) ? '（名前未定）' : ''}`;
 
 // 深さ（「下層B4」「第3層」→ 4 / 3、地上・街 → 0）
 export const depthLevel = d => Number(String(d || '').match(/\d+/)?.[0] || 0);
@@ -90,10 +98,10 @@ const findItem = (st, name, at = '') => {
   return pool.find(i => i.name === n) || pool.find(i => n.length > 1 && (i.name.includes(n) || n.includes(i.name)));
 };
 function addItem(st, it) {
-  const same = !it.rar && !it.unid && st.items.find(i => i.at === (it.at || '') && i.name === it.name && !i.rar && !i.unid);
+  const same = !it.rar && !it.unid && !it.tbd && st.items.find(i => i.at === (it.at || '') && i.name === it.name && !i.rar && !i.unid && !i.tbd);
   if (same) { same.qty += it.qty; if (it.note && !same.note) same.note = it.note; return same; }
   const x = { id: it.id || uid(), name: it.name, qty: it.qty || 1, cat: it.cat || '', note: it.note || '', at: it.at || '' };
-  for (const k of ['rar', 'unid', 'val', 'named']) if (it[k] != null) x[k] = it[k];
+  for (const k of ['rar', 'unid', 'val', 'named', 'tbd']) if (it[k] != null) x[k] = it[k];
   st.items.push(x);
   return x;
 }
@@ -157,10 +165,17 @@ export function rollLoot(st, e, lib = []) {
       // 図鑑のアイテム（戦利品に出す・コモン以下）も候補に入れる。種類が空なら素材扱い
       const fromLib = lib.filter(l => (!l.rar || l.rar === 'C' || l.rar === 'U') && (re.test(l.cat || '') || (!l.cat && kind === 'material')));
       const pool = [...list(kind === 'material' ? e.materials : e.consumables), ...fromLib.map(l => l.name)];
-      const name = pick(pool.length ? pool : ['がらくた']), qty = kind === 'material' ? 1 + Math.floor(Math.random() * 3) : 1;
-      const l = fromLib.find(x => x.name === name), cat = l?.cat || catLike(e, re, '');
-      ops.push({ op: 'add', item: { id: uid(), name, qty, cat, ...(l?.rar ? { rar: l.rar, named: true } : {}) } }); parts.push(`${name}×${qty}`);
-      finds.push({ name, qty, cat, rar: l?.rar || '' });
+      const qty = kind === 'material' ? 1 + Math.floor(Math.random() * 3) : 1;
+      if (!pool.length || Math.random() < 0.6) {
+        // 登録された候補がない、または6割の確率で「名前未定」。何なのかはAIがその場に合わせて描き、記憶係が名前を付ける
+        const cat = catLike(e, re, ''), name = cat || (kind === 'material' ? '素材' : '消耗品');
+        ops.push({ op: 'add', item: { id: uid(), name, qty, cat, tbd: true } }); parts.push(`${name}×${qty}（何かは本文で）`);
+        finds.push({ name, qty, cat, tbd: true });
+      } else {
+        const name = pick(pool), l = fromLib.find(x => x.name === name), cat = l?.cat || catLike(e, re, '');
+        ops.push({ op: 'add', item: { id: uid(), name, qty, cat, ...(l?.rar ? { rar: l.rar, named: true } : {}) } }); parts.push(`${name}×${qty}`);
+        finds.push({ name, qty, cat, rar: l?.rar || '' });
+      }
     }
   }
   const danger = Math.random() < Math.min(0.6, 0.12 + lvl * 0.06);
@@ -176,16 +191,16 @@ export function appraiseOps(st, it, e) {
   const val = rollValue(it.rar, depthLevel(st.depth));
   const name = it.name.replace(/^未鑑定の?/, '') || it.name; // 正体はAIが描き、記憶係が名前を付ける
   return {
-    ops: [{ op: 'patch', id: it.id, set: { unid: false, val, name } }, { op: 'log', text: `🔍 ${itemLabel(it, e)} → 査定額 ${fmtMoney(val, e)}` }],
+    ops: [{ op: 'patch', id: it.id, set: { unid: false, val, name, tbd: true } },{ op: 'log', text: `🔍 ${itemLabel(it, e)} → 査定額 ${fmtMoney(val, e)}` }],
     text: `*🔍 ${itemLabel(it, e)}を鑑定: 査定額 ${fmtMoney(val, e)}*`,
     card: { plugin: 'status', kind: 'appraise', name: it.name, rar: it.rar, val },
   };
 }
-export function sellOps(it, e) {
+export function sellOps(it, e, price = it.val) {
   return {
-    ops: [{ op: 'money', d: it.val }, { op: 'qty', id: it.id, d: -1 }, { op: 'log', text: `💰 ${it.name}を売却 ${signed(it.val)}${e.currency}` }],
-    text: `*💰 ${it.name}を売った: ${signed(it.val)}${e.currency}*`,
-    card: { plugin: 'status', kind: 'sell', name: it.name, rar: it.rar || '', val: it.val },
+    ops: [{ op: 'money', d: price }, { op: 'qty', id: it.id, d: -1 }, { op: 'log', text: `💰 ${it.name}を売却 ${signed(price)}${e.currency}` }],
+    text: `*💰 ${it.name}を売った: ${signed(price)}${e.currency}*`,
+    card: { plugin: 'status', kind: 'sell', name: it.name, rar: it.rar || '', val: price },
   };
 }
 export function useOps(it) {
@@ -292,11 +307,144 @@ export function applyKeeper(st, r, e, turn) {
     const it = st.items.find(i => i.id === str(x?.id));
     if (!it || !str(x.name)) continue;
     log(`${itemLabel(it, e)} → ${str(x.name)}`);
-    it.name = str(x.name); it.named = true;
+    it.name = str(x.name); it.named = true; it.tbd = false;
     if (str(x.note)) it.note = str(x.note);
   }
+  // 経験値（レベルアップは addXp が処理）
+  if (int(r.xp) > 0 && e.xp === 'on') out.push(...addXp(st, int(r.xp), e, turn));
   for (const t of arr(r.reasons).map(str).filter(Boolean).slice(0, 4)) pushLog(st, turn, `（${t}）`);
   return out;
 }
 
 export const snapshot = st => { const c = clone(st); c.prev = null; c.log = []; return c; };
+
+/* ---------- 経験値とレベル ---------- */
+export const needXp = lv => 100 * lv;
+// 経験値を足し、レベルアップしたらゲージの最大値を伸ばして全快させる。st.lvup に演出用の情報を残す
+export function addXp(st, amount, e, turn) {
+  const out = [];
+  st.xp += amount;
+  out.push(`経験値 +${amount}`);
+  const from = st.lv, grow = parsePairs(e.growth).map(([n, v]) => [n, Number(String(v).replace(/[^\d-]/g, '')) || 0]);
+  const gains = {};
+  for (let guard = 0; st.xp >= needXp(st.lv) && guard < 20; guard++) {
+    st.xp -= needXp(st.lv);
+    st.lv++;
+    for (const [n, d] of grow) {
+      const g = st.gauges[n];
+      if (!g || !d) continue;
+      g.max += d; g.v = g.max;
+      gains[n] = (gains[n] || 0) + d;
+    }
+  }
+  if (st.lv > from) {
+    st.lvup = { from, to: st.lv, gains, turn };
+    pushLog(st, turn, `⭐ レベルアップ Lv${from} → Lv${st.lv}`);
+    out.push(`⭐ レベルアップ Lv${st.lv}`);
+  }
+  return out;
+}
+
+/* ---------- お店 ---------- */
+// 相場表「パン 3G／宿代（1泊）50G」→ [{ name, price, service }]。宿代・修理などは品物ではなくサービス
+const SERVICE = /宿|泊|家賃|賃料|修理|交換|治療|定食|建てる|運賃|入場|手数料/;
+export function parsePrices(text) {
+  const out = [];
+  for (const part of String(text || '').split(/\n|／|\//)) {
+    const m = part.trim().match(/^(.+?)\s*([0-9][0-9,]*)\s*[^\d\s]{0,3}\s*〜?$/);
+    if (!m) continue;
+    const name = m[1].trim(), price = Number(m[2].replace(/,/g, ''));
+    if (name && price > 0) out.push({ name, price, service: SERVICE.test(name) });
+  }
+  return out;
+}
+// 売るときの値段: 査定額があればそれ、なければ相場の半額。分からなければ null（物語の中で交渉）
+export function sellPrice(it, basePrice) {
+  if (it.val > 0) return it.val;
+  return basePrice > 0 ? Math.max(1, Math.round(basePrice / 2)) : null;
+}
+// まとめて売買。buy: [{ name, price, qty, cat, rar, service }] / sell: [{ id, name, price, qty }]
+export function tradeOps({ buy = [], sell = [], shop = '' }, e) {
+  const ops = [], parts = [];
+  let total = 0;
+  for (const b of buy) {
+    total -= b.price * b.qty;
+    if (!b.service) ops.push({ op: 'add', item: { id: uid(), name: b.name, qty: b.qty, cat: b.cat || '', ...(b.rar ? { rar: b.rar, named: true } : {}) } });
+  }
+  for (const s of sell) {
+    total += s.price * s.qty;
+    ops.push({ op: 'qty', id: s.id, d: -s.qty });
+  }
+  ops.push({ op: 'money', d: total });
+  if (buy.length) parts.push(`買った ${buy.map(b => `${b.name}×${b.qty}`).join('、')}`);
+  if (sell.length) parts.push(`売った ${sell.map(s => `${s.name}×${s.qty}`).join('、')}`);
+  ops.push({ op: 'log', text: `🛒 ${parts.join('／')}（${signed(total)}${e.currency}）` });
+  return {
+    ops,
+    text: `*🛒 ${shop ? `${shop}で` : ''}${parts.join('／')}（${signed(total)}${e.currency}）*`,
+    card: { plugin: 'status', kind: 'trade', shop, buy: buy.map(b => ({ name: b.name, qty: b.qty, price: b.price, rar: b.rar || '', service: !!b.service })), sell: sell.map(s => ({ name: s.name, qty: s.qty, price: s.price })), total },
+  };
+}
+
+/* ---------- スキルのランクと補正 ---------- */
+const RANKS = [['入門', 1], ['初級', 2], ['中級', 3], ['上級', 4], ['達人', 5], ['極', 5], ['熟練', 4], ['見習い', 1]];
+export function skillBonus(level) {
+  const s = String(level || '');
+  const r = RANKS.find(([k]) => s.includes(k));
+  if (r) return r[1];
+  const n = Number(s.match(/\d+/)?.[0]);
+  return n ? Math.min(5, Math.max(1, Math.round(n / 2))) : 1;
+}
+// ダイス判定の補正（d20 基準。面数に合わせて伸縮）。[{ label, v }]
+export function diceMods(st, what, skillName, sides, e) {
+  const mods = [], text = `${what} ${skillName}`;
+  const sk = st.skills.find(k => skillName && (k.name === skillName || skillName.includes(k.name) || k.name.includes(skillName)))
+    || st.skills.find(k => k.name.length > 1 && text.includes(k.name));
+  if (sk) mods.push({ label: `${sk.name}${sk.level ? `（${sk.level}）` : ''}`, v: skillBonus(sk.level) });
+  if (e.xp === 'on' && st.lv > 1) mods.push({ label: `Lv${st.lv}`, v: Math.min(5, Math.floor((st.lv - 1) / 2)) });
+  if (/攻撃|戦|斬|撃|射|殴|突|防|守|避|受け/.test(what)) {
+    const gear = Object.entries(st.equip).filter(([slot]) => /武器|防具|盾/.test(slot)).map(([, v]) => v);
+    if (gear.length) mods.push({ label: `装備（${gear.join('・')}）`, v: 1 });
+  }
+  const g = Object.entries(st.gauges)[0];
+  if (g && g[1].max && g[1].v / g[1].max < 0.3) mods.push({ label: `${g[0]}が少ない`, v: -2 });
+  const scale = Number(sides) / 20;
+  return mods.map(m => ({ ...m, v: m.v === 0 ? 0 : Math.sign(m.v) * Math.max(1, Math.round(Math.abs(m.v) * scale)) })).filter(m => m.v);
+}
+
+/* ---------- クラフト（素材も完成品も事前の登録はいらない。出来はアプリが決め、正体はAIが描く） ---------- */
+const RANK_I = { C: 0, U: 1, R: 2, E: 3, L: 4 };
+export function craftRoll(st, picks, wish, skill, e) {
+  const used = picks.map(p => ({ it: st.items.find(i => i.id === p.id), qty: p.qty })).filter(p => p.it && p.qty > 0);
+  if (!used.length) return null;
+  const qty = used.reduce((a, p) => a + p.qty, 0);
+  const mat = used.reduce((a, p) => a + (RANK_I[p.it.rar] ?? 0) * p.qty, 0) / qty; // 素材の平均ランク
+  const d20 = 1 + Math.floor(Math.random() * 20);
+  const sb = skill ? skillBonus(skill.level) : 0;
+  const score = d20 + sb + mat * 3 + Math.min(3, Math.floor((qty - 1) / 2));
+  const matText = used.map(p => `${p.it.name}×${p.qty}`).join('＋');
+  const consume = p => ({ op: 'qty', id: p.it.id, d: -p.qty });
+  if (d20 === 1 || score < 7) {
+    // 失敗: 素材の半分（切り上げ）を失う
+    const lost = used.map(p => ({ ...p, qty: Math.ceil(p.qty / 2) }));
+    const lostText = lost.map(p => `${p.it.name}×${p.qty}`).join('、');
+    return {
+      ok: false,
+      ops: [...lost.map(consume), { op: 'log', text: `🔨 作成失敗（${lostText}を失った）` }],
+      text: `*🔨 ${wish ? `「${wish}」の` : ''}作成に失敗: ${lostText}を失った*`,
+      card: { plugin: 'status', kind: 'craft', ok: false, mats: used.map(p => ({ name: p.it.name, qty: p.qty, rar: p.it.rar || '' })), wish, d20, skill: skill?.name || '' },
+    };
+  }
+  const TIERS = ['C', 'U', 'R', 'E', 'L'];
+  let ti = score >= 29 ? 4 : score >= 24 ? 3 : score >= 19 ? 2 : score >= 14 ? 1 : 0;
+  if (d20 === 20) ti = Math.min(4, ti + 1); // 会心は一段上
+  const rar = TIERS[ti];
+  const name = wish || '作成物';
+  const item = { id: uid(), name, qty: 1, cat: '作成品', rar, val: rollValue(rar, 0), tbd: !wish, named: !!wish };
+  return {
+    ok: true,
+    ops: [...used.map(consume), { op: 'add', item }, { op: 'log', text: `🔨 ${matText} → ${itemLabel(item, e)}` }],
+    text: `*🔨 作成: ${matText} → ${wish ? `「${wish}」` : '作成物'}【${rarLabel(rar, e)}】${wish ? '' : '（何ができたかは本文で）'}*`,
+    card: { plugin: 'status', kind: 'craft', ok: true, mats: used.map(p => ({ name: p.it.name, qty: p.qty, rar: p.it.rar || '' })), name, rar, wish, d20, skill: skill?.name || '' },
+  };
+}

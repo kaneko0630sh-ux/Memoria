@@ -87,7 +87,7 @@ function loreTab() {
   <button class="btn block add-btn" data-act="edAddLore">${ic('plus', 'sm')}キーワード設定を追加</button>
   <button class="btn sm ghost" data-act="edImportLore">${ic('upload', 'sm')}ロアブック（JSON）を取り込む</button>
   <h3 class="ed-h" style="margin-top:22px">アイテム図鑑</h3>
-  <p class="hint">アイテムの説明とアイコンです。名前か別名が会話に出たとき${S.settings.lore.ai ? '、または記憶係のAIが必要と判断したとき' : ''}に説明がAIに渡ります。ステータス管理プラグインでは、持ち物や戦利品にアイコン・レア度・売値が付きます。</p>
+  <p class="hint">アイテムの説明とアイコンです。名前か別名が会話に出たとき${S.settings.lore.ai ? '、または記憶係のAIが必要と判断したとき' : ''}に説明がAIに渡ります。ステータス管理プラグインでは、持ち物や戦利品にアイコン・レア度が付き、お店ではこの相場で買えます（売るときは半額）。</p>
   ${st.lore.map((e, i) => (e.item ? itemCard(e, i) : '')).join('')}
   <button class="btn block add-btn" data-act="edAddItem">${ic('plus', 'sm')}アイテムを追加</button>`;
 }
@@ -99,7 +99,7 @@ function itemCard(e, i) {
       <button class="icon-btn" data-act="edRemove" data-list="lore" data-i="${i}" aria-label="削除">${ic('trash', 'sm')}</button></div>
     <div class="grid2"><label class="field"><span>種類</span><input data-draft="lore.${i}.item.cat" value="${esc(it.cat)}" placeholder="例: 素材"></label>
       <label class="field"><span>レア度</span><select data-draft="lore.${i}.item.rar" data-rerender="1">${RARITY_OPTIONS.map(([v, l]) => `<option value="${v}" ${it.rar === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
-    <div class="grid2"><label class="field"><span>売値（任意）</span><input type="number" inputmode="numeric" data-draft="lore.${i}.item.price" value="${esc(it.price)}" placeholder="例: 120"></label>
+    <div class="grid2"><label class="field"><span>相場（値段・任意）</span><input type="number" inputmode="numeric" data-draft="lore.${i}.item.price" value="${esc(it.price)}" placeholder="例: 120"></label>
       <label class="field"><span>別名（カンマ区切り）</span><input data-draft="lore.${i}.keys" data-list="1" value="${esc(e.keys.join(', '))}" placeholder="例: 月光草"></label></div>
     ${draftInput(`lore.${i}.content`, e.content, { label: '説明（AIにも渡されます）', rows: 3, ph: '見た目・効果・入手できる場所・言い伝えなど' })}
     <div class="lore-flags"><label class="switch sm"><span>有効</span><input type="checkbox" class="tgl" data-draft="lore.${i}.on" ${e.on ? 'checked' : ''}></label><label class="switch sm"><span>戦利品に出す</span><input type="checkbox" class="tgl" data-draft="lore.${i}.item.drop" ${it.drop ? 'checked' : ''}></label>${it.icon ? `<button class="btn sm ghost" data-act="edItemIconClear" data-i="${i}">アイコンを外す</button>` : ''}</div>

@@ -538,3 +538,64 @@ pre.prompt { white-space: pre-wrap; word-break: break-word; font-size: 11.5px; l
 .it-icon small { font-size: 10.5px; }
 .it-icon:has(img) { border-style: solid; box-shadow: 0 0 10px var(--rcg, transparent); }
 .it-card .lore-title { font-weight: 800; }
+
+/* お店・クラフト */
+.sh-top { display: flex; gap: 8px; margin-bottom: 8px; }
+.sh-top input { flex: 1; min-width: 0; }
+.sh-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-elev); }
+.sh-row.rf { border-color: var(--rc); box-shadow: inset 3px 0 0 var(--rc), 0 0 8px var(--rcg); }
+.sh-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.sh-main .nm { font-size: 14.5px; }
+.sh-row.rf .nm { color: var(--rc); }
+.sh-row.r-C .nm { color: var(--text); }
+.sh-main small { flex-basis: 100%; color: var(--text3); font-size: 12px; }
+.sh-p { flex: none; font-weight: 800; font-size: 13.5px; color: #e8c05a; }
+.sh-p.plus, .plus { color: #6fd39a; }
+.qn { min-width: 22px !important; text-align: center; }
+.sh-sum { position: sticky; bottom: 0; margin-top: 12px; padding: 10px 0 4px; background: var(--bg-elev); display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); }
+.sh-sum .btn { margin-top: 6px; }
+/* レベル */
+.st-lv { display: flex; align-items: baseline; gap: 10px; }
+.st-lv b { font-size: 20px; }
+.st-lv span { flex: 1; color: var(--text3); font-size: 12.5px; }
+.st-meter.xp i { background: linear-gradient(90deg, #e8c05a, #f2a93b); }
+.lvup { margin: 8px 0 0 60px; padding: 10px 14px; border-radius: 14px; border: 1.5px solid #f2a93b; background: linear-gradient(135deg, rgba(242, 169, 59, .2), transparent 70%), var(--bg-elev); box-shadow: 0 0 18px rgba(242, 169, 59, .45); position: relative; overflow: hidden; }
+.lvup::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 30%, rgba(255, 220, 150, .28) 45%, transparent 60%); background-size: 250% 100%; animation: lshine 2.8s linear infinite; }
+.lv-h { font-size: 11px; font-weight: 900; letter-spacing: .2em; color: #f2a93b; }
+.lv-n { font-size: 18px; font-weight: 800; color: var(--text2); }
+.lv-n b { color: #ffd37a; font-size: 22px; }
+.lv-n i { font-style: normal; color: var(--text3); }
+.lv-g { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.lv-g span { font-size: 12px; color: #6fd39a; background: rgba(76, 175, 122, .12); padding: 1px 8px; border-radius: 999px; }
+/* 取引カード */
+.lcard.trade { --rc: #e8c05a; --rcs: rgba(232, 192, 90, .08); }
+.tr-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 14px; }
+.tr-nm { flex: 1; min-width: 0; color: var(--text); }
+.tr-row.r-R .tr-nm, .tr-row.r-E .tr-nm, .tr-row.r-L .tr-nm { color: var(--rc); }
+.tr-nm small { color: var(--text3); }
+.tr-p { font-weight: 800; color: #f08a8a; }
+.tr-total { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line2); font-size: 14px; }
+.tr-total b { color: #f08a8a; }
+.tr-total b.plus { color: #6fd39a; }
+/* 作成カード */
+.cr-mats { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 13px; }
+.cr-mats i { font-style: normal; color: var(--text3); }
+.cr-mat { padding: 1px 8px; border-radius: 8px; border: 1px solid var(--rc, var(--line2)); color: var(--text2); }
+.cr-arrow { text-align: center; color: var(--text3); font-size: 11px; margin: 4px 0; }
+.cr-out { text-align: center; align-items: center; }
+.cr-out .lt-name { font-size: 16px; }
+.lcard.craft.fail { --rc: rgba(240, 90, 90, .6); }
+.cr-fail { margin-top: 8px; color: #f08a8a; font-weight: 700; font-size: 13.5px; }
+/* ダイスカード */
+.lcard.dice { --rc: var(--line2); text-align: center; }
+.lcard.dice.ok { --rc: #4caf7a; --rcs: rgba(76, 175, 122, .12); --rcg: rgba(76, 175, 122, .35); }
+.lcard.dice.ng { --rc: rgba(240, 90, 90, .7); --rcs: rgba(240, 90, 90, .08); }
+.lcard.dice.crit { --rc: #f2a93b; --rcs: rgba(242, 169, 59, .16); --rcg: rgba(242, 169, 59, .6); }
+.dc-roll { font-size: 40px; font-weight: 900; line-height: 1.1; color: var(--text); }
+.lcard.dice.crit .dc-roll { color: #ffd37a; text-shadow: 0 0 16px rgba(242, 169, 59, .7); }
+.lcard.dice.fumble .dc-roll { color: #f08a8a; }
+.dc-mods { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; font-size: 12.5px; color: var(--text2); margin: 4px 0; }
+.dc-mods b { color: #6fd39a; }
+.dc-total { display: flex; justify-content: center; align-items: baseline; gap: 12px; font-size: 14px; color: var(--text2); }
+.dc-total b { font-size: 20px; color: var(--text); }
+.dc-res { font-weight: 900; font-size: 16px; color: var(--rc); }
