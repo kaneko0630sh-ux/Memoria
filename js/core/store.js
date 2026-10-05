@@ -121,6 +121,7 @@ export const newMem = () => ({
   rev: 0, seq: 0, lastId: 0, coveredId: 0, turn: 0,
   state: '', entries: [], chronicle: [], log: [],
   arc: '', threads: [], rel: [], scene: [], recall: [], loreRecall: [], brief: '',
+  plug: {}, // プラグインの物語状態（registry の pluginMem）
 });
 
 export function normalizeChar(c = {}) {

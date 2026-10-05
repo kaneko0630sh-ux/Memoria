@@ -9,6 +9,7 @@ import { clone, clamp, now, uid, tl, estTokens, parseJSON } from '../core/util.j
 import { emit } from '../core/hooks.js';
 import { callLLM } from '../llm/providers.js';
 import { loreCatalog } from './lorebook.js';
+import { memoryPlugins } from '../plugins/registry.js';
 
 export const TAGS = { event: '出来事', relation: '関係', promise: '約束', secret: '秘密', status: '状態', lore: '設定', item: '所持品' };
 const TAG_KEYS = Object.keys(TAGS);
@@ -41,6 +42,7 @@ const EXTRACT_SYS = `あなたはロールプレイ小説の「記憶係」で�
 16. lore: lore_catalog（作者が書いた設定集の目録）の中から、次の場面の応答で参照すべき項目のIDを最大5件。今の話題・場所・人物・未解決の筋に関わるものを選ぶ。会話にその名前が出ていなくても、背景として効くものは選んでよい。目録がなければ空配列。設定集の内容は記憶として add しない。
 17. brief: 次の応答で書き手が意識すべきことを150字以内で（例: 約束の期限が今夜に迫っている／ミオはまだ竜の名前を明かしていない）。
 18. 追加するものがなければ空配列にする。
+19. <plugin key="…"> が渡された場合は、その指示に従い、同じキーで出力に含める。
 
 出力形式:
 {"state":"...","arc":"...","threads":[{"t":"...","s":"進行中","n":"..."}],"rel":[{"name":"...","text":"..."}],"scene":["..."],"recall":["m3"],"lore":["l2"],"brief":"...","add":[{"scope":"...","text":"...","imp":3,"tag":"event","ents":["..."]}],"update":[{"id":"m12","text":"...","imp":4,"ents":["..."]}],"remove":["m3"]}`;
@@ -53,7 +55,8 @@ const CHRON_SYS = `あなたはロールプレイ小説のあらすじ編集者�
 - 前置き・見出し・記号は不要。要約本文のみを出力する。`;
 
 const strArr = { type: 'array', items: { type: 'string' } };
-function extractSchema(names) {
+// extra: プラグインが相乗りする出力（{ key: schema }）
+function extractSchema(names, extra = {}) {
   const obj = (props, req = Object.keys(props)) => ({ type: 'object', additionalProperties: false, required: req, properties: props });
   return obj({
     state: { type: 'string' }, arc: { type: 'string' },
@@ -63,6 +66,7 @@ function extractSchema(names) {
     add: { type: 'array', items: obj({ scope: { type: 'string', enum: [...new Set(['world', 'user', ...names])] }, text: { type: 'string' }, imp: { type: 'integer' }, tag: { type: 'string', enum: TAG_KEYS }, ents: strArr }) },
     update: { type: 'array', items: obj({ id: { type: 'string' }, text: { type: 'string' }, imp: { type: 'integer' }, ents: strArr }) },
     remove: strArr,
+    ...extra,
   });
 }
 const CONS_SCHEMA = {
@@ -149,7 +153,6 @@ export function commitMemory(chat, uptoId) {
 }
 
 async function memoryJob(chat, uptoId, opts) {
-  const tot = { add: 0, upd: 0, del: 0 };
   const alive = () => S.chats.includes(chat);
   for (let guard = 0; guard < 300; guard++) {
     const pending = chat.messages.filter(x => isDialog(x) && x.id > chat.mem.lastId && x.id <= uptoId);
@@ -160,16 +163,17 @@ async function memoryJob(chat, uptoId, opts) {
     if (!alive()) return;
     if (chat.mem.rev !== rev || !batch.every(b => chat.messages.includes(b))) { memLog(chat, '会話が変更されたため、今回の抽出結果を破棄しました'); return; }
     const r = applyExtraction(chat, res, batch);
-    tot.add += r.add; tot.upd += r.upd; tot.del += r.del;
     chat.mem.lastId = batch.at(-1).id;
     chat.mem.turn = Math.max(chat.mem.turn, batch.at(-1).turn);
     await saveChat(chat);
     changed(chat);
+    // 反映した内容はその場で知らせる（このあとのあらすじ整理を待たない）
+    const flash = [r.add || r.upd || r.del ? `記憶 +${r.add}${r.upd ? `・更新${r.upd}` : ''}${r.del ? `・削除${r.del}` : ''}` : '', ...r.notes].filter(Boolean).join('　');
+    if (flash) emit('memory:flash', chat, flash);
     await maintain(chat);
   }
   if (opts.consolidateScope) await consolidate(chat, opts.consolidateScope, true);
   else await maintain(chat);
-  if (tot.add || tot.upd || tot.del) emit('memory:flash', chat, `記憶 +${tot.add}${tot.upd ? `・更新${tot.upd}` : ''}${tot.del ? `・削除${tot.del}` : ''}`);
 }
 
 async function maintain(chat) {
@@ -195,6 +199,7 @@ async function extractFacts(chat, batch) {
     ...ctx.chars.map(c => `【${c.name}】\n${M([c.profile, c.personality].filter(Boolean).join('\n')).slice(0, 800)}`),
   ].filter(Boolean).join('\n\n');
   const cat = S.settings.lore.ai ? loreCatalog(st, M) : { text: '', ids: {} };
+  const plugs = memoryPlugins(st).map(({ p, cfg }) => ({ key: p.memory.key, text: p.memory.prompt(chat, ctx, cfg), schema: p.memory.schema(cfg) })).filter(x => x.text);
   const sys = M(EXTRACT_SYS.replaceAll('{{chars}}', names.join('、') || '（なし）').replaceAll('{{stateBudget}}', String(s.mem.budgets.state)));
   const user = `登場キャラクター: ${names.join('、') || '（なし）'}\nユーザーの名前: ${ctx.user}\n\n`
     + (statics ? `<static_settings>（既に設定済み。重複して記憶しない）\n${statics}\n</static_settings>\n\n` : '')
@@ -202,8 +207,9 @@ async function extractFacts(chat, batch) {
     + (cat.text ? `<lore_catalog>（設定集の目録。選ぶだけで、記憶として追加しない）\n${cat.text}\n</lore_catalog>\n\n` : '')
     + `<current_state>\n${m.state || '（未記録）'}\n</current_state>\n\n<current_progress>\n${progressText(m) || '（未記録）'}\n</current_progress>\n\n`
     + (prev.length ? `<previous_context>（参考のみ・抽出対象外）\n${logLines(chat, prev, ctx)}\n</previous_context>\n\n` : '')
+    + plugs.map(x => `<plugin key="${x.key}">\n${M(x.text)}\n</plugin>\n\n`).join('')
     + `<new_log>（ここから抽出する）\n${logLines(chat, batch, ctx)}\n</new_log>`;
-  const call = content => callLLM({ role: 'mem', kind: 'extract', system: [{ text: sys, cache: true }], messages: [{ role: 'user', content }], maxTokens: 8000, schema: extractSchema(names), temperature: 0.2 });
+  const call = content => callLLM({ role: 'mem', kind: 'extract', system: [{ text: sys, cache: true }], messages: [{ role: 'user', content }], maxTokens: 8000, schema: extractSchema(names, Object.fromEntries(plugs.map(x => [x.key, x.schema]))), temperature: 0.2 });
   let j = parseJSON((await call(user)).text);
   if (!j) j = parseJSON((await call(user + '\n\n※出力は有効なJSONオブジェクトのみ。前置きやコードブロックは付けない。')).text);
   if (!j) throw new Error('記憶抽出の結果をJSONとして読み取れませんでした');
@@ -213,7 +219,7 @@ async function extractFacts(chat, batch) {
 
 function applyExtraction(chat, res, batch) {
   const m = chat.mem, ctx = chatCtx(chat), turn = batch.at(-1).turn;
-  const r = { add: 0, upd: 0, del: 0 };
+  const r = { add: 0, upd: 0, del: 0, notes: [] };
   const str = v => (typeof v === 'string' ? v.trim() : '');
   if (str(res.state)) m.state = str(res.state);
   if (str(res.arc)) m.arc = str(res.arc);
@@ -242,6 +248,13 @@ function applyExtraction(chat, res, batch) {
   }
   if (Array.isArray(res.recall)) m.recall = res.recall.filter(id => m.entries.some(e => e.id === id)).slice(0, 14);
   memLog(chat, `${tl(batch[0].turn)}〜${tl(turn)} を記憶: 追加${r.add}・更新${r.upd}・削除${r.del}`);
+  // 相乗りしているプラグインの分（所持品など）。出力がなくても、確定したやり取りの分は反映させる
+  for (const { p, cfg } of memoryPlugins(ctx.story)) {
+    try {
+      const sum = p.memory.apply(chat, res[p.memory.key], cfg, batch);
+      if (sum) { memLog(chat, `${p.name}: ${sum}`); r.notes.push(sum); }
+    } catch (e) { memLog(chat, `${p.name}: 反映エラー ${e.message}`, true); }
+  }
   return r;
 }
 

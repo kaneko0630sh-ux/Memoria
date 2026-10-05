@@ -26,6 +26,7 @@ defineView('chat', {
       <button class="mpill" data-act="modelSheet"><span>${esc(cfg.def.kind === 'mock' ? 'demo' : modelShort(cfg.model) || '未設定')}</span>${ic('down', 'xs')}</button>
       <button class="icon-btn mem-btn ${isMemBusy(chat) ? 'busy' : ''}" id="memBtn" data-act="drawer" aria-label="メニュー">${ic('menu')}<i class="dot"></i></button>
     </header>
+    <div class="pbar" id="pbar"></div>
     <div class="mem-flash" id="memFlash"></div>
     <main class="scroll msgs" id="msgs"></main>
     <footer class="composer">
@@ -43,6 +44,7 @@ defineView('chat', {
     if (!chat) { S.ui.stack.pop(); return render(); }
     renderMessages(chat);
     renderChoices(chat);
+    renderBar(chat);
     updateComposer();
     const ta = document.getElementById('input'), sc = document.getElementById('msgs');
     ta.value = S.ui.drafts[chat.id] || '';
@@ -156,17 +158,28 @@ function flashMem(text, err) {
   el._t = setTimeout(() => el.classList.remove('on'), 2800);
 }
 
+// プラグインの小さな表示（所持金など）。トーク画面の上部
+function renderBar(chat) {
+  const el = document.getElementById('pbar');
+  if (!el) return;
+  const html = collect(chatCtx(chat).story, 'bar', chat).join('');
+  el.innerHTML = html;
+  el.hidden = !html;
+}
+
 /* ---------- エンジンからの通知 ---------- */
 const here = chat => isView('chat') && curChatId() === chat.id;
-on('gen:changed', chat => { if (here(chat)) { renderMessages(chat, { keep: true }); updateComposer(); renderChoices(chat); if (S.gen) scrollBottom(); } });
+on('gen:changed', chat => { if (here(chat)) { renderMessages(chat, { keep: true }); updateComposer(); renderChoices(chat); renderBar(chat); if (S.gen) scrollBottom(); } });
 on('gen:delta', (chat, msg) => { if (here(chat)) paintStreaming(chat, msg); });
 on('gen:status', chat => { if (here(chat)) { const el = document.querySelector('#msgs .gen-status'); if (el) el.textContent = genLabel(); } });
 on('choices:changed', chat => renderChoices(chat));
 on('memory:changed', chat => {
   if (!here(chat)) return;
   document.getElementById('memBtn')?.classList.toggle('busy', isMemBusy(chat));
+  renderBar(chat);
   if (!S.gen) renderMessages(chat, { keep: true });
 });
+on('plugin:changed', chat => { if (here(chat)) renderBar(chat); });
 on('memory:flash', (chat, text, err) => { if (here(chat)) flashMem(text, err); });
 setInterval(() => { if (S.gen) { const el = document.querySelector('#msgs .gen-status'); if (el) el.textContent = genLabel(); } }, 1000);
 

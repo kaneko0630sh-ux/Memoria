@@ -120,12 +120,13 @@ export async function generate(chat, { mode = 'reply', regenMsg = null, onFirst 
   runAfterReply(chat, getStory(chat.storyId), target).then(() => saveChat(chat));
 }
 
-export async function sendMessage(chat, text) {
+// extra: メッセージに付けるデータ（例: プラグインの増減 ops。記憶係が確定させたときに反映される）
+export async function sendMessage(chat, text, extra = {}) {
   if (!chat || S.gen) return;
   text = String(text || '').trim();
   if (!text) return aiTurn(chat);
   const prevId = chat.messages.at(-1)?.id || 0;
-  chat.messages.push({ id: ++chat.seq, role: 'user', swipes: [text], sw: 0, turn: maxTurn(chat) + 1, t: now(), persona: { ...chat.persona } });
+  chat.messages.push({ id: ++chat.seq, role: 'user', swipes: [text], sw: 0, turn: maxTurn(chat) + 1, t: now(), persona: { ...chat.persona }, ...extra });
   touch(chat);
   saveChat(chat).catch(() => {}); // 書き込みの完了は待たない（保存する内容はこの時点で確定している）
   // 前のターンの記憶処理は、返信が届き始めてから動かす（同じキーへの同時リクエストで返信を待たせない）

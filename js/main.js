@@ -15,6 +15,7 @@ import './ui/views/personas.js';
 import './ui/views/settings.js';
 import './plugins/dice.js';
 import './plugins/diary.js';
+import './plugins/status/index.js';
 
 async function boot() {
   try { await DB.open(); } catch {

@@ -109,13 +109,16 @@ function pluginsTab() {
   ${allPlugins().map(p => {
     const cfg = st.plugins[p.id] || {}, on = !!cfg.on;
     return `<div class="ed-card pl-card"><div class="pl-row"><div class="grow"><b>${esc(p.name)}</b> <button class="help-btn" data-act="edPluginHelp" data-id="${p.id}" aria-label="説明">${ic('help', 'xs')}</button><p class="hint">${esc(p.desc)}</p></div><input type="checkbox" class="tgl" data-draft="plugins.${p.id}.on" ${on ? 'checked' : ''}></div>
-      ${on && p.fields?.length ? `<div class="pl-cfg">${p.fields.map(f => pluginField(p, f, cfg[f.key] ?? p.defaults?.[f.key])).join('')}</div>` : ''}</div>`;
+      ${on && p.fields?.length ? `<div class="pl-cfg">${p.fields.map(f => pluginField(p, f, cfg[f.key] ?? p.defaults?.[f.key], { ...(p.defaults || {}), ...cfg })).join('')}</div>` : ''}</div>`;
   }).join('')}`;
 }
-function pluginField(p, f, v) {
-  const path = `plugins.${p.id}.${f.key}`;
-  if (f.type === 'select') return `<label class="field"><span>${esc(f.label)}</span><select data-draft="${path}">${f.options.map(([ov, l]) => `<option value="${ov}" ${String(v) === String(ov) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
-  return `<label class="field"><span>${esc(f.label)}</span><input ${f.type === 'number' ? `type="number" inputmode="numeric" min="${f.min ?? ''}" max="${f.max ?? ''}"` : ''} data-draft="${path}" value="${esc(v ?? '')}"></label>`;
+// f: { key, label, type: 'text'|'number'|'select'|'textarea', options, min, max, hint, ph(cfg) → 空欄時の表示, rerender }
+function pluginField(p, f, v, cfg) {
+  const path = `plugins.${p.id}.${f.key}`, rr = f.rerender ? ' data-rerender="1"' : '';
+  const ph = esc(typeof f.ph === 'function' ? f.ph(cfg) : f.ph || ''), hint = f.hint ? `<div class="hint">${esc(f.hint)}</div>` : '';
+  if (f.type === 'select') return `<label class="field"><span>${esc(f.label)}</span><select data-draft="${path}"${rr}>${f.options.map(([ov, l]) => `<option value="${ov}" ${String(v ?? '') === String(ov) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>${hint}</label>`;
+  if (f.type === 'textarea') return `<label class="field"><span>${esc(f.label)}</span><textarea rows="${f.rows || 3}" data-draft="${path}" placeholder="${ph}">${esc(v ?? '')}</textarea>${hint}</label>`;
+  return `<label class="field"><span>${esc(f.label)}</span><input ${f.type === 'number' ? `type="number" inputmode="numeric" min="${f.min ?? ''}" max="${f.max ?? ''}"` : ''} data-draft="${path}" value="${esc(v ?? '')}" placeholder="${ph}">${hint}</label>`;
 }
 
 function introTab() {
@@ -171,7 +174,7 @@ defineView('editor', {
   onInput(el) {
     dirty();
     const path = el.dataset.draft;
-    if (/^plugins\.[^.]+\.on$/.test(path)) return render();
+    if (/^plugins\.[^.]+\.on$/.test(path) || el.dataset.rerender) return render();
     const c = document.getElementById('edCount');
     if (c) c.innerHTML = countText();
     if (S.ui.edTab === 'intro') { const p = document.getElementById('introPreview'); if (p) p.innerHTML = introPreview(); }
