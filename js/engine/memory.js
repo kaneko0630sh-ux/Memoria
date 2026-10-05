@@ -40,7 +40,10 @@ const EXTRACT_SYS = `あなたはロールプレイ小説の「記憶係」で�
 14. scene: 直近の場面に出ている要素（場所・物・その場の脇役・話題）を短い名詞で最大8個。表記は ents とそろえる。
 15. recall: existing_memory の中から、次の場面の応答で踏まえるべき記憶のIDを最大12件。今の話題・場所・人物・未解決の筋に関わるもの、今こそ効いてくる伏線や約束を優先する。
 16. lore: lore_catalog（作者が書いた設定集の目録）の中から、次の場面の応答で参照すべき項目のIDを最大5件。今の話題・場所・人物・未解決の筋に関わるものを選ぶ。会話にその名前が出ていなくても、背景として効くものは選んでよい。目録がなければ空配列。設定集の内容は記憶として add しない。
-17. brief: 次の応答で書き手が意識すべきことを150字以内で（例: 約束の期限が今夜に迫っている／ミオはまだ竜の名前を明かしていない）。
+17. brief: 次の応答のための演出メモ。書き手が物語を面白く動かすための提案を、次の3行で合計250字以内（該当がなければその行は省く）:
+   仕掛け: 今の流れで次に起こせる小さな変化を1つ、具体的に（新しい情報・誰かの決断・割り込み・距離の変化。同じやり取りが続いて停滞しているなら、static_settings の「出来事の種」から今に合うものを1つ選ぶ）
+   回収: 今こそ効く過去の出来事・約束・台詞を existing_memory から1つ（キャラクターの方から持ち出すと効くもの）
+   余白: まだ解かずに残しておく緊張・秘密を1つ（例: ミオはまだ竜の名前を明かしていない）
 18. 追加するものがなければ空配列にする。
 19. <plugin key="…"> が渡された場合は、その指示に従い、同じキーで出力に含める。
 
@@ -196,6 +199,7 @@ async function extractFacts(chat, batch) {
   const statics = [
     st?.prompt?.trim() ? `【ストーリー】\n${M(st.prompt).slice(0, 1500)}` : '',
     st?.world?.trim() ? `【世界観・設定】\n${M(st.world).slice(0, 1500)}` : '',
+    st?.guide?.trim() ? `【作者の指示（進め方・出来事の種など）】\n${M(st.guide).slice(0, 1800)}` : '',
     ...ctx.chars.map(c => `【${c.name}】\n${M([c.profile, c.personality].filter(Boolean).join('\n')).slice(0, 800)}`),
   ].filter(Boolean).join('\n\n');
   const cat = S.settings.lore.ai ? loreCatalog(st, M) : { text: '', ids: {} };
@@ -226,7 +230,7 @@ function applyExtraction(chat, res, batch) {
   if (Array.isArray(res.threads)) m.threads = res.threads.filter(t => str(t?.t)).slice(0, 10).map(t => ({ t: str(t.t), s: t.s === '未着手' ? '未着手' : '進行中', n: str(t.n) }));
   if (Array.isArray(res.rel)) m.rel = res.rel.filter(x => str(x?.name) && str(x?.text)).slice(0, 8).map(x => ({ name: str(x.name), text: str(x.text) }));
   if (Array.isArray(res.scene)) m.scene = res.scene.map(x => str(String(x))).filter(x => x && x.length <= 24).slice(0, 10);
-  if (typeof res.brief === 'string') m.brief = str(res.brief).slice(0, 300);
+  if (typeof res.brief === 'string') m.brief = str(res.brief).slice(0, 400);
   if (Array.isArray(res.lore)) m.loreRecall = [...new Set(res.lore.map(x => res._loreIds?.[str(String(x))]).filter(Boolean))].slice(0, 5);
   for (const a of Array.isArray(res.add) ? res.add : []) {
     const text = str(a?.text);

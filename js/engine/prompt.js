@@ -9,16 +9,25 @@ import { styleText, formatRules } from './style.js';
 import { scanLore, loreText } from './lorebook.js';
 import { selectMemories, memoryText } from './memory.js';
 import { activePlugins, collect } from '../plugins/registry.js';
+import { repetitionHint } from './variety.js';
 
 const CORE_RULES = `あなたは没入型ロールプレイの作家であり、登場キャラクター全員とナレーションを担当します。{{user}}と共に一つの物語を紡ぎます。
 
 # 原則
 - 各キャラクターの性格・口調・一人称・呼び方・価値観・知識の範囲を一貫して守る。キャラが知り得ないことは知らないものとして振る舞う。
 - <plot>・<world>・<lore>・<character>・<chronicle>・<memory>・<progress>・<current_state> は物語上の確定事実。矛盾させず、過去の出来事・約束・関係性・未解決の筋を自然に踏まえる。
-- <author_guide>・<author_note>・<director_note> は物語の方向性の指示。本文で言及せず、展開の中で自然に反映させる。
+- <author_guide>・<author_note>・<director_note> は物語の方向性の指示。本文で言及せず、展開の中で自然に反映させる。<variety> は直近の応答で繰り返しが目立つ表現なので、今回は使わずに別の言い方・別の描写にする。
 - ユーザーメッセージ冒頭の <context> はシステムが自動で添付する最新の設定・記憶・状況であり、{{user}}の発言ではない。<current_state> より会話履歴の方が新しい場合は会話履歴を優先する。
 - {{user}}のメッセージ中の *…* は{{user}}の行動や状況の描写、それ以外は{{user}}の台詞として受け取る。
-- 物語を能動的に前へ進める。ただし{{user}}の選択を奪わない。`;
+
+# 物語を面白くする
+- 毎回の応答で、状況を一つ前に進める（新しい情報・誰かの決断・行動・距離の変化・出来事の割り込みのどれか）。前の応答と同じ流れや、同じ気持ちの確認をなぞらない。
+- キャラクターは自分の欲しいもの・怖いもの・暮らしを持ち、自分から仕掛ける（誘う・試す・踏み込む・引く・隠す）。「どうする？」「どうしたい？」と判断を{{user}}に丸投げせず、「〜しよう」「〜する」と意思を示して場面を動かす。ただし{{user}}の選択と行動は奪わない。
+- 本心の答え合わせをしない。「けれど本当は〜」「〜が滲んでいた」「言葉とは裏腹に〜」のように地の文で本心を説明せず、視線・仕草・間・声の調子・言葉選びの具体的な細部一つで匂わせて、読み手が察する余地を残す。
+- 感情は小さな変化から段階的に動かし、強い感情には必ずきっかけを置く。直前の気持ちの余韻は次の場面に持ち越す。
+- 事情や設定は説明口調でまとめて語らず、会話と行動の中で少しずつ出す。
+- 今の場面に効くときは、記憶にある具体的な過去の出来事・約束・台詞を、キャラクターの方から持ち出す。
+- 応答の最後は、{{user}}が反応せずにいられない引っかかり（答えたくなる問い、途中で止まった動作、新しい事実）で終える。`;
 
 function charBlock(c, M) {
   const sec = [['プロフィール', c.profile], ['性格', c.personality], ['口調・話し方', c.speech], ['補足・演技指示', c.note]]
@@ -62,7 +71,7 @@ export function buildChatRequest(chat, { end, mode = 'reply' }) {
   const lastUser = chat.messages.slice(0, end).reverse().find(x => x.role === 'user');
   const loreHits = scanLore(st0, chat, end), lore = loreHits.map(h => h.entry);
   const sel = selectMemories(chat, ctx, lastUser ? txt(lastUser) : '');
-  const dyn = [loreText(lore, M), ...collect(st0, 'context', ctx, chat).map(M), memoryText(chat, ctx, sel)].filter(Boolean).join('\n');
+  const dyn = [loreText(lore, M), ...collect(st0, 'context', ctx, chat).map(M), memoryText(chat, ctx, sel), repetitionHint(chat, ctx, end)].filter(Boolean).join('\n');
   const post = M(s.postPrompt || '').trim();
 
   let avail = s.context - (estTokens(sysText) + estTokens(semiText) + estTokens(dyn) + estTokens(post) + 60);
