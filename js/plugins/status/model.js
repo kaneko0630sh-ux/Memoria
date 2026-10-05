@@ -66,7 +66,8 @@ export const fmtMoney = (n, e) => `${Math.round(n).toLocaleString()}${e.currency
 export const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(Math.round(n)).toLocaleString();
 export const rarity = k => RARITY.find(r => r.k === k);
 export const rarLabel = (k, e) => (k === 'L' ? e.legend : rarity(k)?.label || '');
-export const itemLabel = (it, e) => it.unid ? (it.name.includes('未鑑定') ? it.name : `${it.name}（？）`) : it.rar && !it.named ? `${it.name}【${rarLabel(it.rar, e)}】` : it.name;
+// レア度は手に入れた時点で分かる（ハクスラと同じ）。正体と値段は鑑定で分かり、名前はAIが付ける
+export const itemLabel = (it, e) => (it.rar && !it.named ? `${it.name}【${rarLabel(it.rar, e)}】` : it.name);
 
 // 深さ（「下層B4」「第3層」→ 4 / 3、地上・街 → 0）
 export const depthLevel = d => Number(String(d || '').match(/\d+/)?.[0] || 0);
@@ -129,9 +130,9 @@ export function rollValue(rar, lvl) {
 }
 const catLike = (e, re, fallback) => list(e.cats).find(c => re.test(c)) || fallback;
 
-// 探索・戦利品: 見つけた物を決めて { ops, text } を返す
+// 探索・戦利品: 見つけた物を決めて { ops, text, card } を返す（card は画面のカード表示用）
 export function rollLoot(st, e) {
-  const lvl = depthLevel(st.depth), ops = [], parts = [];
+  const lvl = depthLevel(st.depth), ops = [], parts = [], finds = [];
   const n = 1 + (Math.random() < 0.55) + (Math.random() < 0.2);
   const kinds = [['relic', 0.22 + lvl * 0.03], ['material', 0.42], ['consumable', 0.16], ['money', 0.2]];
   for (let i = 0; i < n; i++) {
@@ -139,39 +140,50 @@ export function rollLoot(st, e) {
     for (const [k, w] of kinds) { x -= w; if (x <= 0) { kind = k; break; } }
     if (kind === 'relic') {
       const item = { id: uid(), name: e.relic, qty: 1, cat: catLike(e, /遺品|貴重|魔道具/, ''), unid: true, rar: rollRarity(lvl) };
-      ops.push({ op: 'add', item }); parts.push(`${e.relic}（？）×1`);
+      ops.push({ op: 'add', item }); parts.push(`${itemLabel(item, e)}×1`);
+      finds.push({ name: item.name, qty: 1, rar: item.rar, unid: true });
     } else if (kind === 'money') {
       const d = Math.max(1, Math.round(Number(e.moneyFind || 20) * between(0.5, 1.6) * (1 + lvl * 0.4)));
       ops.push({ op: 'money', d }); parts.push(fmtMoney(d, e));
+      finds.push({ money: d });
     } else {
       const pool = list(kind === 'material' ? e.materials : e.consumables);
       const name = pick(pool.length ? pool : ['がらくた']), qty = kind === 'material' ? 1 + Math.floor(Math.random() * 3) : 1;
       const cat = kind === 'material' ? catLike(e, /素材|部品/, '') : catLike(e, /消耗|弾薬|食料|医療/, '');
       ops.push({ op: 'add', item: { id: uid(), name, qty, cat } }); parts.push(`${name}×${qty}`);
+      finds.push({ name, qty, cat });
     }
   }
   const danger = Math.random() < Math.min(0.6, 0.12 + lvl * 0.06);
   ops.push({ op: 'log', text: `🎁 ${parts.join('、')}` });
-  return { ops, text: `*🎁 探索の成果: ${parts.join('、')}*${danger ? '\n*⚠ 近くで何かが動く気配がした*' : ''}`, danger };
+  return {
+    ops, danger,
+    text: `*🎁 探索の成果: ${parts.join('、')}*${danger ? '\n*⚠ 近くで何かが動く気配がした*' : ''}`,
+    card: { plugin: 'status', kind: 'loot', depth: st.depth, finds, danger },
+  };
 }
 
 export function appraiseOps(st, it, e) {
   const val = rollValue(it.rar, depthLevel(st.depth));
-  const label = rarLabel(it.rar, e);
+  const name = it.name.replace(/^未鑑定の?/, '') || it.name; // 正体はAIが描き、記憶係が名前を付ける
   return {
-    ops: [{ op: 'patch', id: it.id, set: { unid: false, val } }, { op: 'log', text: `🔍 ${it.name} → 【${label}】査定額 ${fmtMoney(val, e)}` }],
-    text: `*🔍 ${it.name}を鑑定: 【${label}】、査定額 ${fmtMoney(val, e)}*`,
-    reveal: { id: it.id, rar: it.rar, label, val },
+    ops: [{ op: 'patch', id: it.id, set: { unid: false, val, name } }, { op: 'log', text: `🔍 ${itemLabel(it, e)} → 査定額 ${fmtMoney(val, e)}` }],
+    text: `*🔍 ${itemLabel(it, e)}を鑑定: 査定額 ${fmtMoney(val, e)}*`,
+    card: { plugin: 'status', kind: 'appraise', name: it.name, rar: it.rar, val },
   };
 }
 export function sellOps(it, e) {
   return {
     ops: [{ op: 'money', d: it.val }, { op: 'qty', id: it.id, d: -1 }, { op: 'log', text: `💰 ${it.name}を売却 ${signed(it.val)}${e.currency}` }],
     text: `*💰 ${it.name}を売った: ${signed(it.val)}${e.currency}*`,
+    card: { plugin: 'status', kind: 'sell', name: it.name, rar: it.rar || '', val: it.val },
   };
 }
 export function useOps(it) {
-  return { ops: [{ op: 'qty', id: it.id, d: -1 }, { op: 'log', text: `🧪 ${it.name}を使った` }], text: `*🧪 ${it.name}を使った*` };
+  return {
+    ops: [{ op: 'qty', id: it.id, d: -1 }, { op: 'log', text: `🧪 ${it.name}を使った` }], text: `*🧪 ${it.name}を使った*`,
+    card: { plugin: 'status', kind: 'use', name: it.name, rar: it.rar || '' },
+  };
 }
 
 /* ---------- 記憶係が読み取った変化を適用 ---------- */

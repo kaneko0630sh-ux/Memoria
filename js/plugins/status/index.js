@@ -11,7 +11,7 @@ import { sendMessage } from '../../engine/chat.js';
 import { openSheet, closeSheet, closeAllSheets, setSheetBody, sheetById, sheetOf } from '../../ui/dom.js';
 import { PRESET_OPTIONS, effective } from './presets.js';
 import * as M from './model.js';
-import { sheetHTML, itemSheetHTML, barHTML, formHTML } from './view.js';
+import { sheetHTML, itemSheetHTML, barHTML, formHTML, cardHTML, noteHTML } from './view.js';
 
 const ID = 'status';
 const cfgOf = chat => effective(pluginCfg(getStory(chat.storyId), getPlugin(ID)));
@@ -43,7 +43,7 @@ function statusText(st, e, { ids = false } = {}) {
   if (eq) L.push(`装備: ${eq}`);
   const carried = st.items.filter(i => i.at !== 'home');
   if (carried.length) {
-    const shown = carried.slice(0, ids ? 60 : 24).map(i => `${ids ? `[${i.id}] ` : ''}${(i.unid ? (i.name.includes('未鑑定') ? i.name : `${i.name}（未鑑定）`) : M.itemLabel(i, e))}×${i.qty}`);
+    const shown = carried.slice(0, ids ? 60 : 24).map(i => `${ids ? `[${i.id}] ` : ''}${M.itemLabel(i, e)}${i.unid && !i.name.includes('未鑑定') ? '（未鑑定）' : ''}×${i.qty}`);
     L.push(`持ち物: ${shown.join('、')}${carried.length > shown.length ? `、ほか${carried.length - shown.length}種` : ''}`);
   } else L.push('持ち物: なし');
   if (st.skills.length) L.push(`スキル: ${st.skills.map(k => k.level ? `${k.name}（${k.level}）` : k.name).join('、')}`);
@@ -223,10 +223,10 @@ function edit(chat, fn) {
   changed(chat);
 }
 // ボタン操作: メッセージに ops を付けて送る（確定は記憶係の処理時）
-function act(chat, { ops, text }) {
+function act(chat, { ops, text, card }) {
   if (S.gen) return notify('応答の生成中です', '', 1800);
   closeAllSheets();
-  sendMessage(chat, text, { ops: { [ID]: ops } });
+  sendMessage(chat, text, { ops: { [ID]: ops }, card });
 }
 const itemOf = (chat, id) => view(chat).items.find(i => i.id === id);
 
@@ -234,7 +234,7 @@ definePlugin({
   id: ID,
   name: 'ステータス管理',
   desc: '所持金・持ち物・装備・スキル・体力などを管理します。生活（拠点・家賃・建設・依頼・日付）と探索（現在地・戦利品・鑑定・評判）も選べます',
-  help: '会話の中で起きた売買・入手・消費・負傷などは、記憶係が次の発言のあとに自動で反映します（APIの呼び出しは増えません）。トーク画面の上部か ☰ →「ステータス」で確認・編集できます。探索をオンにすると、戦利品の中身・レア度・鑑定の査定額をアプリがサイコロで決めます。空欄の項目は、選んだひな型の値になります。',
+  help: '会話の中で起きた売買・入手・消費・負傷などは、記憶係が次の発言のあとに自動で反映します（APIの呼び出しは増えません）。トーク画面の上部か ☰ →「ステータス」で確認・編集できます。探索をオンにすると、戦利品の中身とレア度（手に入れた時点で枠の色で分かります）、鑑定の査定額をアプリがサイコロで決め、鑑定した品の正体と名前はAIが描きます。空欄の項目は、選んだひな型の値になります。',
   defaults: { preset: 'adventurer', bar: 'on' },
   fields: [
     { key: 'preset', label: 'ひな型', type: 'select', options: PRESET_OPTIONS, rerender: true, hint: '空欄の項目は、ひな型の値を使います（薄く表示されている値）' },
@@ -263,7 +263,7 @@ definePlugin({
     const e = effective(cfg);
     return `- <status> は{{user}}の所持金・持ち物・装備・状態の正確な記録。持っていない物は使えず、所持金が足りなければ買えない。装備やゲージの描写は <status> に合わせる。<status> より会話の方が新しい増減はそちらを優先する
 - 値段は相場表に従う（ない物は相場から自然に決める）。所持金や個数の計算結果を本文に書かない（アプリが管理する）
-- 🎁 🔍 💰 🧪 で始まる{{user}}の行は、アプリが確定させた結果（戦利品・鑑定・売却・使用）。覆さずにそのまま描写する。「（？）」の品は未鑑定なので正体をまだ明かさない。🔍 の鑑定結果には、そのランクと査定額に見合う正体を具体的に描いて名前を付ける${e.life === 'on' ? `
+- 🎁 🔍 💰 🧪 で始まる{{user}}の行は、アプリが確定させた結果（戦利品・鑑定・売却・使用）。覆さずにそのまま描写する。未鑑定の品は正体（何の品か）をまだ明かさないが、【】のランクに見合う気配（光り方・造りの精巧さ・重み）は描いてよい。🔍 の鑑定結果には、そのランクと査定額に見合う正体を具体的に描いて名前を付ける${e.life === 'on' ? `
 - 日付が進むときは本文で分かるように描く（翌朝、三日後など）。家賃・宿代の支払いはアプリが自動で行う` : ''}${e.explore === 'on' ? `
 - 深い場所ほど危険で実入りがよい。<status> の危険度に合わせる。⚠ の気配が出たら、危険（敵・罠・崩落など）を登場させる` : ''}${String(e.prices).trim() ? `
 ## 相場表
@@ -281,12 +281,17 @@ ${String(e.prices).trim()}` : ''}`;
       for (const m of batch) if (m.ops?.[ID]) M.applyOps(st, m.ops[ID], m.turn);
       const before = M.snapshot(st);
       const notes = M.applyKeeper(st, r, e, batch.at(-1).turn);
+      // 読み取った変化は、そのやり取りのAIの応答の下にカードで添える
+      const reply = batch.filter(m => m.role === 'ai').at(-1);
+      if (reply) { reply.pnote ||= {}; if (notes.length) reply.pnote[ID] = { notes }; else delete reply.pnote[ID]; }
       if (notes.length) st.prev = before;
       emit('plugin:changed', chat);
       return notes.length ? `🎒 ${notes.slice(0, 4).join('・')}${notes.length > 4 ? ' …' : ''}` : '';
     },
   },
 
+  renderCard: (card, env, cfg) => cardHTML(card, effective(cfg), env),
+  renderNote: (note, env, cfg) => noteHTML(note, effective(cfg)),
   bar: (chat, cfg) => (cfg.bar === 'off' ? '' : barHTML(view(chat, effective(cfg)), effective(cfg))),
   menu: (chat, cfg) => [{ label: 'ステータス', val: M.fmtMoney(view(chat, effective(cfg)).money, effective(cfg)), act: `p:${ID}:open` }],
 

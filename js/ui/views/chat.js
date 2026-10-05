@@ -6,7 +6,7 @@ import { PROVIDERS, EFFORTS, llmCfg, warmUp } from '../../llm/providers.js';
 import { parseBlocks, plainText, lastLine } from '../../engine/parse.js';
 import { sendMessage, aiTurn, generate, regenerate, swipe, rewindTo } from '../../engine/chat.js';
 import { isMemBusy, scopeLabel, TAGS } from '../../engine/memory.js';
-import { blockOwners, collect } from '../../plugins/registry.js';
+import { blockOwners, collect, pluginCardHTML, pluginNotesHTML } from '../../plugins/registry.js';
 import { ic, avatarHTML, openSheet, closeSheet, closeAllSheets, sheetOf, setSheetBody, autosize, copyText, saveFile, toast, TYPING } from '../dom.js';
 import { blocksHTML } from '../blocks.js';
 import { defineView, defineActions, go, render, goHome, isView } from '../app.js';
@@ -82,6 +82,9 @@ function msgHTML(chat, x, ctx, lastD) {
   const covered = x.id <= chat.mem.coveredId ? ' covered' : '';
   if (x.role === 'sys') return `<div class="divider"><span>${esc(txt(x))}</span></div>`;
   if (x.role === 'user') {
+    // プラグインの操作結果（戦利品など）は吹き出しの代わりにカードで出す
+    const card = x.card && pluginCardHTML(ctx.story, x, { chat, msg: x, ctx, fresh: Date.now() - (x.t || 0) < 3000 });
+    if (card) return `<div class="msg pcard-msg${covered}" data-id="${x.id}"><div data-act="msgTap">${card}</div></div>`;
     const pr = x.persona ? resolvePersona(chat, x.persona) : ctx.persona; // 送信した時点のプロフィールで表示
     const body = esc(txt(x)).replace(/\*([^*\n]+?)\*/g, '<span class=act>$1</span>').split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
     return `<div class="msg user${covered}" data-id="${x.id}"><div class="u-main"><div class="u-name">${esc(pr.name)}</div><div class="bubble me" data-act="msgTap">${body}</div></div>${avatarHTML(pr, 40)}</div>`;
@@ -92,7 +95,8 @@ function msgHTML(chat, x, ctx, lastD) {
     ? `<div class="say">${avatarHTML(ctx.chars[0], 40)}<div class="say-main"><div class="say-name">${esc(ctx.chars[0]?.name || '')}</div><div class="brow"><div class="bubble ai">${TYPING}<div class="gen-status">${genLabel()}</div></div></div></div></div>`
     : blocksHTML(blocks, ctx, { tag: streaming ? '' : modelShort(x.mdl?.[x.sw]), caret: streaming, env: { chat, msg: x, isLast: isLast && !streaming, ctx } });
   const swipeBar = isLast && !streaming ? `<div class="swipe"><button class="icon-btn" data-act="swipe" data-id="${x.id}" data-dir="-1" ${x.sw === 0 ? 'disabled' : ''} aria-label="前の候補">${ic('left', 'sm')}</button><span>${x.sw + 1}/${x.swipes.length}</span><button class="icon-btn" data-act="swipe" data-id="${x.id}" data-dir="1" aria-label="次の候補">${ic('right', 'sm')}</button><span class="perf">${perfText(x)}</span><button class="icon-btn" data-act="contMsg" aria-label="続きを書かせる">${ic('forward', 'sm')}</button><button class="icon-btn" data-act="regen" aria-label="再生成">${ic('refresh', 'sm')}</button></div>` : '';
-  return `<div class="msg ai${covered}" data-id="${x.id}">${inner}${swipeBar}</div>`;
+  const notes = x.pnote && !streaming ? pluginNotesHTML(ctx.story, x, { chat, msg: x, ctx }) : '';
+  return `<div class="msg ai${covered}" data-id="${x.id}">${inner}${notes}${swipeBar}</div>`;
 }
 
 function renderMessages(chat, { keep = false } = {}) {

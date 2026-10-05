@@ -13,6 +13,8 @@
 //   afterReply(chat, msg, cfg) → Promise            応答が確定した後の処理
 //   menu(chat, cfg) → [{ label, sub, val, act }]    トーク画面のメニュー（☰）に出す項目
 //   bar(chat, cfg) → html                           トーク画面の上部に出す小さな表示（任意）
+//   renderCard(card, env, cfg) → html               msg.card = { plugin, … } を持つメッセージを、吹き出しの代わりにカードで表示
+//   renderNote(note, env, cfg) → html               msg.pnote[id] を、そのAIの応答の下に添えて表示
 //   memory: {                                       記憶係の呼び出しに相乗りする（APIの呼び出しは増えない）
 //     key,                                          記憶係の出力JSONのキー
 //     prompt(chat, ctx, cfg) → string               記憶係に渡す指示と現在の状態
@@ -50,6 +52,20 @@ export const pluginMem = (chat, id) => ((chat.mem.plug ||= {})[id] ||= {});
 
 // 記憶係に相乗りするプラグイン
 export const memoryPlugins = story => activePlugins(story).filter(x => x.p.memory?.key);
+
+// メッセージに付いたプラグインの表示（カード / 応答の下の注記）。プラグインがオフなら空
+export function pluginCardHTML(story, msg, env) {
+  const p = getPlugin(msg.card?.plugin);
+  if (!p?.renderCard || !isPluginOn(story, p.id)) return '';
+  try { return p.renderCard(msg.card, env, pluginCfg(story, p)) || ''; } catch (e) { console.error(`[plugin ${p.id}.renderCard]`, e); return ''; }
+}
+export function pluginNotesHTML(story, msg, env) {
+  return Object.entries(msg.pnote || {}).map(([id, note]) => {
+    const p = getPlugin(id);
+    if (!p?.renderNote || !isPluginOn(story, id)) return '';
+    try { return p.renderNote(note, env, pluginCfg(story, p)) || ''; } catch (e) { console.error(`[plugin ${id}.renderNote]`, e); return ''; }
+  }).join('');
+}
 
 export function collect(story, hook, ...args) {
   const out = [];

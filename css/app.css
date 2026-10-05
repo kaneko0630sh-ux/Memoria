@@ -471,3 +471,57 @@ pre.prompt { white-space: pre-wrap; word-break: break-word; font-size: 11.5px; l
 .rar.r-L { color: #f2a93b; background: rgba(242, 169, 59, .12); }
 .tag.q-達成 { color: #4caf7a; }
 .tag.q-失敗 { color: var(--danger); }
+
+/* レア度の枠（ハクスラ風）: --rc 枠と文字の色 / --rcs 淡い背景 / --rcg 光 */
+.r-N { --rc: var(--line2); --rcs: transparent; --rcg: transparent; }
+.r-C { --rc: #9aa0a6; --rcs: rgba(154, 160, 166, .08); --rcg: transparent; }
+.r-U { --rc: #4caf7a; --rcs: rgba(76, 175, 122, .1); --rcg: transparent; }
+.r-R { --rc: #4f8dfd; --rcs: rgba(79, 141, 253, .12); --rcg: rgba(79, 141, 253, .45); }
+.r-E { --rc: #b16cf7; --rcs: rgba(177, 108, 247, .14); --rcg: rgba(177, 108, 247, .55); }
+.r-L { --rc: #f2a93b; --rcs: rgba(242, 169, 59, .16); --rcg: rgba(242, 169, 59, .65); }
+.st-item.rf, .st-card.rf { border-color: var(--rc); background: linear-gradient(90deg, var(--rcs), transparent 70%), var(--bg-elev); box-shadow: inset 3px 0 0 var(--rc), 0 0 10px var(--rcg); }
+.st-item.rf .nm, .st-card.rf .nm { color: var(--rc); }
+.st-item.r-C .nm, .st-card.r-C .nm { color: var(--text); }
+
+.msg.pcard-msg { display: flex; justify-content: center; padding: 6px 16px; }
+.msg.pcard-msg > div { width: 100%; max-width: 380px; }
+.lcard { position: relative; overflow: hidden; border: 1.5px solid var(--rc, var(--line2)); border-radius: 14px; background: linear-gradient(160deg, var(--rcs, transparent), transparent 60%), var(--bg-elev); padding: 10px 12px; box-shadow: 0 0 14px var(--rcg, transparent); }
+.lc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-weight: 800; font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+.lc-head small { font-weight: 700; color: var(--text3); }
+.lc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.lt { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--rc, var(--line2)); background: linear-gradient(180deg, var(--rcs, transparent), transparent), var(--bg); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .03), 0 0 10px var(--rcg, transparent); }
+.lt-rar { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; color: var(--rc, var(--text3)); }
+.lt-name { font-size: 14px; line-height: 1.35; color: var(--text); word-break: break-word; }
+.lt.r-R .lt-name, .lt.r-E .lt-name, .lt.r-L .lt-name { color: var(--rc); }
+.lt-q { font-size: 11.5px; color: var(--text3); }
+.lt-money { --rc: #e8c05a; --rcs: rgba(232, 192, 90, .1); }
+.lt-money .lt-name { color: #e8c05a; }
+.lc-danger { margin-top: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(240, 90, 90, .12); color: #f08a8a; font-size: 12.5px; font-weight: 700; }
+.lcard.appraise { text-align: center; padding: 12px 14px 16px; }
+.lcard.appraise .lc-head { justify-content: center; }
+.ap-rar { font-size: 26px; font-weight: 900; letter-spacing: .08em; color: var(--rc); text-shadow: 0 0 16px var(--rcg); }
+.ap-name { font-size: 14px; color: var(--text2); margin-top: 2px; }
+.ap-val { margin-top: 8px; font-size: 14px; color: var(--text2); }
+.ap-val b { font-size: 20px; color: #e8c05a; }
+.lcard.mini { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 14px; }
+.mi-h { color: var(--text3); font-weight: 800; font-size: 12.5px; flex: none; }
+.mi-name { flex: 1; min-width: 0; color: var(--rc, var(--text)); }
+.lcard.mini.r-C .mi-name, .lcard.mini.r-U .mi-name { color: var(--text); }
+.mi-plus { color: #e8c05a; font-weight: 800; }
+/* 伝説級: 光が流れる＋脈打つ */
+.lcard.r-L::after, .lt.r-L::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 30%, rgba(255, 220, 150, .28) 45%, transparent 60%); background-size: 250% 100%; animation: lshine 2.8s linear infinite; }
+.lcard.r-L, .lt.r-L { animation: lpulse 2.4s ease-in-out infinite; }
+@keyframes lshine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+@keyframes lpulse { 0%, 100% { box-shadow: 0 0 10px var(--rcg); } 50% { box-shadow: 0 0 22px var(--rcg); } }
+/* 出た瞬間だけ跳ねる（エピック以上は光が弾ける） */
+.lcard.fresh { animation: lpop .45s cubic-bezier(.2, 1.4, .4, 1) both; }
+.lcard.fresh.r-E, .lcard.fresh.r-L { animation: lpop .45s cubic-bezier(.2, 1.4, .4, 1) both, lburst 1.2s ease-out both; }
+.lcard.fresh.r-L { animation: lpop .45s cubic-bezier(.2, 1.4, .4, 1) both, lburst 1.2s ease-out both, lpulse 2.4s ease-in-out 1.2s infinite; }
+@keyframes lpop { from { transform: scale(.88); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes lburst { 0% { box-shadow: 0 0 0 0 var(--rcg); } 40% { box-shadow: 0 0 34px 6px var(--rcg); } 100% { box-shadow: 0 0 14px var(--rcg); } }
+.pnote { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 0 60px; padding: 6px 10px; border: 1px dashed var(--line2); border-radius: 10px; font-size: 12.5px; }
+.pn-h { color: var(--text3); font-weight: 800; }
+.pn { padding: 1px 8px; border-radius: 999px; background: var(--bg-elev2); color: var(--text2); }
+.pn.gain { color: #6fd39a; background: rgba(76, 175, 122, .12); }
+.pn.loss { color: #f08a8a; background: rgba(240, 90, 90, .1); }
+@media (prefers-reduced-motion: reduce) { .lcard, .lt, .lcard::after, .lt::after { animation: none !important; } }
