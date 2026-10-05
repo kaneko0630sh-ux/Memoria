@@ -2,6 +2,7 @@
 // 入る条件: 「常時」 / 直近の会話にキーワードが出た / 記憶係のAIが次の場面に必要と選んだ（chat.mem.loreRecall）
 // 容量を超えるときは 常時 → キーワード → AI の順に優先する
 import { S, txt, isDialog, normalizeLore } from '../core/store.js';
+import { RARITY } from '../core/items.js';
 
 const BY = ['always', 'key', 'ai'];
 
@@ -12,7 +13,8 @@ export function scanLore(story, chat, end) {
   const { depth = 4, budget = 3000, ai = true } = S.settings.lore;
   const recent = chat.messages.slice(0, end).filter(isDialog).slice(-depth).map(txt).join('\n').toLowerCase();
   const picked = new Set(ai ? chat.mem?.loreRecall || [] : []);
-  const why = e => (e.always ? 'always' : e.keys.some(k => k && recent.includes(k.toLowerCase())) ? 'key' : picked.has(e.id) ? 'ai' : '');
+  const keysOf = e => (e.item ? [e.title, ...e.keys] : e.keys); // アイテムは名前そのものもキーワード
+  const why = e => (e.always ? 'always' : keysOf(e).some(k => k && recent.includes(k.toLowerCase())) ? 'key' : picked.has(e.id) ? 'ai' : '');
   const hits = entries.map(entry => ({ entry, by: why(entry) })).filter(h => h.by).sort((a, b) => BY.indexOf(a.by) - BY.indexOf(b.by));
   const out = [];
   let chars = 0;
@@ -31,14 +33,19 @@ export function loreCatalog(story, M, max = 80) {
   const text = list.map((e, i) => {
     ids['l' + (i + 1)] = e.id;
     const head = M(e.content).replace(/\s+/g, ' ').trim();
-    return `[l${i + 1}] ${e.title || e.keys[0] || '設定'}${e.keys.length ? `（キー: ${e.keys.slice(0, 4).join('・')}）` : ''}: ${head.slice(0, 50)}${head.length > 50 ? '…' : ''}`;
+    return `[l${i + 1}] ${e.item ? 'アイテム: ' : ''}${e.title || e.keys[0] || '設定'}${e.keys.length ? `（キー: ${e.keys.slice(0, 4).join('・')}）` : ''}: ${head.slice(0, 50)}${head.length > 50 ? '…' : ''}`;
   }).join('\n');
   return { text, ids };
 }
 
 export function loreText(entries, M) {
   if (!entries.length) return '';
-  return `<lore>\n${entries.map(e => `【${e.title || e.keys[0] || '設定'}】\n${M(e.content).trim()}`).join('\n\n')}\n</lore>`;
+  const head = e => {
+    if (!e.item) return e.title || e.keys[0] || '設定';
+    const tags = [RARITY.find(r => r.k === e.item.rar)?.label, e.item.cat].filter(Boolean).join('・');
+    return `アイテム: ${e.title}${tags ? `（${tags}）` : ''}`;
+  };
+  return `<lore>\n${entries.map(e => `【${head(e)}】\n${M(e.content).trim()}`).join('\n\n')}\n</lore>`;
 }
 
 // SillyTavern のワールド情報 / キャラクターブック → ロアブック項目

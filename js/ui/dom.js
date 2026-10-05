@@ -135,7 +135,8 @@ export function pickFile(accept) {
   });
 }
 // 画像を中央（縦は上寄り）で切り抜いて JPEG 化
-export function fileToImage(file, w, h) {
+// o.png: 透過を残す（アイコン用） / 既定は人物向けに少し上寄りで切り抜く JPEG
+export function fileToImage(file, w, h, o = {}) {
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => {
@@ -143,9 +144,9 @@ export function fileToImage(file, w, h) {
       c.width = w; c.height = h;
       let sw = img.width, sh = img.height;
       if (sw / sh > r) sw = sh * r; else sh = sw / r;
-      g.drawImage(img, (img.width - sw) / 2, (img.height - sh) * 0.18, sw, sh, 0, 0, w, h);
+      g.drawImage(img, (img.width - sw) / 2, (img.height - sh) * (o.png ? 0.5 : 0.18), sw, sh, 0, 0, w, h);
       URL.revokeObjectURL(url);
-      res(c.toDataURL('image/jpeg', 0.85));
+      res(o.png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.85));
     };
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('画像を読み込めませんでした')); };
     img.src = url;

@@ -1,13 +1,7 @@
 // ステータス管理プラグインのひな型。プロットの設定で空欄の項目は、選んだひな型の値を使う
 // 一覧は「カンマ区切り」、持ち物・装備・スキルは「1行に1つ」でも「カンマ区切り」でもよい
 
-export const RARITY = [
-  { k: 'C', label: 'コモン', w: 60, val: [5, 30] },
-  { k: 'U', label: 'アンコモン', w: 25, val: [30, 120] },
-  { k: 'R', label: 'レア', w: 10, val: [120, 500] },
-  { k: 'E', label: 'エピック', w: 4, val: [500, 2000] },
-  { k: 'L', label: '伝説級', w: 1, val: [2000, 8000] },
-];
+export { RARITY } from '../../core/items.js';
 
 export const PRESETS = {
   simple: {

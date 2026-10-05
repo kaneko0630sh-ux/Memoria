@@ -7,6 +7,7 @@ const A = name => `p:status:${name}`;
 const btn = (act, label, data = {}, cls = 'btn sm') => `<button class="${cls}" data-act="${A(act)}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}>${label}</button>`;
 const rarBadge = (it, e) => `${it.rar ? `<span class="rar r-${it.rar}">${esc(rarLabel(it.rar, e))}</span>` : ''}${it.unid ? '<span class="rar r-q">未鑑定</span>' : ''}`;
 const RANK = ['C', 'U', 'R', 'E', 'L'];
+const iconHTML = (src, cls = 'st-ic') => (src ? `<span class="${cls}"><img src="${esc(src)}" alt=""></span>` : '');
 const meter = (v, max, cls = '') => `<div class="st-meter ${cls}"><i style="width:${Math.max(0, Math.min(100, max ? (v / max) * 100 : 0))}%"></i></div>`;
 
 export const TABS = e => [['items', '持ち物'], ['gear', '装備・スキル'], ['state', '状態'], ...(e.life === 'on' ? [['home', '拠点・依頼']] : []), ['log', '履歴']];
@@ -23,27 +24,29 @@ export function barHTML(st, e) {
 }
 
 function itemRow(it, e, pending) {
-  return `<button class="st-item${it.rar ? ` rf r-${it.rar}` : ''}" data-act="${A('item')}" data-id="${it.id}"><span class="nm">${esc(it.name)}</span>${rarBadge(it, e)}${pending ? '<span class="tag">反映待ち</span>' : ''}<span class="q">×${it.qty}</span></button>`;
+  return `<button class="st-item${it.rar ? ` rf r-${it.rar}` : ''}" data-act="${A('item')}" data-id="${it.id}">${iconHTML(it.icon)}<span class="nm">${esc(it.name)}</span>${rarBadge(it, e)}${pending ? '<span class="tag">反映待ち</span>' : ''}<span class="q">×${it.qty}</span></button>`;
 }
 
 /* ---------- トーク中のカード（戦利品・鑑定・売却・使用）と、記憶係の記録 ---------- */
-function lootTile(f, e) {
+function lootTile(f, e, iconOf) {
   if (f.money != null) return `<div class="lt lt-money"><span class="lt-rar">お金</span><b class="lt-name">+${esc(fmtMoney(f.money, e))}</b></div>`;
-  return `<div class="lt r-${f.rar || 'N'}${f.unid ? ' unid' : ''}"><span class="lt-rar">${f.rar ? esc(rarLabel(f.rar, e)) : esc(f.cat || '')}</span><b class="lt-name">${esc(f.name)}</b><span class="lt-q">×${f.qty}${f.unid ? '・未鑑定' : ''}</span></div>`;
+  const icon = f.unid ? '' : iconOf(f.name);
+  return `<div class="lt r-${f.rar || 'N'}${f.unid ? ' unid' : ''}${icon ? ' has-ic' : ''}">${iconHTML(icon, 'lt-ic')}<span class="lt-rar">${f.rar ? esc(rarLabel(f.rar, e)) : esc(f.cat || '')}</span><b class="lt-name">${esc(f.name)}</b><span class="lt-q">×${f.qty}${f.unid ? '・未鑑定' : ''}</span></div>`;
 }
-export function cardHTML(card, e, env = {}) {
+// iconOf(name) → アイテム図鑑のアイコン（なければ空）
+export function cardHTML(card, e, env = {}, iconOf = () => '') {
   const fresh = env.fresh ? ' fresh' : '';
   if (card.kind === 'loot') {
     const best = RANK[Math.max(-1, ...card.finds.map(f => RANK.indexOf(f.rar)))] || 'N';
     return `<div class="lcard r-${best}${fresh}"><div class="lc-head"><span>🎁 探索の成果</span>${card.depth ? `<small>${esc(card.depth)}</small>` : ''}</div>
-      <div class="lc-grid">${card.finds.map(f => lootTile(f, e)).join('')}</div>${card.danger ? '<div class="lc-danger">⚠ 近くで何かが動く気配がした</div>' : ''}</div>`;
+      <div class="lc-grid">${card.finds.map(f => lootTile(f, e, iconOf)).join('')}</div>${card.danger ? '<div class="lc-danger">⚠ 近くで何かが動く気配がした</div>' : ''}</div>`;
   }
   if (card.kind === 'appraise') {
     return `<div class="lcard appraise r-${card.rar}${fresh}"><div class="lc-head"><span>🔍 鑑定結果</span></div>
       <div class="ap-body"><div class="ap-rar">${esc(rarLabel(card.rar, e))}</div><div class="ap-name">${esc(card.name)}</div><div class="ap-val">査定額 <b>${esc(fmtMoney(card.val, e))}</b></div></div></div>`;
   }
-  if (card.kind === 'sell') return `<div class="lcard mini${card.rar ? ` r-${card.rar}` : ''}${fresh}"><span class="mi-h">💰 売却</span><b class="mi-name">${esc(card.name)}</b><span class="mi-plus">+${esc(fmtMoney(card.val, e))}</span></div>`;
-  if (card.kind === 'use') return `<div class="lcard mini${card.rar ? ` r-${card.rar}` : ''}${fresh}"><span class="mi-h">🧪 使用</span><b class="mi-name">${esc(card.name)}</b></div>`;
+  if (card.kind === 'sell') return `<div class="lcard mini${card.rar ? ` r-${card.rar}` : ''}${fresh}"><span class="mi-h">💰 売却</span>${iconHTML(iconOf(card.name), 'mi-ic')}<b class="mi-name">${esc(card.name)}</b><span class="mi-plus">+${esc(fmtMoney(card.val, e))}</span></div>`;
+  if (card.kind === 'use') return `<div class="lcard mini${card.rar ? ` r-${card.rar}` : ''}${fresh}"><span class="mi-h">🧪 使用</span>${iconHTML(iconOf(card.name), 'mi-ic')}<b class="mi-name">${esc(card.name)}</b></div>`;
   return '';
 }
 export function noteHTML(note) {
@@ -121,7 +124,8 @@ export function itemSheetHTML(it, e, { inBase, life, busy }) {
   ].filter(Boolean).join('');
   const edits = inBase ? `<div class="btn-row">${btn('qty', '−1', { id: it.id, d: -1 })}${btn('qty', '＋1', { id: it.id, d: 1 })}${life ? btn('move', it.at === 'home' ? '持ち物へ移す' : '拠点に置く', { id: it.id }) : ''}${btn('form', '編集', { kind: 'item', id: it.id }, 'btn sm ghost')}${btn('qty', '捨てる', { id: it.id, d: -it.qty }, 'btn sm danger')}</div>`
     : '<p class="hint">この品はまだ反映待ちです。次の発言のあとに編集できます。</p>';
-  return `<div class="st-card big${it.rar ? ` rf r-${it.rar}` : ''}"><b class="nm">${esc(it.name)}</b>${rarBadge(it, e)}<span class="q">×${it.qty}</span>${facts.length ? `<small>${esc(facts.join('／'))}</small>` : ''}</div>
+  return `<div class="st-card big${it.rar ? ` rf r-${it.rar}` : ''}">${iconHTML(it.icon, 'st-ic big')}<b class="nm">${esc(it.name)}</b>${rarBadge(it, e)}<span class="q">×${it.qty}</span>${facts.length ? `<small>${esc(facts.join('／'))}</small>` : ''}</div>
+    ${it.desc ? `<p class="st-desc">${esc(it.desc)}</p>` : ''}
     ${busy ? '<p class="hint">応答の生成中は操作できません。</p>' : acts ? `<div class="btn-row">${acts}</div>` : ''}
     ${it.unid ? '<p class="hint">鑑定すると、ランクと査定額をアプリがサイコロで決め、AIが正体を描写します。</p>' : ''}
     ${edits}`;

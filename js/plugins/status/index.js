@@ -11,6 +11,7 @@ import { sendMessage } from '../../engine/chat.js';
 import { openSheet, closeSheet, closeAllSheets, setSheetBody, sheetById, sheetOf } from '../../ui/dom.js';
 import { PRESET_OPTIONS, effective } from './presets.js';
 import * as M from './model.js';
+import { libraryOf, findLibItem } from '../../core/items.js';
 import { sheetHTML, itemSheetHTML, barHTML, formHTML, cardHTML, noteHTML } from './view.js';
 
 const ID = 'status';
@@ -34,6 +35,16 @@ function view(chat, e = cfgOf(chat)) {
 }
 const changed = chat => { saveChat(chat); emit('plugin:changed', chat); };
 
+// アイテム図鑑の情報（アイコン・説明・レア度・売値）を重ねた持ち物。状態そのものは書き換えない
+function enrich(story, it) {
+  const l = findLibItem(story, it.name);
+  if (!l) return it;
+  const price = Number(l.item.price) || 0;
+  return { ...it, rar: it.rar || l.item.rar || '', val: it.val ?? (price || undefined), icon: l.item.icon, desc: l.content, named: it.named || !it.unid };
+}
+const decorated = (chat, st) => { const story = getStory(chat.storyId); return { ...st, items: st.items.map(i => enrich(story, i)) }; };
+const dropLib = story => libraryOf(story).filter(l => l.item.drop).map(l => ({ name: l.title, cat: l.item.cat, rar: l.item.rar, price: Number(l.item.price) || 0 }));
+
 /* ---------- AIに渡す文 ---------- */
 function statusText(st, e, { ids = false } = {}) {
   const L = [];
@@ -42,8 +53,9 @@ function statusText(st, e, { ids = false } = {}) {
   const eq = Object.entries(st.equip).map(([k, v]) => `${k}=${v}`).join('、');
   if (eq) L.push(`装備: ${eq}`);
   const carried = st.items.filter(i => i.at !== 'home');
+  const label = i => `${i.name}${i.rar ? `【${M.rarLabel(i.rar, e)}】` : ''}${i.unid && !i.name.includes('未鑑定') ? '（未鑑定）' : ''}`;
   if (carried.length) {
-    const shown = carried.slice(0, ids ? 60 : 24).map(i => `${ids ? `[${i.id}] ` : ''}${M.itemLabel(i, e)}${i.unid && !i.name.includes('未鑑定') ? '（未鑑定）' : ''}×${i.qty}`);
+    const shown = carried.slice(0, ids ? 60 : 24).map(i => `${ids ? `[${i.id}] ` : ''}${label(i)}×${i.qty}`);
     L.push(`持ち物: ${shown.join('、')}${carried.length > shown.length ? `、ほか${carried.length - shown.length}種` : ''}`);
   } else L.push('持ち物: なし');
   if (st.skills.length) L.push(`スキル: ${st.skills.map(k => k.level ? `${k.name}（${k.level}）` : k.name).join('、')}`);
@@ -63,7 +75,7 @@ function statusText(st, e, { ids = false } = {}) {
     if (rep.length) L.push(`評判: ${rep.map(([f, v]) => `${f}=${M.repLabel(v)}`).join('、')}`);
     if (ids) {
       const unnamed = st.items.filter(i => i.rar && !i.unid && !i.named);
-      if (unnamed.length) L.push(`鑑定済みで名前未定: ${unnamed.map(i => `[${i.id}] ${M.itemLabel(i, e)}`).join('、')}`);
+      if (unnamed.length) L.push(`鑑定済みで名前未定: ${unnamed.map(i => `[${i.id}] ${label(i)}`).join('、')}`);
     }
   }
   return L.join('\n');
@@ -89,7 +101,11 @@ function keeperPrompt(chat, ctx, cfg) {
 - reasons: 変化の理由を短く（例: 宿代を払った）
 
 現在の記録:
-${statusText(view(chat, e), e, { ids: true })}`;
+${statusText(decorated(chat, view(chat, e)), e, { ids: true })}${libNames(chat)}`;
+}
+function libNames(chat) {
+  const lib = libraryOf(getStory(chat.storyId));
+  return lib.length ? `\nアイテム図鑑の品（手に入れたら、この名前で items に記録する）:${lib.slice(0, 50).map(l => l.title + (l.item.cat ? `（${l.item.cat}）` : '')).join('、')}` : '';
 }
 
 function keeperSchema(cfg) {
@@ -209,7 +225,7 @@ const FORMS = {
 /* ---------- シート ---------- */
 function refresh(chat) {
   const e = cfgOf(chat);
-  if (sheetById('status')) setSheetBody('status', sheetHTML(view(chat, e), e, base(chat, e), S.ui.stTab));
+  if (sheetById('status')) setSheetBody('status', sheetHTML(decorated(chat, view(chat, e)), e, base(chat, e), S.ui.stTab));
 }
 on('plugin:changed', chat => { if (curChat() === chat) refresh(chat); });
 on('memory:changed', chat => { if (curChat() === chat && sheetById('status')) refresh(chat); });
@@ -228,7 +244,7 @@ function act(chat, { ops, text, card }) {
   closeAllSheets();
   sendMessage(chat, text, { ops: { [ID]: ops }, card });
 }
-const itemOf = (chat, id) => view(chat).items.find(i => i.id === id);
+const itemOf = (chat, id) => { const it = view(chat).items.find(i => i.id === id); return it && enrich(getStory(chat.storyId), it); };
 
 definePlugin({
   id: ID,
@@ -270,7 +286,7 @@ definePlugin({
 ${String(e.prices).trim()}` : ''}`;
   },
 
-  context: (ctx, chat, cfg) => `<status>\n${statusText(view(chat, effective(cfg)), effective(cfg))}\n</status>`,
+  context: (ctx, chat, cfg) => `<status>\n${statusText(decorated(chat, view(chat, effective(cfg))), effective(cfg))}\n</status>`,
 
   memory: {
     key: 'status',
@@ -290,7 +306,7 @@ ${String(e.prices).trim()}` : ''}`;
     },
   },
 
-  renderCard: (card, env, cfg) => cardHTML(card, effective(cfg), env),
+  renderCard: (card, env, cfg) => cardHTML(card, effective(cfg), env, name => findLibItem(env.ctx?.story, name)?.item.icon || ''),
   renderNote: (note, env, cfg) => noteHTML(note, effective(cfg)),
   bar: (chat, cfg) => (cfg.bar === 'off' ? '' : barHTML(view(chat, effective(cfg)), effective(cfg))),
   menu: (chat, cfg) => [{ label: 'ステータス', val: M.fmtMoney(view(chat, effective(cfg)).money, effective(cfg)), act: `p:${ID}:open` }],
@@ -301,7 +317,7 @@ ${String(e.prices).trim()}` : ''}`;
       if (!chat) return;
       closeAllSheets();
       const e = cfgOf(chat);
-      openSheet({ id: 'status', title: 'ステータス', full: true, html: sheetHTML(view(chat, e), e, base(chat, e), S.ui.stTab) });
+      openSheet({ id: 'status', title: 'ステータス', full: true, html: sheetHTML(decorated(chat, view(chat, e)), e, base(chat, e), S.ui.stTab) });
     },
     tab(el) { S.ui.stTab = el.dataset.tab; refresh(curChat()); },
     item(el) {
@@ -310,7 +326,7 @@ ${String(e.prices).trim()}` : ''}`;
       const e = cfgOf(chat);
       openSheet({ id: 'status-item', title: '持ち物', html: itemSheetHTML(it, e, { inBase: base(chat, e).items.some(i => i.id === it.id), life: e.life === 'on', busy: !!S.gen }) });
     },
-    loot() { const chat = curChat(); act(chat, M.rollLoot(view(chat), cfgOf(chat))); },
+    loot() { const chat = curChat(); act(chat, M.rollLoot(view(chat), cfgOf(chat), dropLib(getStory(chat.storyId)))); },
     appraise(el) { const chat = curChat(), it = itemOf(chat, el.dataset.id); if (it?.unid) act(chat, M.appraiseOps(view(chat), it, cfgOf(chat))); },
     sell(el) { const chat = curChat(), it = itemOf(chat, el.dataset.id); if (it?.val) act(chat, M.sellOps(it, cfgOf(chat))); },
     use(el) { const chat = curChat(), it = itemOf(chat, el.dataset.id); if (it) act(chat, M.useOps(it)); },

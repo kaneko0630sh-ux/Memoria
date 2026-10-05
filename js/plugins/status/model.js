@@ -131,7 +131,8 @@ export function rollValue(rar, lvl) {
 const catLike = (e, re, fallback) => list(e.cats).find(c => re.test(c)) || fallback;
 
 // 探索・戦利品: 見つけた物を決めて { ops, text, card } を返す（card は画面のカード表示用）
-export function rollLoot(st, e) {
+// lib: アイテム図鑑のうち「戦利品に出す」もの [{ name, cat, rar, price }]
+export function rollLoot(st, e, lib = []) {
   const lvl = depthLevel(st.depth), ops = [], parts = [], finds = [];
   const n = 1 + (Math.random() < 0.55) + (Math.random() < 0.2);
   const kinds = [['relic', 0.22 + lvl * 0.03], ['material', 0.42], ['consumable', 0.16], ['money', 0.2]];
@@ -139,19 +140,27 @@ export function rollLoot(st, e) {
     let x = Math.random() * kinds.reduce((a, k) => a + k[1], 0), kind = 'material';
     for (const [k, w] of kinds) { x -= w; if (x <= 0) { kind = k; break; } }
     if (kind === 'relic') {
-      const item = { id: uid(), name: e.relic, qty: 1, cat: catLike(e, /遺品|貴重|魔道具/, ''), unid: true, rar: rollRarity(lvl) };
-      ops.push({ op: 'add', item }); parts.push(`${itemLabel(item, e)}×1`);
-      finds.push({ name: item.name, qty: 1, rar: item.rar, unid: true });
+      // 同じレア度の図鑑アイテム（戦利品に出す）があれば、半分の確率でそれが鑑定済みで出る
+      const rar = rollRarity(lvl), named = lib.filter(l => l.rar === rar);
+      const l = named.length && Math.random() < 0.5 ? pick(named) : null;
+      const item = l
+        ? { id: uid(), name: l.name, qty: 1, cat: l.cat || catLike(e, /遺品|貴重|魔道具/, ''), rar, named: true, ...(l.price ? { val: l.price } : {}) }
+        : { id: uid(), name: e.relic, qty: 1, cat: catLike(e, /遺品|貴重|魔道具/, ''), unid: true, rar };
+      ops.push({ op: 'add', item }); parts.push(`${item.name}【${rarLabel(rar, e)}】×1`);
+      finds.push({ name: item.name, qty: 1, rar, unid: !l, cat: item.cat });
     } else if (kind === 'money') {
       const d = Math.max(1, Math.round(Number(e.moneyFind || 20) * between(0.5, 1.6) * (1 + lvl * 0.4)));
       ops.push({ op: 'money', d }); parts.push(fmtMoney(d, e));
       finds.push({ money: d });
     } else {
-      const pool = list(kind === 'material' ? e.materials : e.consumables);
+      const re = kind === 'material' ? /素材|部品/ : /消耗|弾薬|食料|医療/;
+      // 図鑑のアイテム（戦利品に出す・コモン以下）も候補に入れる。種類が空なら素材扱い
+      const fromLib = lib.filter(l => (!l.rar || l.rar === 'C' || l.rar === 'U') && (re.test(l.cat || '') || (!l.cat && kind === 'material')));
+      const pool = [...list(kind === 'material' ? e.materials : e.consumables), ...fromLib.map(l => l.name)];
       const name = pick(pool.length ? pool : ['がらくた']), qty = kind === 'material' ? 1 + Math.floor(Math.random() * 3) : 1;
-      const cat = kind === 'material' ? catLike(e, /素材|部品/, '') : catLike(e, /消耗|弾薬|食料|医療/, '');
-      ops.push({ op: 'add', item: { id: uid(), name, qty, cat } }); parts.push(`${name}×${qty}`);
-      finds.push({ name, qty, cat });
+      const l = fromLib.find(x => x.name === name), cat = l?.cat || catLike(e, re, '');
+      ops.push({ op: 'add', item: { id: uid(), name, qty, cat, ...(l?.rar ? { rar: l.rar, named: true } : {}) } }); parts.push(`${name}×${qty}`);
+      finds.push({ name, qty, cat, rar: l?.rar || '' });
     }
   }
   const danger = Math.random() < Math.min(0.6, 0.12 + lvl * 0.06);

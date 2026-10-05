@@ -525,3 +525,16 @@ pre.prompt { white-space: pre-wrap; word-break: break-word; font-size: 11.5px; l
 .pn.gain { color: #6fd39a; background: rgba(76, 175, 122, .12); }
 .pn.loss { color: #f08a8a; background: rgba(240, 90, 90, .1); }
 @media (prefers-reduced-motion: reduce) { .lcard, .lt, .lcard::after, .lt::after { animation: none !important; } }
+/* アイテム図鑑のアイコン */
+.st-ic { flex: none; width: 30px; height: 30px; border-radius: 8px; overflow: hidden; background: var(--bg); border: 1px solid var(--rc, var(--line2)); display: grid; place-items: center; }
+.st-ic img, .lt-ic img, .mi-ic img, .it-icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.st-ic.big { width: 64px; height: 64px; border-radius: 12px; }
+.st-desc { margin: 0 0 10px; font-size: 14px; line-height: 1.65; color: var(--text2); white-space: pre-wrap; }
+.lt.has-ic { padding-top: 8px; }
+.lt-ic { width: 36px; height: 36px; margin-bottom: 4px; border-radius: 8px; overflow: hidden; background: var(--bg-elev); border: 1px solid var(--rc, var(--line2)); }
+.mi-ic { flex: none; width: 26px; height: 26px; border-radius: 6px; overflow: hidden; border: 1px solid var(--rc, var(--line2)); }
+.it-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.it-icon { flex: none; width: 64px; height: 64px; border-radius: 12px; border: 1.5px dashed var(--rc, var(--line2)); background: var(--bg); color: var(--text3); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; overflow: hidden; padding: 0; }
+.it-icon small { font-size: 10.5px; }
+.it-icon:has(img) { border-style: solid; box-shadow: 0 0 10px var(--rcg, transparent); }
+.it-card .lore-title { font-weight: 800; }

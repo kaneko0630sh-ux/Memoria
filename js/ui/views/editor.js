@@ -5,6 +5,7 @@ import { esc, clone, uid, hhmm } from '../../core/util.js';
 import { STYLE_GROUPS, STYLE_SECTIONS, INFOBOX_OPTIONS } from '../../engine/style.js';
 import { parseBlocks, textToItems, itemsToText } from '../../engine/parse.js';
 import { loreFromJSON } from '../../engine/lorebook.js';
+import { RARITY_OPTIONS, newItemData } from '../../core/items.js';
 import { allPlugins, getPlugin, blockOwners } from '../../plugins/registry.js';
 import { readCardFile } from '../../io/porting.js';
 import { ic, avatarHTML, openSheet, closeAllSheets, toast, pickFile, fileToImage, segButtons, draftInput } from '../dom.js';
@@ -77,14 +78,32 @@ function loreTab() {
   <div class="ed-card">${draftInput('world', st.world, { rows: 10, ph: '世界観・地理・勢力・ルールなど。キーワードに関係なく毎回AIに渡されます。', hint: '長いほど毎回の送信量が増えます。細かい設定は下のキーワード設定に分けるのがおすすめです。' })}</div>
   <h3 class="ed-h">キーワード設定（ロアブック）</h3>
   <p class="hint">会話にキーワードが出たとき（直近${S.settings.lore.depth}件の会話を見ます）${S.settings.lore.ai ? 'と、記憶係のAIが今の場面に必要と判断したとき' : ''}に呼び出される設定です。</p>
-  ${st.lore.map((e, i) => `<div class="ed-card ${e.on ? '' : 'off'}">
+  ${st.lore.map((e, i) => (e.item ? '' : `<div class="ed-card ${e.on ? '' : 'off'}">
     <div class="ed-card-h"><input class="lore-title" data-draft="lore.${i}.title" value="${esc(e.title)}" placeholder="項目名（例: 灰の手）"><button class="icon-btn" data-act="edRemove" data-list="lore" data-i="${i}" aria-label="削除">${ic('trash', 'sm')}</button></div>
     <label class="field"><span>キーワード（カンマ区切り）</span><input data-draft="lore.${i}.keys" data-list="1" value="${esc(e.keys.join(', '))}" placeholder="例: 灰の手, 密輸組合"></label>
     ${draftInput(`lore.${i}.content`, e.content, { label: '内容', rows: 4 })}
     <div class="lore-flags"><label class="switch sm"><span>有効</span><input type="checkbox" class="tgl" data-draft="lore.${i}.on" ${e.on ? 'checked' : ''}></label><label class="switch sm"><span>常時（キーワードなしでも入れる）</span><input type="checkbox" class="tgl" data-draft="lore.${i}.always" ${e.always ? 'checked' : ''}></label></div>
-  </div>`).join('')}
+  </div>`)).join('')}
   <button class="btn block add-btn" data-act="edAddLore">${ic('plus', 'sm')}キーワード設定を追加</button>
-  <button class="btn sm ghost" data-act="edImportLore">${ic('upload', 'sm')}ロアブック（JSON）を取り込む</button>`;
+  <button class="btn sm ghost" data-act="edImportLore">${ic('upload', 'sm')}ロアブック（JSON）を取り込む</button>
+  <h3 class="ed-h" style="margin-top:22px">アイテム図鑑</h3>
+  <p class="hint">アイテムの説明とアイコンです。名前か別名が会話に出たとき${S.settings.lore.ai ? '、または記憶係のAIが必要と判断したとき' : ''}に説明がAIに渡ります。ステータス管理プラグインでは、持ち物や戦利品にアイコン・レア度・売値が付きます。</p>
+  ${st.lore.map((e, i) => (e.item ? itemCard(e, i) : '')).join('')}
+  <button class="btn block add-btn" data-act="edAddItem">${ic('plus', 'sm')}アイテムを追加</button>`;
+}
+function itemCard(e, i) {
+  const it = e.item;
+  return `<div class="ed-card it-card ${e.on ? '' : 'off'}">
+    <div class="it-top"><button class="it-icon r-${it.rar || 'N'}" data-act="edItemIcon" data-i="${i}" aria-label="アイコン">${it.icon ? `<img src="${esc(it.icon)}" alt="">` : `${ic('image')}<small>アイコン</small>`}</button>
+      <div class="grow"><input class="lore-title" data-draft="lore.${i}.title" value="${esc(e.title)}" placeholder="アイテム名（例: 月光苔）"></div>
+      <button class="icon-btn" data-act="edRemove" data-list="lore" data-i="${i}" aria-label="削除">${ic('trash', 'sm')}</button></div>
+    <div class="grid2"><label class="field"><span>種類</span><input data-draft="lore.${i}.item.cat" value="${esc(it.cat)}" placeholder="例: 素材"></label>
+      <label class="field"><span>レア度</span><select data-draft="lore.${i}.item.rar" data-rerender="1">${RARITY_OPTIONS.map(([v, l]) => `<option value="${v}" ${it.rar === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <div class="grid2"><label class="field"><span>売値（任意）</span><input type="number" inputmode="numeric" data-draft="lore.${i}.item.price" value="${esc(it.price)}" placeholder="例: 120"></label>
+      <label class="field"><span>別名（カンマ区切り）</span><input data-draft="lore.${i}.keys" data-list="1" value="${esc(e.keys.join(', '))}" placeholder="例: 月光草"></label></div>
+    ${draftInput(`lore.${i}.content`, e.content, { label: '説明（AIにも渡されます）', rows: 3, ph: '見た目・効果・入手できる場所・言い伝えなど' })}
+    <div class="lore-flags"><label class="switch sm"><span>有効</span><input type="checkbox" class="tgl" data-draft="lore.${i}.on" ${e.on ? 'checked' : ''}></label><label class="switch sm"><span>戦利品に出す</span><input type="checkbox" class="tgl" data-draft="lore.${i}.item.drop" ${it.drop ? 'checked' : ''}></label>${it.icon ? `<button class="btn sm ghost" data-act="edItemIconClear" data-i="${i}">アイコンを外す</button>` : ''}</div>
+  </div>`;
 }
 
 function styleTab() {
@@ -234,6 +253,9 @@ defineActions({
   edProfileImage: async el => { d().profiles[Number(el.dataset.i)].avatar = await fileToImage(await pickFile('image/*'), 256, 256); dirty(); render(); },
   edAddExample: () => { d().examples.push({ id: uid(), charId: d().chars.find(c => c.name)?.id || '', situation: '', reply: '' }); dirty(); render(); },
   edAddLore: () => { d().lore.push(normalizeLore()); dirty(); render(); },
+  edAddItem: () => { d().lore.push(normalizeLore({ item: newItemData() })); dirty(); render(); },
+  edItemIcon: async el => { d().lore[Number(el.dataset.i)].item.icon = await fileToImage(await pickFile('image/*'), 128, 128, { png: true }); dirty(); render(); },
+  edItemIconClear: el => { d().lore[Number(el.dataset.i)].item.icon = ''; dirty(); render(); },
   edAddImage: async el => {
     const c = d().chars[Number(el.dataset.i)];
     c.images.push(await fileToImage(await pickFile('image/*'), 480, 640));

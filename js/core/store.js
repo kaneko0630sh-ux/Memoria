@@ -1,6 +1,7 @@
 // アプリの状態・データ形式・保存処理。データの形はここだけで定義する
 import { DB } from './db.js';
 import { uid, now, deepMerge } from './util.js';
+import { newItemData } from './items.js';
 
 export const DEFAULT_SETTINGS = {
   provider: 'anthropic',
@@ -133,7 +134,12 @@ export function normalizeChar(c = {}) {
   out.images = (out.images || []).filter(Boolean);
   return out;
 }
-export const normalizeLore = (e = {}) => ({ id: uid(), title: '', keys: [], content: '', always: false, on: true, ...e });
+// item があればアイテム図鑑の項目（core/items.js）
+export const normalizeLore = (e = {}) => {
+  const out = { id: uid(), title: '', keys: [], content: '', always: false, on: true, item: null, ...e };
+  if (out.item) out.item = newItemData(out.item);
+  return out;
+};
 
 export function normalizeStory(s = {}) {
   const st = {
