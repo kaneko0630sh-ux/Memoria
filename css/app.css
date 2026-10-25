@@ -604,3 +604,19 @@ pre.prompt { white-space: pre-wrap; word-break: break-word; font-size: 11.5px; l
 .pcard.loot-b .pc-head { color: #e8c05a; }
 .ab-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .ab-item { border-color: var(--rc) !important; color: var(--rc) !important; box-shadow: 0 0 8px var(--rcg); gap: 6px; }
+/* 能力値・ランク・ステータス画面 */
+.st-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.st-stats div { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 10px; border-radius: 10px; background: var(--bg-elev); border: 1px solid var(--line); font-size: 13px; color: var(--text2); }
+.st-stats b { font-size: 16px; color: var(--text); }
+.st-rank { font-size: 16px; color: #ffd37a; }
+.st-titles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.lvup.rank { border-color: #4f8dfd; background: linear-gradient(135deg, rgba(79, 141, 253, .2), transparent 70%), var(--bg-elev); box-shadow: 0 0 18px rgba(79, 141, 253, .45); }
+.lvup.rank .lv-h { color: #7fb0ff; }
+.lvup.rank .lv-n b { color: #a8c8ff; }
+.swin { border: 1.5px solid rgba(110, 170, 255, .7); border-radius: 12px; background: linear-gradient(180deg, rgba(40, 70, 140, .35), rgba(20, 30, 60, .5)); box-shadow: 0 0 16px rgba(80, 140, 255, .35), inset 0 0 0 1px rgba(255, 255, 255, .05); padding: 10px 14px; color: #dbe7ff; }
+.sw-h { display: flex; align-items: baseline; gap: 10px; font-size: 11px; font-weight: 900; letter-spacing: .2em; color: #8fb5ff; border-bottom: 1px solid rgba(140, 180, 255, .3); padding-bottom: 6px; margin-bottom: 6px; }
+.sw-h b { font-size: 15px; letter-spacing: 0; color: #fff; }
+.sw-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13.5px; }
+.sw-k { color: #8fb5ff; white-space: nowrap; }
+.sw-v { color: #eef3ff; word-break: break-word; }
+.sw-v.wide { grid-column: 1 / -1; }

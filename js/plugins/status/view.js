@@ -10,7 +10,7 @@ const RANK = ['C', 'U', 'R', 'E', 'L'];
 const iconHTML = (src, cls = 'st-ic') => (src ? `<span class="${cls}"><img src="${esc(src)}" alt=""></span>` : '');
 const meter = (v, max, cls = '') => `<div class="st-meter ${cls}"><i style="width:${Math.max(0, Math.min(100, max ? (v / max) * 100 : 0))}%"></i></div>`;
 
-export const TABS = e => [['items', '持ち物'], ['gear', '装備・スキル'], ['state', '状態'], ...(e.life === 'on' ? [['home', '拠点・依頼']] : []), ['log', '履歴']];
+export const TABS = e => [['items', '持ち物'], ['gear', '装備・スキル'], ['state', '状態'], ['party', '仲間'], ...(e.life === 'on' ? [['home', '暮らし']] : []), ['log', '履歴']];
 
 export function barHTML(st, e) {
   const g = Object.entries(st.gauges)[0];
@@ -66,8 +66,9 @@ export function cardHTML(card, e, env = {}, iconOf = () => '') {
 export function noteHTML(note) {
   const cls = n => (/\+\d|受けた|習得|達成|レベルアップ/.test(n) ? 'gain' : /−\d|不足|失敗/.test(n) ? 'loss' : '');
   const lv = note?.lvup ? `<div class="lvup"><div class="lv-h">LEVEL UP</div><div class="lv-n">Lv ${note.lvup.from} <i>→</i> <b>Lv ${note.lvup.to}</b></div>${Object.keys(note.lvup.gains || {}).length ? `<div class="lv-g">${Object.entries(note.lvup.gains).map(([n, d]) => `<span>${esc(n)} +${d}</span>`).join('')}</div>` : ''}</div>` : '';
+  const rk = note?.rankup ? `<div class="lvup rank"><div class="lv-h">RANK UP</div><div class="lv-n">${esc(note.rankup.name)}　${note.rankup.from ? `${esc(note.rankup.from)} <i>→</i> ` : ''}<b>${esc(note.rankup.to)}</b></div></div>` : '';
   const notes = (note?.notes || []).filter(n => !/^⭐/.test(n));
-  return `${lv}${notes.length ? `<div class="pnote"><span class="pn-h">🎒 記録</span>${notes.map(n => `<span class="pn ${cls(n)}">${esc(n)}</span>`).join('')}</div>` : ''}`;
+  return `${lv}${rk}${notes.length ? `<div class="pnote"><span class="pn-h">🎒 記録</span>${notes.map(n => `<span class="pn ${cls(n)}">${esc(n)}</span>`).join('')}</div>` : ''}`;
 }
 
 /* ---------- 物語の中のブロック（AIが出す【戦利品】【鑑定】） ---------- */
@@ -83,7 +84,7 @@ export function appraiseBlockHTML({ what, items, e, active }) {
 
 /* ---------- お店のシート ---------- */
 const step = (act, data, n, max) => `<span class="st-step">${btn(act, '−', { ...data, d: -1, max }, 'icon-btn sm')}<b class="qn">${n}</b>${btn(act, '＋', { ...data, d: 1, max }, 'icon-btn sm')}</span>`;
-export function shopHTML({ c, stock, sellables, money, e, busy, iconOf }) {
+export function shopHTML({ c, stock, sellables, money, e, busy, iconOf, note = '' }) {
   const buyTotal = stock.reduce((a, x) => a + (c.buy[x.name] || 0) * x.price, 0);
   const sellTotal = sellables.reduce((a, i) => a + (c.sell[i.id] || 0) * i.sellAt, 0);
   const after = money - buyTotal + sellTotal, any = buyTotal || sellTotal;
@@ -92,6 +93,7 @@ export function shopHTML({ c, stock, sellables, money, e, busy, iconOf }) {
   return `<div class="sh-top"><input id="shopName" value="${esc(c.name)}" placeholder="店の名前（例: 鍛冶屋グロム、闇市）" autocomplete="off">${btn('shopSwitch', '切替', {}, 'btn sm ghost')}</div>
     <div class="btn-row">${btn('shopGen', c.gen ? '品ぞろえを考えています…' : '✨ この店の品ぞろえをAIに出してもらう', {}, 'btn sm', c.gen)}</div>
     <p class="hint">今の場面と相場表から、その店らしい品をAIが並べます（記憶用のモデルを1回使います）。アイテム図鑑と相場表の品は、いつでも買えます。</p>
+    ${note ? `<p class="note-box">${esc(note)}</p>` : ''}
     <div class="lbl">買う</div><div class="st-list">${stock.map(buyRow).join('') || '<p class="empty-s">品物がありません（相場表かアイテム図鑑に値段を書くか、AIに品ぞろえを出してもらってください）</p>'}</div>
     <div class="lbl" style="margin-top:12px">売る</div><div class="st-list">${sellables.map(sellRow).join('') || '<p class="empty-s">値段の分かる持ち物がありません</p>'}</div>
     <div class="sh-sum"><div class="st-row"><span>買う</span><b>−${esc(fmtMoney(buyTotal, e))}</b></div><div class="st-row"><span>売る</span><b class="plus">+${esc(fmtMoney(sellTotal, e))}</b></div>
@@ -139,7 +141,12 @@ function stateTab(st, e) {
   return `${e.xp === 'on' ? `<div class="st-lv"><b>Lv ${st.lv}</b><span>次のレベルまで ${need - st.xp}</span>${btn('form', '編集', { kind: 'level' }, 'btn sm ghost')}</div>${meter(st.xp, need, 'xp')}` : ''}
     ${g.length ? `<div class="lbl">ゲージ</div>${g.map(([n, x]) => `<div class="st-gauge"><div class="st-row"><span>${esc(n)}</span><span class="st-step">${btn('gauge', '−', { name: n, d: -1 }, 'icon-btn sm')}<b>${x.v} / ${x.max}</b>${btn('gauge', '＋', { name: n, d: 1 }, 'icon-btn sm')}</span></div>${meter(x.v, x.max)}</div>`).join('')}` : ''}
     <div class="btn-row">${btn('form', 'ゲージを編集', { kind: 'gauges' }, 'btn sm ghost')}</div>
-    ${e.life === 'on' ? `<div class="lbl" style="margin-top:14px">日付</div><div class="st-row"><span>${st.day}日目（${weekday(st.day)}）</span><span class="st-step">${btn('day', '−', { d: -1 }, 'icon-btn sm')}${btn('day', '＋', { d: 1 }, 'icon-btn sm')}</span></div>` : ''}
+    ${Object.keys(st.stats || {}).length ? `<div class="lbl" style="margin-top:14px">能力値</div><div class="st-stats">${Object.entries(st.stats).map(([k, v]) => `<div><span>${esc(k)}</span><b>${v}</b></div>`).join('')}</div>` : ''}
+    <div class="btn-row">${btn('form', '能力値を編集', { kind: 'stats' }, 'btn sm ghost')}${st.skills.some(k => /鑑定/.test(k.name)) ? btn('peek', '👁 人物・魔物を鑑定', {}, 'btn sm') : ''}</div>
+    ${Object.keys(st.ranks || {}).length || st.titles?.length ? `<div class="lbl" style="margin-top:14px">ランク・称号</div>${Object.entries(st.ranks).map(([k, v]) => `<div class="st-row"><span>${esc(k)}</span><b class="st-rank">${esc(v)}</b></div>`).join('')}${st.titles.length ? `<div class="st-titles">${st.titles.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}` : ''}
+    <div class="btn-row">${btn('form', 'ランク・称号を編集', { kind: 'ranks' }, 'btn sm ghost')}</div>
+    ${e.life === 'on' ? `<div class="lbl" style="margin-top:14px">日付</div><div class="st-row"><span>${st.day}日目（${weekday(st.day)}）</span><span class="st-step">${btn('day', '−', { d: -1 }, 'icon-btn sm')}${btn('day', '＋', { d: 1 }, 'icon-btn sm')}</span></div><p class="hint">＋で日付を進めると、家賃・定期の収支・建設・育つ物も処理されます。</p>` : ''}
+    ${e.explore !== 'on' && String(e.regions).trim() ? `<div class="lbl" style="margin-top:14px">現在地</div><div class="st-row"><span>${esc(st.depth || '未設定')}</span>${btn('form', '変更', { kind: 'depth' }, 'btn sm ghost')}</div>` : ''}
     ${e.explore === 'on' ? `<div class="lbl" style="margin-top:14px">現在地</div><div class="st-row"><span>${esc(st.depth || '未設定')}（危険度 ${dangerLabel(depthLevel(st.depth))}）</span>${btn('form', '変更', { kind: 'depth' }, 'btn sm ghost')}</div>
       ${rep.length ? `<div class="lbl" style="margin-top:14px">評判</div>${rep.map(([f, v]) => `<div class="st-row"><span>${esc(f)}</span><span class="st-step">${btn('rep', '−', { f, d: -10 }, 'icon-btn sm')}<b>${repLabel(v)}（${v}）</b>${btn('rep', '＋', { f, d: 10 }, 'icon-btn sm')}</span></div>`).join('')}` : ''}` : ''}`;
 }
@@ -155,8 +162,32 @@ function homeTab(st, e, base) {
     <div class="lbl" style="margin-top:14px">依頼</div>
     <div class="st-list">${st.quests.map((q, i) => `<button class="st-item" data-act="${A('form')}" data-kind="quest" data-id="${i}"><span class="tag q-${q.state}">${esc(q.state)}</span><span class="nm">${esc(q.title)}</span><small>${esc([q.reward && '報酬 ' + q.reward, q.deadline && '期限 ' + q.deadline].filter(Boolean).join('・'))}</small></button>`).join('') || '<p class="empty-s">ありません</p>'}</div>
     <div class="btn-row">${btn('form', `${ic('plus', 'sm')}依頼を追加`, { kind: 'quest', id: 'new' })}</div>
+    <div class="lbl" style="margin-top:14px">定期の収入・支出</div>
+    <div class="st-list">${(st.recurring || []).map(r => `<button class="st-item" data-act="${A('form')}" data-kind="recurring" data-id="${r.id}"><span class="nm">${esc(r.name)}</span><span class="${r.amount >= 0 ? 'plus' : 'warn'}"><b>${signed(r.amount)}${esc(e.currency)}</b></span><small>${r.every}日ごと${r.vary ? `・ぶれ±${r.vary}%` : ''}・次は${r.next}日目</small></button>`).join('') || '<p class="empty-s">ありません（仕事に就いた・店を開いたなどは、記憶係が自動で記録します）</p>'}</div>
+    <div class="btn-row">${btn('form', `${ic('plus', 'sm')}定期の収支を追加`, { kind: 'recurring', id: 'new' })}</div>
+    <div class="lbl" style="margin-top:14px">育てている物・待っている物</div>
+    <div class="st-list">${(st.timers || []).filter(t => !t.done).map(t => { const left = Math.max(0, t.start + t.days - st.day); return `<button class="st-proj" data-act="${A('form')}" data-kind="timer" data-id="${t.id}"><div class="st-row"><span>${esc(t.name)}</span><b>あと${left}日</b></div>${meter(t.days - left, t.days)}${t.yieldName ? `<small>${esc(t.yieldName)} 約${t.yieldQty}</small>` : ''}</button>`; }).join('') || '<p class="empty-s">ありません</p>'}</div>
+    <div class="btn-row">${btn('form', `${ic('plus', 'sm')}育てる物・待つ物を追加`, { kind: 'timer', id: 'new' })}</div>
     <div class="lbl" style="margin-top:14px">拠点の保管（${stored.length}）</div>
     <div class="st-list">${stored.map(it => itemRow(it, e, !base.items.some(b => b.id === it.id))).join('') || '<p class="empty-s">ありません</p>'}</div>`;
+}
+
+function partyTab(st) {
+  return `<div class="st-list">${(st.party || []).map(m => `<button class="st-proj" data-act="${A('form')}" data-kind="member" data-id="${m.id}"><div class="st-row"><span><b>${esc(m.name)}</b>${m.role ? ` <span class="tag">${esc(m.role)}</span>` : ''}</span><b>HP ${m.hp.v}/${m.hp.max}</b></div>${meter(m.hp.v, m.hp.max)}${m.equip || m.note ? `<small>${esc([m.equip, m.note].filter(Boolean).join('／'))}</small>` : ''}</button>`).join('') || '<p class="empty-s">仲間はいません（物語の中で仲間になると、記憶係が自動で記録します）</p>'}</div>
+    <div class="btn-row">${btn('form', `${ic('plus', 'sm')}仲間を追加`, { kind: 'member', id: 'new' })}</div>`;
+}
+
+/* ---------- AIが出す【鑑定結果】（なろう風のステータス画面） ---------- */
+export function statusWindowHTML(lines) {
+  const rows = lines.map(l => l.match(/^([^:：]{1,16})[:：]\s*(.*)$/)).filter(Boolean);
+  const title = rows.find(r => /名前/.test(r[1]))?.[2] || '';
+  return `<div class="swin"><div class="sw-h">ステータス${title ? `<b>${esc(title)}</b>` : ''}</div>
+    <div class="sw-grid">${rows.filter(r => !/名前/.test(r[1])).map(r => `<span class="sw-k">${esc(r[1])}</span><span class="sw-v">${esc(r[2])}</span>`).join('') || lines.map(l => `<span class="sw-v wide">${esc(l)}</span>`).join('')}</div></div>`;
+}
+export function peekHTML() {
+  return `<p class="hint">鑑定スキルで人物や魔物を見ます。結果のステータスはAIが【鑑定結果】として書きます（鑑定スキルが低いと一部が「？？？」になります）。</p>
+    <label class="field"><span>鑑定する相手</span><input id="peekTarget" placeholder="例: 目の前のゴブリン、宿屋の主人" autocomplete="off"></label>
+    <div class="btn-row end"><button class="btn" data-act="closeSheet">キャンセル</button>${btn('peekGo', '👁 鑑定する', {}, 'btn primary')}</div>`;
 }
 
 function logTab(st) {
@@ -167,7 +198,7 @@ function logTab(st) {
 export function sheetHTML(st, e, base, tab) {
   const tabs = TABS(e);
   if (!tabs.some(([k]) => k === tab)) tab = 'items';
-  const body = { items: itemsTab, gear: gearTab, state: stateTab, home: homeTab, log: logTab }[tab](st, e, base);
+  const body = { items: itemsTab, gear: gearTab, state: stateTab, party: partyTab, home: homeTab, log: logTab }[tab](st, e, base);
   return `<div class="seg">${tabs.map(([k, l]) => `<button class="${k === tab ? 'on' : ''}" data-act="${A('tab')}" data-tab="${k}">${l}</button>`).join('')}</div>
     <div class="st-body">${body}</div>
     <p class="hint">会話の中の売買・入手・消費・負傷などは、記憶係が次の発言のあとに自動で反映します。違っていたら直接直せます。</p>`;

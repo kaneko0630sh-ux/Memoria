@@ -26,6 +26,22 @@ export function parseItems(s, cats = []) {
   });
 }
 export const guessCat = (name, cats) => cats.find(c => c.split(/[・/／]/).some(t => t && name.includes(t))) || '';
+// 名前から種類を推測（相場表の品など、種類が書かれていない物に地域の倍率を掛けるため）
+const CAT_HINTS = [
+  [/装備|武具|武器|防具/, /剣|刀|槍|斧|弓|杖|盾|鎧|兜|籠手|ローブ|服|ナイフ|短剣|ハンマー|銃|ライフル|コート/],
+  [/魔石/, /魔石|核|コア/],
+  [/素材|部品/, /牙|皮|毛皮|鉱石|草|苔|糸|骨|鱗|角|羽|木材|鉄|銅|基板|部品|ギア/],
+  [/消耗|食料|医療|薬/, /ポーション|薬|パン|肉|食|水|酒|弁当|包帯|パッチ|タブレット/],
+];
+export function catOf(name, cats) {
+  const direct = guessCat(name, cats);
+  if (direct) return direct;
+  for (const [catRe, nameRe] of CAT_HINTS) {
+    const c = cats.find(x => catRe.test(x));
+    if (c && nameRe.test(name)) return c;
+  }
+  return '';
+}
 export function parsePairs(s) {
   return lines(s).map(l => {
     const m = l.match(/^([^:：]+)[:：]\s*(.*)$/);
@@ -59,14 +75,22 @@ export function initState(e) {
     day: 1, home: null, projects: [], quests: [],
     depth: '', rep: Object.fromEntries(list(e.factions).map(f => [f, 0])),
     lv: 1, xp: 0, shops: {},
+    stats: parseStats(e.stats), ranks: Object.fromEntries(parsePairs(e.ranks).filter(([k]) => k)), titles: [],
+    recurring: [], timers: [], party: parseParty(e.party),
     log: [], prev: null,
   };
 }
 // 古い版で作られた状態に、後から増えた項目を足す
 export function upgrade(st) {
   st.lv ??= 1; st.xp ??= 0; st.shops ||= {};
+  st.stats ||= {}; st.ranks ||= {}; st.titles ||= []; st.recurring ||= []; st.timers ||= []; st.party ||= [];
   return st;
 }
+// 能力値「筋力:8,敏捷:10」→ { 筋力: 8, 敏捷: 10 }
+export const parseStats = s => Object.fromEntries(parsePairs(s).map(([k, v]) => [k, Number(String(v).replace(/[^\d-]/g, ''))]).filter(([k, v]) => k && Number.isFinite(v)));
+// 仲間「エルナ: 弓使い」→ [{ id, name, role, hp, equip, note }]
+export const parseParty = s => parsePairs(s).filter(([k]) => k).map(([name, role]) => newMember({ name, role }));
+export const newMember = (o = {}) => ({ id: uid(), name: '', role: '', hp: { v: 30, max: 30 }, equip: '', note: '', ...o });
 
 export const fmtMoney = (n, e) => `${Math.round(n).toLocaleString()}${e.currency}`;
 export const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(Math.round(n)).toLocaleString();
@@ -251,32 +275,39 @@ export function applyKeeper(st, r, e, turn) {
     if (v !== g.v) { g.v = v; out.push(`${str(x.name)} ${v}/${g.max}`); }
   }
 
-  // 生活
-  if (int(r.days) > 0) {
-    st.day += clamp(int(r.days), 0, 60);
-    out.push(`${st.day}日目`);
-  }
+  // 生活（拠点・定期の収支・育つ物を先に決めてから、日付を進める）
   for (const x of arr(r.home).slice(0, 1)) {
     if (!str(x?.name)) continue;
     const every = Math.max(0, int(x.every)), rent = Math.max(0, int(x.rent));
     st.home = { name: str(x.name), kind: str(x.kind), rent, every, next: st.day + (every || 0), arrears: false };
     log(`拠点: ${st.home.name}${rent ? `（${fmtMoney(rent, e)}／${every}日）` : ''}`);
   }
-  // 家賃・宿代の引き落とし
-  for (let guard = 0; st.home?.rent > 0 && st.home.every > 0 && st.day >= st.home.next && guard < 24; guard++) {
-    st.money -= st.home.rent;
-    st.home.next += st.home.every;
-    st.home.arrears = st.money < 0;
-    log(`${st.home.kind || '家賃'}の支払い ${signed(-st.home.rent)}${e.currency}（自動）${st.home.arrears ? '・不足' : ''}`);
-  }
   for (const x of arr(r.projects)) {
     const name = str(x?.name);
     if (!name) continue;
-    const p = st.projects.find(q => q.name === name) || (st.projects.push({ name, progress: 0, note: '' }), st.projects.at(-1));
+    const p = st.projects.find(q => q.name === name) || (st.projects.push({ name, progress: 0, note: '', perDay: 0 }), st.projects.at(-1));
     const prog = clamp(int(x.progress), 0, 100);
     if (prog !== p.progress) { p.progress = prog; log(`${name} ${prog}%`); }
+    if (int(x.per_day) > 0) p.perDay = clamp(int(x.per_day), 0, 100);
     if (str(x.note)) p.note = str(x.note);
   }
+  for (const x of arr(r.recurring)) {
+    const name = str(x?.name);
+    if (!name) continue;
+    const i = st.recurring.findIndex(k => k.name === name);
+    if (x.stop) { if (i >= 0) { st.recurring.splice(i, 1); log(`定期の収支を終了: ${name}`); } continue; }
+    const rec = { id: st.recurring[i]?.id || uid(), name, amount: int(x.amount), every: Math.max(1, int(x.every) || 1), vary: clamp(int(x.vary), 0, 80), next: st.recurring[i]?.next ?? st.day + Math.max(1, int(x.every) || 1) };
+    if (!rec.amount) continue;
+    if (i >= 0) st.recurring[i] = rec; else st.recurring.push(rec);
+    log(`${i >= 0 ? '定期の収支を変更' : '定期の収支'}: ${name} ${signed(rec.amount)}${e.currency}／${rec.every}日`);
+  }
+  for (const x of arr(r.timers)) {
+    const name = str(x?.name), days = clamp(int(x.days), 1, 365);
+    if (!name || st.timers.some(t => t.name === name && !t.done)) continue;
+    st.timers.push({ id: uid(), name, days, start: st.day, yieldName: str(x.yield_name), yieldQty: Math.max(0, int(x.yield_qty)), cat: str(x.cat), done: false });
+    log(`⏳ ${name}（${days}日後）`);
+  }
+  if (int(r.days) > 0) out.push(...advanceDays(st, clamp(int(r.days), 0, 60), e, turn));
   for (const x of arr(r.quests)) {
     const title = str(x?.title);
     if (!title) continue;
@@ -313,11 +344,80 @@ export function applyKeeper(st, r, e, turn) {
   }
   // 経験値（レベルアップは addXp が処理）
   if (int(r.xp) > 0 && e.xp === 'on') out.push(...addXp(st, int(r.xp), e, turn));
+  // 仲間
+  for (const x of arr(r.party)) {
+    const name = str(x?.name);
+    if (!name) continue;
+    const i = st.party.findIndex(m => m.name === name);
+    if (x.status === '離脱') { if (i >= 0) { st.party.splice(i, 1); log(`仲間が離脱: ${name}`); } continue; }
+    const m = i >= 0 ? st.party[i] : (st.party.push(newMember({ name })), st.party.at(-1));
+    if (i < 0) log(`仲間に加わった: ${name}`);
+    if (str(x.role)) m.role = str(x.role);
+    if (int(x.hpmax) > 0) m.hp.max = int(x.hpmax);
+    if (Number.isFinite(Number(x.hp)) && int(x.hp) >= 0) { const v = clamp(int(x.hp), 0, m.hp.max); if (v !== m.hp.v && i >= 0) out.push(`${name} HP ${v}/${m.hp.max}`); m.hp.v = v; }
+    if (str(x.equip)) m.equip = str(x.equip);
+    if (str(x.note)) m.note = str(x.note);
+  }
+  // 能力値・ランク・称号
+  for (const x of arr(r.stats)) {
+    const k = str(x?.name);
+    if (!k || !Number.isFinite(Number(x.value))) continue;
+    if (st.stats[k] !== int(x.value)) { log(`${k} ${st.stats[k] ?? '—'} → ${int(x.value)}`); st.stats[k] = int(x.value); }
+  }
+  for (const x of arr(r.ranks)) {
+    const k = str(x?.name), v = str(x?.value);
+    if (!k || !v || st.ranks[k] === v) continue;
+    st.rankup = { name: k, from: st.ranks[k] || '', to: v, turn };
+    st.ranks[k] = v;
+    log(`⭐ ${k}: ${v}`);
+  }
+  for (const t of arr(r.titles).map(str).filter(Boolean)) if (!st.titles.includes(t)) { st.titles.push(t); log(`称号を得た: ${t}`); }
   for (const t of arr(r.reasons).map(str).filter(Boolean).slice(0, 4)) pushLog(st, turn, `（${t}）`);
   return out;
 }
 
 export const snapshot = st => { const c = clone(st); c.prev = null; c.log = []; return c; };
+
+/* ---------- 日付を進める（家賃・定期の収支・建設の自動進行・育つ物） ---------- */
+// 記憶係が「日が経った」と読んだときと、状態タブの「＋」で使う。運が絡む量（売上のぶれ・収穫量）はアプリが決める
+export function advanceDays(st, n, e, turn) {
+  const out = [];
+  if (!(n > 0)) return out;
+  const log = t => { pushLog(st, turn, t); out.push(t); };
+  st.day += n;
+  out.push(`${st.day}日目`);
+  // 収入が先、支払いが後（同じ期間の給金で家賃を払える）
+  for (const r of st.recurring) {
+    let sum = 0, times = 0;
+    for (let guard = 0; r.every > 0 && st.day >= r.next && guard < 120; guard++) {
+      sum += r.vary ? Math.round(r.amount * between(1 - r.vary / 100, 1 + r.vary / 100)) : r.amount;
+      r.next += r.every; times++;
+    }
+    if (times) { st.money += sum; log(`${r.name} ${signed(sum)}${e.currency}${times > 1 ? `（${times}回分）` : ''}`); }
+  }
+  for (let guard = 0; st.home?.rent > 0 && st.home.every > 0 && st.day >= st.home.next && guard < 60; guard++) {
+    st.money -= st.home.rent;
+    st.home.next += st.home.every;
+    st.home.arrears = st.money < 0;
+    log(`${st.home.kind || '家賃'}の支払い ${signed(-st.home.rent)}${e.currency}（自動）${st.home.arrears ? '・不足' : ''}`);
+  }
+  for (const p of st.projects) {
+    if (!(p.perDay > 0) || p.progress >= 100) continue;
+    p.progress = Math.min(100, p.progress + p.perDay * n);
+    log(p.progress >= 100 ? `🏠 ${p.name}が完成` : `${p.name} ${p.progress}%`);
+  }
+  for (const t of st.timers) {
+    if (t.done || st.day < t.start + t.days) continue;
+    t.done = true;
+    if (t.yieldName && t.yieldQty > 0) {
+      const qty = Math.max(1, Math.round(t.yieldQty * between(0.7, 1.3)));
+      addItem(st, { name: t.yieldName, qty, cat: t.cat || '' });
+      log(`🌱 ${t.name}: ${t.yieldName}×${qty}`);
+    } else log(`⏳ ${t.name}ができあがった`);
+  }
+  if (st.timers.length > 30) st.timers = st.timers.filter(t => !t.done).concat(st.timers.filter(t => t.done).slice(-10));
+  return out;
+}
 
 /* ---------- 経験値とレベル ---------- */
 export const needXp = lv => 100 * lv;
@@ -339,6 +439,14 @@ export function addXp(st, amount, e, turn) {
     }
   }
   if (st.lv > from) {
+    // 能力値の成長（基本の伸び＋ときどきアプリのサイコロで1多く伸びる）
+    for (const [n, d] of parsePairs(e.statGrowth).map(([k, v]) => [k, Number(String(v).replace(/[^\d-]/g, '')) || 0])) {
+      if (!(n in st.stats) || !d) continue;
+      let add = 0;
+      for (let l = from; l < st.lv; l++) add += d + (Math.random() < 0.3 ? 1 : 0);
+      st.stats[n] += add;
+      gains[n] = (gains[n] || 0) + add;
+    }
     st.lvup = { from, to: st.lv, gains, turn };
     pushLog(st, turn, `⭐ レベルアップ Lv${from} → Lv${st.lv}`);
     out.push(`⭐ レベルアップ Lv${st.lv}`);
@@ -359,10 +467,41 @@ export function parsePrices(text) {
   }
   return out;
 }
-// 売るときの値段: 査定額があればそれ、なければ相場の半額。分からなければ null（物語の中で交渉）
-export function sellPrice(it, basePrice) {
+// 売るときの値段: 査定額があればそれ、なければ相場×地域の倍率×買取率（ふつう半額）。分からなければ null（物語の中で交渉）
+export function sellPrice(it, basePrice, { rate = 0.5, factor = 1 } = {}) {
   if (it.val > 0) return it.val;
-  return basePrice > 0 ? Math.max(1, Math.round(basePrice / 2)) : null;
+  return basePrice > 0 ? Math.max(1, Math.round(basePrice * factor * rate)) : null;
+}
+
+/* ---------- 地域ごとの相場 ----------
+   「王都: 装備品=1.3, 素材=1.2」「辺境の村: 0.8」→ [{ name, all, cats }]。現在地にその地名が含まれていれば適用 */
+export function parseRegions(text) {
+  return String(text || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const m = l.match(/^([^:：]+)[:：](.*)$/);
+    if (!m) return null;
+    const r = { name: m[1].trim(), all: 1, cats: {} };
+    for (const part of m[2].split(/[,、，]/).map(s => s.trim()).filter(Boolean)) {
+      const kv = part.match(/^(.+?)\s*[=＝×x]\s*([\d.]+)$/);
+      if (kv) r.cats[kv[1].trim()] = Number(kv[2]);
+      else if (!isNaN(Number(part))) r.all = Number(part);
+    }
+    return r.name ? r : null;
+  }).filter(Boolean);
+}
+export const regionOf = (e, place) => (place ? parseRegions(e.regions).find(r => place.includes(r.name)) || null : null);
+export const regionFactor = (region, cat) => (region ? region.cats[cat] ?? region.all ?? 1 : 1);
+export function regionText(region) {
+  if (!region) return '';
+  const parts = Object.entries(region.cats).map(([c, f]) => `${c}は${f > 1 ? '高め' : f < 1 ? '安め' : '普通'}（×${f}）`);
+  if (region.all !== 1) parts.unshift(`全体に${region.all > 1 ? '高め' : '安め'}（×${region.all}）`);
+  return parts.join('、');
+}
+// 交渉・商売のスキルがあると、売るときは高く・買うときは安くなる
+const TRADE_SKILL = /交渉|商才|話術|値切|商売|商人|弁舌/;
+export function tradeRates(st) {
+  const sk = st.skills.find(k => TRADE_SKILL.test(k.name));
+  const b = sk ? skillBonus(sk.level) : 0;
+  return { sell: Math.min(0.75, 0.5 + 0.05 * b), buy: Math.max(0.85, 1 - 0.03 * b), skill: sk ? sk.name : '' };
 }
 // まとめて売買。buy: [{ name, price, qty, cat, rar, service }] / sell: [{ id, name, price, qty }]
 export function tradeOps({ buy = [], sell = [], shop = '' }, e) {
@@ -388,20 +527,43 @@ export function tradeOps({ buy = [], sell = [], shop = '' }, e) {
 }
 
 /* ---------- スキルのランクと補正 ---------- */
-const RANKS = [['入門', 1], ['初級', 2], ['中級', 3], ['上級', 4], ['達人', 5], ['極', 5], ['熟練', 4], ['見習い', 1]];
+// ランクの書き方: 入門〜達人 / S〜F / EX・ユニーク・固有 / Lv3・レベル7 などの数字
+const RANKS = [['EX', 5], ['ユニーク', 5], ['固有', 5], ['神', 5], ['極', 5], ['達人', 5], ['上級', 4], ['熟練', 4], ['中級', 3], ['初級', 2], ['入門', 1], ['見習い', 1]];
+const LETTER = { S: 5, A: 4, B: 3, C: 2, D: 1, E: 1, F: 0 };
 export function skillBonus(level) {
-  const s = String(level || '');
-  const r = RANKS.find(([k]) => s.includes(k));
+  const s = String(level || '').trim();
+  const r = RANKS.find(([k]) => s.toUpperCase().includes(k));
   if (r) return r[1];
+  const l = s.match(/(?:^|ランク\s*)([SABCDEF])\+*$/i);
+  if (l) return LETTER[l[1].toUpperCase()];
   const n = Number(s.match(/\d+/)?.[0]);
   return n ? Math.min(5, Math.max(1, Math.round(n / 2))) : 1;
 }
+// 能力値と、判定の内容の対応（判定文にこの語があれば、その能力値で補正）
+const STAT_HINTS = [
+  [/筋力|STR|腕力/, /腕力|押|持ち上|叩|殴|斬|投げ|壊|運ぶ|組み/],
+  [/体力|VIT|耐久|生命/, /耐え|我慢|毒|病|長時間|走り続/],
+  [/敏捷|AGI|素早|速さ/, /避|躱|かわ|速|走|跳|隠|忍|逃|追/],
+  [/魔力|INT|知力|知性|MAG/, /魔法|呪文|詠唱|魔|術|知識|解読|調べ/],
+  [/器用|DEX|技量/, /解錠|開け|細工|射|罠|作|修理|盗/],
+  [/精神|MND|意志|WIS/, /抵抗|恐怖|誘惑|集中|祈/],
+  [/魅力|CHA/, /説得|交渉|口説|騙|演技|歌/],
+  [/幸運|LUK|^運$/, /運|くじ|偶然|賭/],
+];
 // ダイス判定の補正（d20 基準。面数に合わせて伸縮）。[{ label, v }]
 export function diceMods(st, what, skillName, sides, e) {
   const mods = [], text = `${what} ${skillName}`;
   const sk = st.skills.find(k => skillName && (k.name === skillName || skillName.includes(k.name) || k.name.includes(skillName)))
     || st.skills.find(k => k.name.length > 1 && text.includes(k.name));
   if (sk) mods.push({ label: `${sk.name}${sk.level ? `（${sk.level}）` : ''}`, v: skillBonus(sk.level) });
+  // 能力値（10を基準に、2ごとに±1。−2〜+5）
+  for (const [statRe, actRe] of STAT_HINTS) {
+    const key = Object.keys(st.stats || {}).find(k => statRe.test(k));
+    if (!key || !actRe.test(what)) continue;
+    const v = Math.max(-2, Math.min(5, Math.floor((st.stats[key] - 10) / 2)));
+    if (v) mods.push({ label: `${key} ${st.stats[key]}`, v });
+    break;
+  }
   if (e.xp === 'on' && st.lv > 1) mods.push({ label: `Lv${st.lv}`, v: Math.min(5, Math.floor((st.lv - 1) / 2)) });
   if (/攻撃|戦|斬|撃|射|殴|突|防|守|避|受け/.test(what)) {
     const gear = Object.entries(st.equip).filter(([slot]) => /武器|防具|盾/.test(slot)).map(([, v]) => v);
