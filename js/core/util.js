@@ -10,7 +10,7 @@ export const sleep = ms => new Promise(r => setTimeout(r, ms));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const now = () => Date.now();
 export const uniq = a => [...new Set(a)];
-export const tl = t => (t ? 'T' + t : '開始');
+export const tl = t => (t ? 'T' + (Number(t) || 0) : '開始');
 export const FINE = typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
 export const safeName = s => String(s || 'untitled').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40);
 export const modelShort = m => String(m || '').split('/').pop().replace(/^claude-/, '');

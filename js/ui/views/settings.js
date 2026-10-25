@@ -14,7 +14,7 @@ const opts = (list, cur) => list.map(([v, l]) => `<option value="${esc(v)}" ${cu
 const provList = same => [...(same ? [['', 'メインと同じ']] : []), ...Object.entries(PROVIDERS).map(([k, v]) => [k, v.label])];
 
 function num(path, label, o = {}) {
-  return `<label class="field"><span>${label}</span><input type="number" inputmode="${o.dec ? 'decimal' : 'numeric'}" data-set="${path}" data-num="1" value="${getPath(S.settings, path)}"${o.step ? ` step="${o.step}"` : ''}${o.min != null ? ` min="${o.min}"` : ''}>${o.hint ? `<div class="hint">${o.hint}</div>` : ''}</label>`;
+  return `<label class="field"><span>${label}</span><input type="number" inputmode="${o.dec ? 'decimal' : 'numeric'}" data-set="${path}" data-num="1" value="${esc(getPath(S.settings, path))}"${o.step ? ` step="${o.step}"` : ''}${o.min != null ? ` min="${o.min}"` : ''}>${o.hint ? `<div class="hint">${o.hint}</div>` : ''}</label>`;
 }
 function keyField(p) {
   const d = PROVIDERS[p];
@@ -22,7 +22,7 @@ function keyField(p) {
   return `<label class="field"><span>${d.label} のAPIキー</span><div class="inline"><input type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-set="keys.${p}" value="${esc(S.settings.keys[p] || '')}" placeholder="${d.keyHint}"><button class="btn sm" data-act="toggleKey">表示</button></div></label>`;
 }
 function modelField(path, provider, value, ph = 'モデルID') {
-  return `<div class="inline"><input data-set="${path}" value="${esc(value || '')}" list="dl-${path.replace(/\W/g, '')}" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${ph}"><button class="btn sm" data-act="pickModel" data-p="${provider}" data-path="${path}">一覧</button></div>
+  return `<div class="inline"><input data-set="${esc(path)}" value="${esc(value || '')}" list="dl-${path.replace(/\W/g, '')}" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${ph}"><button class="btn sm" data-act="pickModel" data-p="${esc(provider)}" data-path="${esc(path)}">一覧</button></div>
     <datalist id="dl-${path.replace(/\W/g, '')}">${(PROVIDERS[provider]?.suggest || []).map(m => `<option value="${m}">`).join('')}</datalist>`;
 }
 

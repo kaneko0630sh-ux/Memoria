@@ -25,21 +25,24 @@ definePlugin({
     const lines = b.paras.map(p => p.t);
     const sides = Number(env.cfg.sides) || 20;
     const what = field(lines, /^判定\s*[:：]\s*/) || lines[0] || '';
-    const target = Number(field(lines, /^目標\s*[:：]\s*/).replace(/\D+/g, '')) || Math.ceil(sides / 2);
+    // 最初の数だけを読む（「目標: 15（20面）」を1520にしない）。全角数字・「目標値」も可。面数の範囲に収める
+    const tm = field(lines, /^目標値?\s*[:：]\s*/).normalize('NFKC').match(/\d+/);
+    const target = Math.min(sides, Math.max(1, Number(tm?.[0]) || Math.ceil(sides / 2)));
     const skill = field(lines, /^技能\s*[:：]\s*/);
     const rolled = pluginState(env.chat, 'dice')[env.msg.id];
     const foot = rolled
-      ? `<div class="pc-result ${rolled.ok ? 'ok' : 'ng'}">${rolled.total != null ? `合計 ${rolled.total}` : `出目 ${rolled.roll}`} → ${rolled.ok ? '成功' : '失敗'}</div>`
+      ? `<div class="pc-result ${rolled.ok ? 'ok' : 'ng'}">${rolled.total != null ? `合計 ${Number(rolled.total) || 0}` : `出目 ${Number(rolled.roll) || 0}`} → ${rolled.ok ? '成功' : '失敗'}</div>`
       : env.isLast ? `<button class="btn primary sm" data-act="p:dice:roll" data-msg="${env.msg.id}" data-target="${target}" data-sides="${sides}" data-what="${esc(what)}" data-skill="${esc(skill)}">${ic('dice', 'sm')}ダイスを振る</button>` : '';
     return `<div class="pcard"><div class="pc-head">${ic('dice', 'sm')}ダイス判定</div><div class="pc-body">${esc(what)}<small>目標 ${target} 以上（${sides}面）${skill ? `・技能: ${esc(skill)}` : ''}</small></div>${foot}</div>`;
   },
 
   // 振った結果のカード（吹き出しの代わり）
   renderCard(card) {
-    const crit = card.roll === card.sides ? ' crit' : card.roll === 1 && !card.ok ? ' fumble' : '';
-    return `<div class="lcard dice ${card.ok ? 'ok' : 'ng'}${crit}"><div class="lc-head"><span>🎲 ${esc(card.what || '判定')}</span><small>目標 ${card.target}（${card.sides}面）</small></div>
-      <div class="dc-body"><div class="dc-roll">${card.roll}</div>${card.mods.length ? `<div class="dc-mods">${card.mods.map(m => `<span>${esc(m.label)} <b>${signed(m.v)}</b></span>`).join('')}</div>` : ''}
-      <div class="dc-total">${card.mods.length ? `合計 <b>${card.total}</b>` : ''}<span class="dc-res">${card.ok ? '成功' : '失敗'}</span></div></div></div>`;
+    const n = v => Number(v) || 0, roll = n(card.roll), mods = Array.isArray(card.mods) ? card.mods : [];
+    const crit = roll === n(card.sides) ? ' crit' : roll === 1 && !card.ok ? ' fumble' : '';
+    return `<div class="lcard dice ${card.ok ? 'ok' : 'ng'}${crit}"><div class="lc-head"><span>🎲 ${esc(card.what || '判定')}</span><small>目標 ${n(card.target)}（${n(card.sides)}面）</small></div>
+      <div class="dc-body"><div class="dc-roll">${roll}</div>${mods.length ? `<div class="dc-mods">${mods.map(m => `<span>${esc(m.label)} <b>${signed(n(m.v))}</b></span>`).join('')}</div>` : ''}
+      <div class="dc-total">${mods.length ? `合計 <b>${n(card.total)}</b>` : ''}<span class="dc-res">${card.ok ? '成功' : '失敗'}</span></div></div></div>`;
   },
 
   actions: {

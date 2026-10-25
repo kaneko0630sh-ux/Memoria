@@ -125,8 +125,12 @@ export const newMem = () => ({
   plug: {}, // プラグインの物語状態（registry の pluginMem）
 });
 
+// 文章の項目は文字列に揃える（null が入っていると .trim() で画面が落ちる）
+const strFields = (o, keys) => { for (const k of keys) if (typeof o[k] !== 'string') o[k] = o[k] == null ? '' : String(o[k]); return o; };
+
 export function normalizeChar(c = {}) {
-  const out = { id: uid(), name: '', images: [], profile: '', personality: '', speech: '', note: '', ...c };
+  const out = strFields({ id: uid(), name: '', images: [], profile: '', personality: '', speech: '', note: '', ...c }, ['name', 'profile', 'personality', 'speech', 'note']);
+  if (!Array.isArray(out.images)) out.images = [];
   if (!out.images?.length && c.avatar) out.images = [c.avatar];
   if (c.examples && !out.speech) out.speech = c.examples;
   delete out.avatar;
@@ -136,7 +140,8 @@ export function normalizeChar(c = {}) {
 }
 // item があればアイテム図鑑の項目（core/items.js）
 export const normalizeLore = (e = {}) => {
-  const out = { id: uid(), title: '', keys: [], content: '', always: false, on: true, item: null, ...e };
+  const out = strFields({ id: uid(), title: '', keys: [], content: '', always: false, on: true, item: null, ...e }, ['title', 'content']);
+  out.keys = (Array.isArray(out.keys) ? out.keys : []).filter(k => k != null).map(String);
   if (out.item) out.item = newItemData(out.item);
   return out;
 };
@@ -149,13 +154,14 @@ export function normalizeStory(s = {}) {
   };
   if (s.direction && !s.prompt) st.prompt = s.direction;
   delete st.direction;
+  strFields(st, ['title', 'description', 'prompt', 'guide', 'userRole', 'world', 'opening', 'creatorNote', 'cover']);
   st.style = { ...STYLE_DEFAULTS, ...(s.style || {}) };
   st.style.mood = Array.isArray(st.style.mood) ? st.style.mood.slice(0, 2) : [];
   st.chars = (s.chars || []).map(normalizeChar);
   st.lore = (s.lore || []).map(normalizeLore);
-  st.examples = (s.examples || []).map(x => ({ id: uid(), charId: '', situation: '', reply: '', ...x }));
-  st.profiles = (s.profiles || []).map(x => ({ id: uid(), name: '', desc: '', avatar: '', ...x }));
-  st.tags = Array.isArray(s.tags) ? s.tags : [];
+  st.examples = (s.examples || []).map(x => strFields({ id: uid(), charId: '', situation: '', reply: '', ...x }, ['situation', 'reply']));
+  st.profiles = (s.profiles || []).map(x => strFields({ id: uid(), name: '', desc: '', avatar: '', ...x }, ['name', 'desc', 'avatar']));
+  st.tags = Array.isArray(s.tags) ? s.tags.filter(t => t != null).map(String) : [];
   st.plugins = s.plugins && typeof s.plugins === 'object' ? s.plugins : {};
   st.v = 3;
   return st;
@@ -169,6 +175,41 @@ export function normalizeChat(c) {
   c.messages ||= [];
   c.note ??= '';
   c.choices ??= false;
+  return c;
+}
+
+/* ---------- 読み込んだファイル（他の人が作ったかもしれない）の検査 ----------
+   起動時の読み込みには使わない（手元のデータの ID を変えると、トークとプロットのつながりが切れるため）。
+   ID は HTML の属性に入るので、文字・数字・_ . - だけにする（日本語の ID はそのまま残る） */
+const SAFE_ID = /^[\p{L}\p{N}_.-]{1,64}$/u;
+export const safeId = v => (SAFE_ID.test(String(v ?? '')) ? String(v) : uid());
+const rows = a => (Array.isArray(a) ? a : []).filter(e => e && typeof e === 'object');
+const SCOPE = /^(world|user|c:[\p{L}\p{N}_.-]{1,64})$/u;
+
+export function sanitizeStory(st) {
+  st.id = safeId(st.id);
+  for (const list of [st.chars, st.lore, st.examples, st.profiles]) for (const x of list) x.id = safeId(x.id);
+  for (const x of st.examples) x.charId = x.charId ? safeId(x.charId) : '';
+  return st;
+}
+function sanitizeMem(m) {
+  m.entries = rows(m.entries).map(e => ({ ...e, id: safeId(e.id), scope: SCOPE.test(String(e.scope)) ? e.scope : 'world', text: String(e.text ?? ''), imp: Math.max(1, Math.min(5, Math.round(Number(e.imp)) || 3)), turn: Number(e.turn) || 0 }));
+  m.chronicle = rows(m.chronicle).map(x => ({ ...x, id: safeId(x.id), text: String(x.text ?? ''), from: Number(x.from) || 0, to: Number(x.to) || 0 }));
+  for (const k of ['lastId', 'coveredId', 'turn', 'seq', 'rev']) m[k] = Number(m[k]) || 0;
+  return m;
+}
+export function sanitizeChat(c) {
+  c.id = safeId(c.id);
+  if (c.storyId) c.storyId = safeId(c.storyId); // ない（v1 のトーク）なら、そのまま移行の対象にする
+  c.messages = rows(c.messages).filter(m => Number.isFinite(Number(m.id)) && Array.isArray(m.swipes));
+  for (const m of c.messages) {
+    m.id = Number(m.id); m.turn = Number(m.turn) || 0; m.swipes = m.swipes.map(s => (s == null ? '' : String(s))); m.sw = Math.max(0, Math.min(m.swipes.length - 1, Number(m.sw) || 0));
+    // 速度の記録（候補ごと）: 数だけを残す
+    if (Array.isArray(m.perf)) m.perf = m.perf.map(p => (p && typeof p === 'object' ? Object.fromEntries(Object.entries(p).map(([k, v]) => [k, Number(v) || 0])) : null));
+    else delete m.perf;
+  }
+  sanitizeMem(c.mem);
+  c.snaps = rows(c.snaps).filter(s => s.data && typeof s.data === 'object').map(s => ({ at: Number(s.at) || 0, data: sanitizeMem(deepMerge(newMem(), s.data)) }));
   return c;
 }
 

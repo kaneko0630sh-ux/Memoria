@@ -48,7 +48,16 @@ function enrich(story, it) {
 function marketPrice(chat, name, e = cfgOf(chat)) {
   const l = findLibItem(getStory(chat.storyId), name);
   if (Number(l?.item.price) > 0) return Number(l.item.price);
-  return M.parsePrices(e.prices).find(p => p.name === name || p.name.startsWith(name))?.price || 0;
+  const rows = M.parsePrices(e.prices), exact = rows.find(p => p.name === name);
+  if (exact) return exact.price;
+  // 「弾薬（10発）12C」のようなまとめ売りは1個あたりに直す（数の分からない「（1kg）」などは使わない）
+  for (const p of rows.filter(p => p.name.startsWith(name))) {
+    const rest = p.name.slice(name.length);
+    if (!/\d/.test(rest)) return p.price;
+    const n = Number(rest.match(/(\d+)\s*(?:発|個|本|枚|束|袋|錠|粒)/)?.[1]);
+    if (n) return Math.max(1, Math.round(p.price / n));
+  }
+  return 0;
 }
 // 今いる土地の倍率と、交渉スキルによる売値・買値の率
 function priceCtx(chat, e = cfgOf(chat)) {
@@ -71,7 +80,7 @@ function statusText(st, e, { ids = false, turn = 0, recent = '' } = {}) {
   const g = Object.entries(st.gauges).map(([n, x]) => `${n} ${x.v}/${x.max}`).join('・');
   const lv = e.xp === 'on' ? `｜Lv${st.lv}（次のレベルまで経験値 ${M.needXp(st.lv) - st.xp}）` : '';
   L.push(`所持金 ${M.fmtMoney(st.money, e)}${g ? `｜${g}` : ''}${lv}${e.life === 'on' ? `｜${st.day}日目（${M.weekday(st.day)}）` : ''}`);
-  if (e.xp === 'on' && st.lvup && st.lvup.turn >= turn - 1) L.push(`直前にレベルアップした（Lv${st.lvup.from} → Lv${st.lvup.to}）`);
+  if (e.xp === 'on' && turn > 0 && st.lvup && st.lvup.turn >= turn - 2) L.push(`直前にレベルアップした（Lv${st.lvup.from} → Lv${st.lvup.to}）`);
   const eq = Object.entries(st.equip).map(([k, v]) => `${k}=${v}`).join('、');
   if (eq) L.push(`装備: ${eq}`);
   const carried = st.items.filter(i => i.at !== 'home');
@@ -85,7 +94,7 @@ function statusText(st, e, { ids = false, turn = 0, recent = '' } = {}) {
   if (stats.length) L.push(`能力値: ${stats.map(([k, v]) => `${k}${v}`).join('・')}`);
   const ranks = Object.entries(st.ranks || {});
   if (ranks.length || st.titles?.length) L.push(`${ranks.map(([k, v]) => `${k}: ${v}`).join('、')}${st.titles?.length ? `${ranks.length ? '｜' : ''}称号: ${st.titles.join('、')}` : ''}`);
-  if (st.rankup && st.rankup.turn >= turn - 1) L.push(`直前にランクが上がった（${st.rankup.name} ${st.rankup.from || '—'} → ${st.rankup.to}）`);
+  if (turn > 0 && st.rankup && st.rankup.turn >= turn - 2) L.push(`直前にランクが上がった（${st.rankup.name} ${st.rankup.from || '—'} → ${st.rankup.to}）`);
   if (st.party?.length) L.push(`仲間: ${st.party.map(m => `${m.name}${m.role ? `（${m.role}）` : ''} Lv${m.lv || 1} HP ${m.hp.v}/${m.hp.max}${m.good ? `・得意: ${m.good}` : ''}${m.equip ? `・${m.equip}` : ''}`).join('、')}`);
   // 前に鑑定した相手が最近の会話に出ていれば、その時の結果（同じ強さで描くため）
   const seen = Object.entries(st.dossier || {}).filter(([n]) => recent.includes(n)).slice(0, 3);
@@ -95,7 +104,7 @@ function statusText(st, e, { ids = false, turn = 0, recent = '' } = {}) {
     const waiting = (st.timers || []).filter(t => !t.done);
     if (waiting.length) L.push(`育成中・待ち: ${waiting.map(t => `${t.name}（あと${Math.max(0, t.start + t.days - st.day)}日）`).join('、')}`);
     const h = st.home;
-    if (h) L.push(`拠点: ${h.name}${h.kind ? `〔${h.kind}〕` : ''}${h.rent ? `（${M.fmtMoney(h.rent, e)}／${h.every}日・次の支払い ${h.next}日目${h.arrears ? '・支払い不足' : ''}）` : ''}`);
+    if (h) L.push(`拠点: ${h.name}${h.kind ? `〔${h.kind}〕` : ''}${h.rent ? `（${M.fmtMoney(h.rent, e)}／${h.every}日・次の支払い ${h.next}日目${h.arrears && st.money < 0 ? '・支払い不足' : ''}）` : ''}`);
     const stored = st.items.filter(i => i.at === 'home');
     if (stored.length) L.push(`拠点の保管: ${stored.slice(0, 12).map(i => `${i.name}×${i.qty}`).join('、')}${stored.length > 12 ? ' ほか' : ''}`);
     if (st.projects.length) L.push(`建設: ${st.projects.map(p => `${p.name} ${p.progress}%`).join('、')}`);
@@ -121,13 +130,13 @@ function keeperPrompt(chat, ctx, cfg) {
   const e = effective(cfg), life = e.life === 'on', exp = e.explore === 'on';
   return `{{user}}の所持金・持ち物・装備・状態の記録係も兼ねる。new_log で実際に起きた変化だけを、このキーで出力する（推測しない。変化がなければ空にする）。
 - 🎁 🔍 💰 🧪 🛒 🔨 で始まる行の増減は、アプリが反映済み。出力しない（ただし、そこで手に入った「名前未定の品」の正体が本文で描かれたら identify で名前を付ける）
-- money: 所持金の増減（支払いは負、収入は正。なければ0）
+- money: 所持金の増減（支払いは負、収入は正。なければ0）${life ? '。家賃・宿代は home の rent でアプリが日付に合わせて引くので、ここに入れない' : ''}
 - items: 持ち物の増減（name、delta。新しく手に入れた物には cat: ${M.list(e.cats).join('／')} のどれか、と短い note）
 - equip: 装備の付け替え（slot: ${M.list(e.slots).join('／')}。外したら name を空に）
 - skills: 新しく覚えた・成長したスキル（name、level、note）
 - gauges: 値が変わったゲージの新しい値（${Object.keys(base(chat, e).gauges).join('、') || 'なし'}）${life ? `
 - days: 経過した日数（翌朝なら1。なければ0）
-- home: 住む場所・泊まる場所が変わったときだけ1件（name、kind: 宿／借家／自宅 など、rent: 支払い額、every: 何日ごと。家を買った・建てたなら rent は0）
+- home: 住む場所・泊まる場所が変わったときだけ1件（name、kind: 宿／借家／自宅 など、rent: 支払い額、every: 何日ごと。家を買った・建てたなら rent は0。宿を引き払った・住む所を失ったなら name を「なし」）
 - projects: 建設・増築・改装・開墾の進み具合（name、progress: 0〜100 の現在値、note、per_day: 職人に任せたなど毎日ひとりでに進むなら1日の進み%（なければ0））
 - quests: 依頼の受注・達成・失敗（title、reward、deadline、state: 受注／達成／失敗）。報酬の受け取りは money で
 - move: 持ち物を拠点に置いた（to: 拠点）・拠点から持ち出した（to: 持ち物）
@@ -136,12 +145,12 @@ function keeperPrompt(chat, ctx, cfg) {
 - depth: 現在地が変わったときだけ、新しい場所（例: 下層B4、王都の市場、辺境の村）。変わらなければ空` : ''}${exp ? `
 - rep: 勢力の評判の増減（faction: ${M.list(e.factions).join('／') || '本文に出た勢力'}、delta: -30〜30）` : ''}
 - party: 仲間（{{user}}と行動を共にする人物）の加入・離脱・変化（name、status: 加入／離脱／更新、role: 役割、lv: 物語でレベルが明かされたら（なければ0。ふだんの成長はアプリが行う）、good: 得意なこと（例: 弓, 索敵, 料理。分かったときだけ）、hp: 今のHP（分からなければ-1）、hpmax（分からなければ0）、equip: 装備の要約、note）${Object.keys(base(chat, e).stats || {}).length ? `
-- stats: {{user}}の能力値が物語の中で変わったとき（name、value。${Object.keys(base(chat, e).stats).join('、')}）。レベルアップでの伸びはアプリが行うので書かない` : ''}${String(e.ranks).trim() ? `
+- stats: {{user}}の能力値が物語の中で変わったとき（name、value。${Object.keys(base(chat, e).stats).join('、')}）。レベルアップでの伸びはアプリが行うので書かない` : ''}${String(e.ranks).trim() || Object.keys(base(chat, e).ranks || {}).length ? `
 - ranks: ランクが上がった・変わったとき（name、value。例: 冒険者ランク / E）
 - titles: 新しく得た称号` : ''}${e.xp === 'on' ? `
 - xp: 今回得た経験値（敵を倒した 15〜50、依頼を達成した 30〜120、危機を切り抜けた・大きな発見 10〜40、なければ0。大げさに付けない）` : ''}
 - identify: 「名前未定の品」の正体が本文で描かれたら、その id と、本文で付いた名前 name、短い note
-- reasons: 変化の理由を短く（例: 宿代を払った）
+- reasons: 変化の理由を短く（例: 回復薬を買った）
 
 現在の記録:
 ${statusText(decorated(chat, view(chat, e)), e, { ids: true })}${libNames(chat)}`;
@@ -174,8 +183,9 @@ function keeperSchema(cfg) {
   if (e.explore === 'on' || String(e.regions).trim()) props.depth = s;
   if (e.explore === 'on') props.rep = arr(obj({ faction: s, delta: i }));
   props.party = arr(obj({ name: s, status: { type: 'string', enum: ['加入', '離脱', '更新'] }, role: s, lv: i, good: s, hp: i, hpmax: i, equip: s, note: s }));
-  if (M.parseStats(e.stats) && Object.keys(M.parseStats(e.stats)).length) props.stats = arr(obj({ name: s, value: i }));
-  if (String(e.ranks).trim()) Object.assign(props, { ranks: arr(obj({ name: s, value: s })), titles: arr(s) });
+  // 能力値・ランク・称号は、手で足した場合もあるので常に受け付ける（空なら [] が返るだけ）
+  props.stats = arr(obj({ name: s, value: i }));
+  Object.assign(props, { ranks: arr(obj({ name: s, value: s })), titles: arr(s) });
   if (e.xp === 'on') props.xp = i;
   props.identify = arr(obj({ id: s, name: s, note: s }));
   props.reasons = arr(s);
@@ -270,7 +280,8 @@ const FORMS = {
       if (!v.name.trim()) return '';
       const it = st.items.find(i => i.id === id);
       const patch = { name: v.name.trim(), qty: Math.max(1, num(v.qty)), cat: v.cat, note: v.note.trim(), ...(v.val !== '' ? { val: Math.max(0, num(v.val)) } : {}) };
-      if (it) { Object.assign(it, patch); if (v.val === '') delete it.val; if (it.rar && patch.name !== it.name) it.named = true; }
+      // 名前を自分で付け直したら「名前未定」ではなくなる（AIや記憶係に上書きさせない）
+      if (it) { const renamed = patch.name !== it.name; Object.assign(it, patch); if (v.val === '') delete it.val; if (renamed) { it.named = true; it.tbd = false; } }
       else M.applyOps(st, [{ op: 'add', item: patch }]);
       return `持ち物: ${patch.name}×${patch.qty}`;
     },
@@ -320,7 +331,7 @@ const FORMS = {
     fields: (st, e, id) => { const p = st.projects[id] || {}; return [{ name: 'name', label: '名前', value: p.name }, { name: 'progress', label: '進み具合（%）', type: 'number', value: p.progress ?? 0 }, { name: 'note', label: 'メモ（必要な資材・費用など）', value: p.note }]; },
     save: (st, v, id) => {
       if (!v.name.trim()) return '';
-      const p = { name: v.name.trim(), progress: Math.max(0, Math.min(100, num(v.progress))), note: v.note.trim() };
+      const p = { ...(st.projects[id] || {}), name: v.name.trim(), progress: Math.max(0, Math.min(100, num(v.progress))), note: v.note.trim() }; // 職人の毎日の進み（perDay）は残す
       if (st.projects[id]) st.projects[id] = p; else st.projects.push(p);
       return `建設: ${p.name} ${p.progress}%`;
     },
@@ -355,6 +366,7 @@ function edit(chat, fn) {
   const st = base(chat);
   const text = fn(st);
   if (!text) return;
+  st.prev = null; // 手で直したら、それより前の状態には戻さない
   st.log.push({ turn: chat.messages.at(-1)?.turn || 0, text: `✎ ${text}` });
   changed(chat);
 }
@@ -380,7 +392,9 @@ function shopStock(chat, name, e = cfgOf(chat)) {
   const lib = libraryOf(story).filter(l => Number(l.item.price) > 0).map(l => ({ name: l.title, price: adj(Number(l.item.price), l.item.cat), cat: l.item.cat, rar: l.item.rar, note: l.content.slice(0, 40), icon: l.item.icon }));
   const table = M.parsePrices(e.prices).map(p => { const cat = p.service ? '' : M.catOf(p.name, M.list(e.cats)); return { name: p.name, price: adj(p.price, cat), service: p.service, cat, rar: '', note: '' }; });
   const seen = new Set();
-  return [...gen, ...lib, ...table].filter(x => !seen.has(x.name) && seen.add(x.name));
+  // 生活がオンなら宿代・家賃はアプリが日付で引く（お店で払うと二重になる）
+  const rent = e.life === 'on' ? M.RENT : null;
+  return [...gen, ...lib, ...table].filter(x => !(rent && !lib.includes(x) && rent.test(x.name)) && !seen.has(x.name) && seen.add(x.name));
 }
 function shopView(chat) {
   const e = cfgOf(chat), st = decorated(chat, view(chat, e)), c = S.ui.shop, pc = priceCtx(chat, e);
@@ -484,8 +498,8 @@ definePlugin({
 - 🔍 の鑑定結果・🔨 の作成結果は、ランク（と査定額）に見合う出来として描く。🛒 の売買は店の人物とのやり取りとして描く${e.xp === 'on' ? `
 - <status> に「直前にレベルアップした」とあれば、成長を実感する一瞬を短く描く（数値は書かない）` : ''}${e.life === 'on' ? `
 - 日付が進むときは本文で分かるように描く（翌朝、三日後など）。家賃・宿代の支払い、定期の収入・支出（給金・売上など）、建設の進み、育つ物のできあがりはアプリが日付に合わせて処理するので、本文では給金を受け取る・売上を数える・収穫するといった場面として描き、金額や量の計算はしない` : ''}
-- <status> の仲間は{{user}}と行動を共にする人物。仲間の行動・HP・装備の描写を <status> に合わせ、レベルと得意なことに見合った活躍をさせる${Object.keys(M.parseStats(e.stats)).length || /鑑定/.test(e.skills) ? `
-- {{user}}が人物や魔物を鑑定したら（👁 の行や、鑑定する描写）、応答の中に【鑑定結果】ブロックを置き、対象の「名前・種族・レベル・HP・主な能力値・スキル・状態」を1行に1つ「項目: 値」で書く。{{user}}の鑑定スキルが低いうちは一部を「？？？」にしてよい。<status> に「前に鑑定した〇〇」があれば、その強さと矛盾させない（その後の成長や負傷は描いてよい）` : ''}${String(e.ranks).trim() ? `
+- <status> の仲間は{{user}}と行動を共にする人物。仲間の行動・HP・装備の描写を <status> に合わせ、レベルと得意なことに見合った活躍をさせる
+- {{user}}が鑑定スキルで人物や魔物を鑑定したら（👁 の行や、鑑定する描写）、応答の中に【鑑定結果】ブロックを置き、対象の「名前・種族・レベル・HP・主な能力値・スキル・状態」を1行に1つ「項目: 値」で書く（名前が分からなければ種族名を名前にする）。{{user}}の鑑定スキルが低いうちは一部を「？？？」にしてよい。<status> に「前に鑑定した〇〇」があれば、その強さと矛盾させない（その後の成長や負傷は描いてよい）${String(e.ranks).trim() ? `
 - ランクや称号が上がったら（<status> に「直前にランクが上がった」）、周りの反応を短く描く` : ''}${String(e.regions).trim() ? `
 - 町や地域によって物の値段は違う。<status> の「この土地の相場」に合わせる` : ''}${e.explore === 'on' ? `
 - 深い場所ほど危険で実入りがよい。<status> の危険度に合わせる。⚠ の気配が出たら、危険（敵・罠・崩落など）を登場させる
@@ -512,7 +526,7 @@ ${String(e.prices).trim()}` : ''}`;
       const reply = batch.filter(m => m.role === 'ai').at(-1);
       const lvup = st.lvup?.turn === batch.at(-1).turn ? st.lvup : null, rankup = st.rankup?.turn === batch.at(-1).turn ? st.rankup : null;
       if (reply) { reply.pnote ||= {}; if (notes.length) reply.pnote[ID] = { notes, lvup, rankup }; else delete reply.pnote[ID]; }
-      if (notes.length) st.prev = before;
+      st.prev = notes.length ? before : null; // 取り消せるのは直前の記憶係の反映だけ（ボタンの結果や手での編集まで巻き戻さない）
       emit('plugin:changed', chat);
       return notes.length ? `🎒 ${notes.slice(0, 4).join('・')}${notes.length > 4 ? ' …' : ''}` : '';
     },
@@ -651,7 +665,12 @@ ${String(e.prices).trim()}` : ''}`;
       if (!chat || !F) return;
       const st = base(chat), e = cfgOf(chat), id = el.dataset.id === 'new' ? 'new' : el.dataset.id ?? '';
       const exists = el.dataset.kind === 'item' ? st.items.some(i => i.id === id) : id !== 'new' && id !== '';
-      openSheet({ id: 'status-form', title: F.title, html: formHTML(F.fields(st, e, id), { kind: el.dataset.kind, id, del: !!F.remove && exists }) });
+      const fields = F.fields(st, e, id), v = view(chat, e), kind = el.dataset.kind;
+      // フォームは確定した値。ボタン操作の反映待ちがあれば、二重に足さないよう知らせる
+      const pend = kind === 'money' ? v.money - st.money : kind === 'item' && exists ? (v.items.find(i => i.id === id)?.qty ?? 0) - (st.items.find(i => i.id === id)?.qty ?? 0) : 0;
+      const pf = pend && fields.find(f => f.name === (kind === 'money' ? 'money' : 'qty'));
+      if (pf) pf.hint = `反映待ちの ${M.signed(pend)} は、次の発言のあとに別に足されます（ここには確定した値を入れてください）`;
+      openSheet({ id: 'status-form', title: F.title, html: formHTML(fields, { kind, id, del: !!F.remove && exists }) });
     },
     save(el) {
       const chat = curChat(), F = FORMS[el.dataset.kind], w = sheetOf(el);

@@ -12,7 +12,9 @@ export const RARITY = [
 ];
 export const RARITY_OPTIONS = [['', 'なし'], ...RARITY.map(r => [r.k, r.label])];
 
-export const newItemData = (o = {}) => ({ icon: '', cat: '', rar: '', price: '', drop: false, ...o });
+// レア度は決まった記号だけ（クラス名として HTML に入るので、読み込んだファイルの値をそのまま使わない）
+export const rarKey = k => (RARITY.some(r => r.k === k) ? k : '');
+export const newItemData = (o = {}) => ({ icon: '', cat: '', price: '', drop: false, ...o, rar: rarKey(o.rar) });
 export const isItem = e => !!e?.item;
 
 const norm = s => String(s || '').trim().toLowerCase();

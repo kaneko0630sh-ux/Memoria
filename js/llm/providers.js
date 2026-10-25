@@ -12,8 +12,11 @@ const origin = () => (/^https?:/.test(location.origin) ? { 'HTTP-Referer': locat
 // kind: anthropic / compat（OpenAI互換） / gemini / mock
 export const PROVIDERS = {
   anthropic: { label: 'Anthropic（Claude）', kind: 'anthropic', keyHint: 'sk-ant-...', suggest: ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5', 'claude-fable-5-1', 'claude-opus-4-8'] },
-  openai: { label: 'OpenAI', kind: 'compat', keyHint: 'sk-...', suggest: [], base: () => 'https://api.openai.com/v1', maxTokensKey: 'max_completion_tokens' },
-  openrouter: { label: 'OpenRouter', kind: 'compat', keyHint: 'sk-or-...', suggest: [], base: () => 'https://openrouter.ai/api/v1', headers: () => ({ 'X-Title': 'Memoria', ...origin() }) },
+  openai: { label: 'OpenAI', kind: 'compat', keyHint: 'sk-...', suggest: [], base: () => 'https://api.openai.com/v1', maxTokensKey: 'max_completion_tokens',
+    // 思考するモデルだけが受け付ける。受け付けないモデルでは下の adapt が外して覚える
+    thinking: (body, effort) => { body.reasoning_effort = effort === 'off' ? 'minimal' : effort; } },
+  openrouter: { label: 'OpenRouter', kind: 'compat', keyHint: 'sk-or-...', suggest: [], base: () => 'https://openrouter.ai/api/v1', headers: () => ({ 'X-Title': 'Memoria', ...origin() }),
+    thinking: (body, effort) => { body.reasoning = effort === 'off' ? { enabled: false } : { effort }; } },
   nanogpt: {
     label: 'NanoGPT', kind: 'compat', keyHint: 'NanoGPTのAPIキー', suggest: ['anthropic/claude-sonnet-5', 'deepseek-chat', 'moonshotai/kimi-k2.6', 'z-ai/glm-5.3-flash'],
     base: () => (S.settings.nanoSub ? 'https://nano-gpt.com/api/subscription/v1' : 'https://nano-gpt.com/api/v1'),
@@ -127,6 +130,8 @@ async function withAdapt(cfg, body, attempt, adapters) {
 // o: { role, kind, system:[{text,cache}], messages:[{role,content,cache}], maxTokens, temperature, stream, schema, signal, onText, onStatus }
 // 無通信が続いたら打ち切る（思考中のデータ受信は「通信あり」として扱う）
 const IDLE_MS = { stream: 120000, once: 240000 };
+// 待っている間に停止されたら、すぐ抜ける
+const sleepUnless = (ms, signal) => new Promise(r => { const t = setTimeout(r, ms); signal?.addEventListener('abort', () => { clearTimeout(t); r(); }, { once: true }); });
 
 export async function callLLM(o) {
   const cfg = llmCfg(o.role);
@@ -136,6 +141,8 @@ export async function callLLM(o) {
   const fn = { anthropic: callAnthropic, compat: callCompat, gemini: callGemini }[cfg.def.kind];
   let started = false;
   for (let attempt = 0; ; attempt++) {
+    // 再試行を待つ間に停止が押されていたら、送り直さない
+    if (o.signal?.aborted) throw new DOMException('aborted', 'AbortError');
     const ctrl = new AbortController();
     const outer = () => ctrl.abort();
     o.signal?.addEventListener('abort', outer);
@@ -149,7 +156,7 @@ export async function callLLM(o) {
       if (timedOut) throw new Error(`応答が途絶えました（${(o.stream ? IDLE_MS.stream : IDLE_MS.once) / 1000}秒間データなし）。混雑しているか思考に時間がかかっています。再生成するか、別のモデルをお試しください。`);
       if (e.name === 'AbortError') throw e;
       const retryable = [429, 500, 502, 503, 504, 529].includes(e.status);
-      if (retryable && !started && attempt < 2) { await sleep(attempt ? 4000 : 1500); continue; }
+      if (retryable && !started && attempt < 2) { await sleepUnless(attempt ? 4000 : 1500, o.signal); continue; }
       if (e instanceof TypeError) throw new Error('通信エラー: ' + e.message + '（ネットワーク、またはURL/CORSを確認してください）');
       throw e;
     } finally {
@@ -254,6 +261,7 @@ async function callCompat(cfg, o, io) {
     { id: 'response_format', has: b => !!b.response_format, match: /response_format|json/i, apply: b => delete b.response_format },
     { id: 'reasoning', has: b => 'reasoning_effort' in b, match: /reasoning/i, apply: b => delete b.reasoning_effort },
     { id: 'thinking', has: b => 'thinking' in b, match: /thinking/i, apply: b => delete b.thinking },
+    { id: 'reasoning_obj', has: b => 'reasoning' in b, match: /reasoning/i, apply: b => delete b.reasoning },
   ]);
 }
 

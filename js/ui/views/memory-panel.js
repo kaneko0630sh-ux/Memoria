@@ -22,7 +22,7 @@ function panelHTML(chat) {
   const tab = S.ui.memTab, count = sc => m.entries.filter(e => e.scope === sc).length;
   const tabs = [['state', '現在の状況', ''], ['prog', '進行度', m.threads.length], ...scopes.map(sc => [sc, scopeLabel(sc, ctx), count(sc)]), ['chron', 'あらすじ', m.chronicle.length], ['log', 'ログ', '']];
   return `<div id="memStatus">${statusHTML(chat)}</div>
-    <div class="seg">${tabs.map(([k, l, n]) => `<button class="${k === tab ? 'on' : ''}" data-act="memTab" data-tab="${k}">${esc(l)}${n !== '' ? `<span class="n">${n}</span>` : ''}</button>`).join('')}</div>
+    <div class="seg">${tabs.map(([k, l, n]) => `<button class="${k === tab ? 'on' : ''}" data-act="memTab" data-tab="${esc(k)}">${esc(l)}${n !== '' ? `<span class="n">${n}</span>` : ''}</button>`).join('')}</div>
     <div class="mem-pane">${paneHTML(chat, tab, ctx)}</div>`;
 }
 function meterHTML(used, budget, extra = '') {
@@ -31,9 +31,9 @@ function meterHTML(used, budget, extra = '') {
 }
 const impSel = (cls, cur = 3) => `<select class="${cls}">${[5, 4, 3, 2, 1].map(i => `<option value="${i}" ${i === cur ? 'selected' : ''}>重要度 ${i}</option>`).join('')}</select>`;
 function entryHTML(e) {
-  if (S.ui.memEditing === e.id) return `<div class="mem-e editing"><textarea class="mem-edit" rows="3">${esc(e.text)}</textarea><div class="inline">${impSel('mem-edit-imp', e.imp)}<button class="btn sm" data-act="memCancelEdit">取消</button><button class="btn sm primary" data-act="memSaveEdit" data-eid="${e.id}">保存</button></div></div>`;
+  if (S.ui.memEditing === e.id) return `<div class="mem-e editing"><textarea class="mem-edit" rows="3">${esc(e.text)}</textarea><div class="inline">${impSel('mem-edit-imp', e.imp)}<button class="btn sm" data-act="memCancelEdit">取消</button><button class="btn sm primary" data-act="memSaveEdit" data-eid="${esc(e.id)}">保存</button></div></div>`;
   const src = e.src === 'manual' ? '<span class="tag">手動</span>' : e.src === 'merged' ? '<span class="tag">統合</span>' : '';
-  return `<div class="mem-e ${e.pinned ? 'pinned' : ''}"><div class="mem-text">${esc(e.text)}</div><div class="mem-meta"><span class="imp" title="重要度">${'★'.repeat(e.imp)}<span class="off">${'★'.repeat(5 - e.imp)}</span></span><span>${tl(e.turn)}</span>${e.tag ? `<span class="tag">${TAGS[e.tag] || esc(e.tag)}</span>` : ''}${src}${(e.ents || []).map(x => `<span class="tag ent">${esc(x)}</span>`).join('')}<span class="grow"></span><button class="icon-btn pin-b" data-act="memPin" data-eid="${e.id}" aria-label="${e.pinned ? '固定を解除' : '固定（常に渡す・圧縮しない）'}">${ic('pin', 'sm')}</button><button class="icon-btn" data-act="memEdit" data-eid="${e.id}" aria-label="編集">${ic('edit', 'sm')}</button><button class="icon-btn" data-act="memDel" data-eid="${e.id}" aria-label="削除">${ic('trash', 'sm')}</button></div></div>`;
+  return `<div class="mem-e ${e.pinned ? 'pinned' : ''}"><div class="mem-text">${esc(e.text)}</div><div class="mem-meta"><span class="imp" title="重要度">${'★'.repeat(e.imp)}<span class="off">${'★'.repeat(5 - e.imp)}</span></span><span>${tl(e.turn)}</span>${e.tag ? `<span class="tag">${TAGS[e.tag] || esc(e.tag)}</span>` : ''}${src}${(e.ents || []).map(x => `<span class="tag ent">${esc(x)}</span>`).join('')}<span class="grow"></span><button class="icon-btn pin-b" data-act="memPin" data-eid="${esc(e.id)}" aria-label="${e.pinned ? '固定を解除' : '固定（常に渡す・圧縮しない）'}">${ic('pin', 'sm')}</button><button class="icon-btn" data-act="memEdit" data-eid="${esc(e.id)}" aria-label="編集">${ic('edit', 'sm')}</button><button class="icon-btn" data-act="memDel" data-eid="${esc(e.id)}" aria-label="削除">${ic('trash', 'sm')}</button></div></div>`;
 }
 function statsHTML(chat) {
   let r;
@@ -70,8 +70,8 @@ function paneHTML(chat, tab, ctx) {
     return `<p class="note-box">${m.coveredId ? `${tl(coveredTurn || 0)}までの会話はここに要約され、原文はAIへ送られません（画面上には残ります）。` : 'まだ要約はありません。'}直近の約${memWindow().recent}件は常に原文のまま送られます。</p>
       ${meterHTML(used, s.mem.budgets.chronicle, `${m.chronicle.length}件`)}
       ${m.chronicle.length ? m.chronicle.map(c => S.ui.memEditing === c.id
-        ? `<div class="mem-e editing"><div class="mem-meta"><b>${tl(c.from)}〜${tl(c.to)}</b></div><textarea class="mem-edit" rows="6">${esc(c.text)}</textarea><div class="inline"><span class="grow"></span><button class="btn sm" data-act="memCancelEdit">取消</button><button class="btn sm primary" data-act="chronSave" data-eid="${c.id}">保存</button></div></div>`
-        : `<div class="mem-e"><div class="mem-meta"><b class="t2">${tl(c.from)}〜${tl(c.to)}</b>${c.merged ? '<span class="tag">前史</span>' : ''}<span class="grow"></span><button class="icon-btn" data-act="memEdit" data-eid="${c.id}" aria-label="編集">${ic('edit', 'sm')}</button><button class="icon-btn" data-act="chronDel" data-eid="${c.id}" aria-label="削除">${ic('trash', 'sm')}</button></div><div class="mem-text">${esc(c.text)}</div></div>`).join('')
+        ? `<div class="mem-e editing"><div class="mem-meta"><b>${tl(c.from)}〜${tl(c.to)}</b></div><textarea class="mem-edit" rows="6">${esc(c.text)}</textarea><div class="inline"><span class="grow"></span><button class="btn sm" data-act="memCancelEdit">取消</button><button class="btn sm primary" data-act="chronSave" data-eid="${esc(c.id)}">保存</button></div></div>`
+        : `<div class="mem-e"><div class="mem-meta"><b class="t2">${tl(c.from)}〜${tl(c.to)}</b>${c.merged ? '<span class="tag">前史</span>' : ''}<span class="grow"></span><button class="icon-btn" data-act="memEdit" data-eid="${esc(c.id)}" aria-label="編集">${ic('edit', 'sm')}</button><button class="icon-btn" data-act="chronDel" data-eid="${esc(c.id)}" aria-label="削除">${ic('trash', 'sm')}</button></div><div class="mem-text">${esc(c.text)}</div></div>`).join('')
         : '<p class="empty-s">会話が長くなると、古い部分から自動であらすじ化されます。</p>'}`;
   }
   if (tab === 'log') {
@@ -90,9 +90,9 @@ function paneHTML(chat, tab, ctx) {
     : `${esc(scopeLabel(sc, ctx))}が体験したこと・感じたこと・関係・約束・秘密の記憶です。`;
   return `<p class="note-box">${desc}ピン留め・最重要（★5）の記憶は毎回、それ以外は場面に合わせて選ばれてAIへ渡されます。</p>
     ${meterHTML(used, budget, `${list.length}件`)}
-    <div class="mem-add"><textarea class="mem-new" rows="2" placeholder="記憶を手動で追加…"></textarea><div class="inline">${impSel('mem-new-imp', 3)}<button class="btn sm primary" data-act="memAdd" data-scope="${sc}">追加</button></div></div>
+    <div class="mem-add"><textarea class="mem-new" rows="2" placeholder="記憶を手動で追加…"></textarea><div class="inline">${impSel('mem-new-imp', 3)}<button class="btn sm primary" data-act="memAdd" data-scope="${esc(sc)}">追加</button></div></div>
     <div>${list.length ? list.map(entryHTML).join('') : '<p class="empty-s">まだ記憶はありません。会話が進むと自動で積み重なります。</p>'}</div>
-    <div class="btn-row"><button class="btn sm" data-act="memConsolidate" data-scope="${sc}" ${list.filter(e => !e.pinned).length < 3 ? 'disabled' : ''}>今すぐ整理・圧縮</button></div>`;
+    <div class="btn-row"><button class="btn sm" data-act="memConsolidate" data-scope="${esc(sc)}" ${list.filter(e => !e.pinned).length < 3 ? 'disabled' : ''}>今すぐ整理・圧縮</button></div>`;
 }
 
 on('memory:changed', chat => {
@@ -162,12 +162,14 @@ defineActions({
   },
   memRebuild: el => {
     const chat = chatOf(el), n = chat.messages.filter(x => x.role !== 'sys').length;
-    if (!confirm(`全${n}件のメッセージから記憶とあらすじを作り直します。APIを何度も呼び出すため費用と時間がかかります。続けますか？`)) return;
+    if (S.gen?.chatId === chat.id) return toast('生成が終わってから実行してください', 'warn');
+    if (!confirm(`全${n}件のメッセージから記憶とあらすじを作り直します。APIを何度も呼び出すため費用と時間がかかります。プラグインの状態（ステータスなど）もログから計算し直すため、手で直した所持品や日付は元に戻ります。続けますか？`)) return;
     rebuildMemory(chat);
     return save(chat);
   },
   memReset: el => {
     const chat = chatOf(el);
+    if (S.gen?.chatId === chat.id) return toast('生成が終わってから実行してください', 'warn');
     if (!confirm('記憶項目・現在の状況・進行度をすべて消します（あらすじは残ります）。よろしいですか？')) return;
     resetMemoryItems(chat);
     return save(chat);

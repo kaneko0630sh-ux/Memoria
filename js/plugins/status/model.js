@@ -14,15 +14,19 @@ import { RARITY } from './presets.js';
 
 /* ---------- 設定文字列の読み取り ---------- */
 export const list = s => String(s ?? '').split(/[,、，\n]/).map(x => x.trim()).filter(Boolean);
-const lines = s => String(s ?? '').split(/\n|[,、，](?![^（(]*[)）])/).map(x => x.trim()).filter(Boolean);
+// 全角数字は半角に（日本語入力で「回復薬×２」「筋力:８」と書かれても数として読む）
+const halfDigits = s => String(s ?? '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+const lines = s => halfDigits(s).split(/\n|[,、，](?![^（(]*[)）])/).map(x => x.trim()).filter(Boolean);
 // 「名前×数（種類）」。種類を省いたら、種類名の一部を含むものに振り分ける（浄水タブレット → 食料・水）
+// 括弧の中が種類の一覧にない「松明×3（予備）」は、括弧の中をメモにする
 export function parseItems(s, cats = []) {
   return lines(s).map(l => {
-    let cat = '';
+    let cat = '', note = '';
     const c = l.match(/^(.*?)\s*[（(［\[]([^）)］\]]+)[）)］\]]\s*$/);
     if (c && cats.includes(c[2].trim())) { l = c[1]; cat = c[2].trim(); }
+    else if (c && /[×xX*]\s*\d+\s*$/.test(c[1])) { l = c[1]; note = c[2].trim(); }
     const m = l.match(/^(.+?)\s*[×xX*]\s*(\d+)\s*$/), name = (m ? m[1] : l).trim();
-    return { name, qty: m ? Number(m[2]) : 1, cat: cat || guessCat(name, cats) };
+    return { name, qty: m ? Number(m[2]) : 1, cat: cat || catOf(name, cats), note };
   });
 }
 export const guessCat = (name, cats) => cats.find(c => c.split(/[・/／]/).some(t => t && name.includes(t))) || '';
@@ -66,7 +70,7 @@ export function parseWeights(s) {
 
 /* ---------- 状態 ---------- */
 export function initState(e) {
-  const items = parseItems(e.items, list(e.cats)).map(i => ({ id: uid(), name: i.name, qty: i.qty, cat: i.cat, note: '', at: '' }));
+  const items = parseItems(e.items, list(e.cats)).map(i => ({ id: uid(), name: i.name, qty: i.qty, cat: i.cat, note: i.note || '', at: '' }));
   return {
     v: 1, money: Number(e.money) || 0, items,
     equip: Object.fromEntries(parsePairs(e.equip).filter(([k, v]) => k && v)),
@@ -81,25 +85,45 @@ export function initState(e) {
   };
 }
 // 古い版で作られた状態に、後から増えた項目を足す
+// 数のはずの項目は数に揃える（読み込んだトークのファイルに文字が入っていても、画面に HTML として出さない）
+const N = (v, d = 0) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Number(v) : d);
 export function upgrade(st) {
   st.lv ??= 1; st.xp ??= 0; st.shops ||= {};
   st.stats ||= {}; st.ranks ||= {}; st.titles ||= []; st.recurring ||= []; st.timers ||= []; st.party ||= []; st.dossier ||= {};
-  for (const m of st.party) { m.lv ||= 1; m.xp ||= 0; m.good ??= ''; }
+  const objs = a => (Array.isArray(a) ? a : []).filter(x => x && typeof x === 'object');
+  // 配列は壊れているときだけ作り直す（毎回作り直すと、取り出した配列への参照がずれる）
+  for (const k of ['items', 'projects', 'quests', 'log', 'recurring', 'timers', 'party']) if (!Array.isArray(st[k]) || st[k].some(x => !x || typeof x !== 'object')) st[k] = objs(st[k]);
+  st.gauges ||= {}; st.rep ||= {};
+  st.money = N(st.money); st.lv = N(st.lv, 1) || 1; st.xp = N(st.xp); st.day = N(st.day, 1) || 1;
+  for (const [k, g] of Object.entries(st.gauges)) { if (g && typeof g === 'object') { g.v = N(g.v); g.max = N(g.max, 1); } else st.gauges[k] = { v: 0, max: 1 }; }
+  for (const [k, d] of Object.entries(st.dossier)) if (!d || typeof d !== 'object') delete st.dossier[k];
+  if (st.home && typeof st.home !== 'object') st.home = null;
+  for (const o of [st.stats, st.rep]) for (const k of Object.keys(o)) o[k] = N(o[k]);
+  for (const i of st.items) i.qty = N(i.qty, 1);
+  for (const m of st.party) { m.lv = N(m.lv, 1) || 1; m.xp = N(m.xp); m.good ??= ''; if (!m.hp || typeof m.hp !== 'object') m.hp = {}; m.hp.v = N(m.hp.v, 30); m.hp.max = N(m.hp.max, 30); }
+  if (st.home) for (const k of ['rent', 'every', 'next']) st.home[k] = N(st.home[k]);
+  for (const p of st.projects) { p.progress = N(p.progress); p.perDay = N(p.perDay); }
+  for (const r of st.recurring) for (const k of ['amount', 'every', 'next', 'vary']) r[k] = N(r[k]);
+  for (const t of st.timers) for (const k of ['days', 'start', 'yieldQty']) t[k] = N(t[k]);
+  for (const q of st.quests) if (!['受注', '達成', '失敗'].includes(q.state)) q.state = '受注';
+  for (const l of st.log) l.turn = N(l.turn);
+  for (const d of Object.values(st.dossier)) { d.turn = N(d.turn); d.lines = (Array.isArray(d.lines) ? d.lines : []).map(String); }
   return st;
 }
 // AIの【鑑定結果】ブロックを読み取る → [{ name, lines }]（次に会ったときも同じ強さで描かれるよう覚えておく）
 export function extractAppraisals(text) {
   const out = [];
-  const re = /^\s*【鑑定結果】\s*$([\s\S]*?)(?=^\s*【[^】]{1,30}】|$(?![\s\S]))/gm;
+  // 見出しの行に続けて書く・箇条書き（- ・）・太字（**）・Markdown の見出し（### 【…】）も受け付ける
+  const re = /^[ \t#*＊]*【鑑定結果】[*＊ \t]*(.*)$([\s\S]*?)(?=^[ \t#*＊]*【[^】]{1,30}】|$(?![\s\S]))/gm;
   for (const m of String(text || '').matchAll(re)) {
-    const lines = m[1].split('\n').map(l => l.trim()).filter(l => /^[^:：]{1,16}[:：]/.test(l)).slice(0, 12);
+    const lines = `${m[1]}\n${m[2]}`.split('\n').map(l => l.trim().replace(/^[-・*＊]\s*/, '').replace(/\*\*/g, '').trim()).filter(l => /^[^:：]{1,16}[:：]/.test(l)).slice(0, 12);
     const name = (lines.find(l => /^名前\s*[:：]/.test(l)) || '').replace(/^名前\s*[:：]\s*/, '').trim();
-    if (name && lines.length) out.push({ name, lines });
+    if (name && !/^[？?・\s]+$/.test(name)) out.push({ name, lines }); // 名前が「？？？」だけの結果は、別の相手と混ざるので覚えない
   }
   return out;
 }
 // 能力値「筋力:8,敏捷:10」→ { 筋力: 8, 敏捷: 10 }
-export const parseStats = s => Object.fromEntries(parsePairs(s).map(([k, v]) => [k, Number(String(v).replace(/[^\d-]/g, ''))]).filter(([k, v]) => k && Number.isFinite(v)));
+export const parseStats = s => Object.fromEntries(parsePairs(s).map(([k, v]) => [k, String(v).replace(/[^\d-]/g, '')]).filter(([k, v]) => k && v !== '' && Number.isFinite(Number(v))).map(([k, v]) => [k, Number(v)]));
 // 仲間「エルナ: 弓使い」→ [{ id, name, role, hp, equip, note }]
 export const parseParty = s => parsePairs(s).filter(([k]) => k).map(([name, role]) => newMember({ name, role }));
 // 仲間は数字をゆるく持つ: レベル・HP・得意なこと（判定の補正に使う）・装備（文章）
@@ -115,7 +139,15 @@ export const needsName = it => !!(it.tbd || (it.rar && !it.unid && !it.named));
 export const itemLabel = (it, e) => `${it.name}${it.rar ? `【${rarLabel(it.rar, e)}】` : ''}${it.unid ? (it.name.includes('未鑑定') ? '' : '（未鑑定）') : needsName(it) ? '（名前未定）' : ''}`;
 
 // 深さ（「下層B4」「第3層」→ 4 / 3、地上・街 → 0）
-export const depthLevel = d => Number(String(d || '').match(/\d+/)?.[0] || 0);
+// 「下層B4」「第3層」に加えて、全角（第３層）や漢数字（第三層・地下五階）も読む。漢数字は 第／地下／B の後か 層／階 の前だけ（三日月の森は 0）
+const KANJI = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+const kanjiNum = s => { const m = s.match(/^([一二三四五六七八九])?十([一二三四五六七八九])?$/); return m ? (KANJI[m[1]] || 1) * 10 + (KANJI[m[2]] || 0) : KANJI[s] || 0; };
+export const depthLevel = d => {
+  const s = halfDigits(d || '').replace(/Ｂ/g, 'B'), n = s.match(/\d+/)?.[0];
+  if (n) return Number(n);
+  const k = s.match(/(?:第|地下|B)([一二三四五六七八九十]+)|([一二三四五六七八九十]+)(?:層|階)/);
+  return k ? kanjiNum(k[1] || k[2]) : 0;
+};
 export function dangerLabel(lvl) {
   return lvl <= 0 ? '安全' : lvl <= 2 ? '低' : lvl <= 4 ? '中' : lvl <= 7 ? '高' : '極めて高い';
 }
@@ -134,9 +166,11 @@ const findItem = (st, name, at = '') => {
   const pool = st.items.filter(i => i.at === at);
   return pool.find(i => i.name === n) || pool.find(i => n.length > 1 && (i.name.includes(n) || n.includes(i.name)));
 };
+// 同じ名前・同じ場所の品は重ねる（レア度が違う物・査定額の付いた物・未鑑定や名前未定の物は別の行）
+const stackable = (a, b) => a.name === b.name && (a.at || '') === (b.at || '') && !a.unid && !a.tbd && !b.unid && !b.tbd && a.val == null && b.val == null && (!a.rar || !b.rar || a.rar === b.rar);
 function addItem(st, it) {
-  const same = !it.rar && !it.unid && !it.tbd && st.items.find(i => i.at === (it.at || '') && i.name === it.name && !i.rar && !i.unid && !i.tbd);
-  if (same) { same.qty += it.qty; if (it.note && !same.note) same.note = it.note; return same; }
+  const same = st.items.find(i => stackable(i, it));
+  if (same) { same.qty += it.qty || 1; if (it.note && !same.note) same.note = it.note; if (it.rar && !same.rar) same.rar = it.rar; if (it.named) same.named = true; return same; }
   const x = { id: it.id || uid(), name: it.name, qty: it.qty || 1, cat: it.cat || '', note: it.note || '', at: it.at || '' };
   for (const k of ['rar', 'unid', 'val', 'named', 'tbd']) if (it[k] != null) x[k] = it[k];
   st.items.push(x);
@@ -145,16 +179,18 @@ function addItem(st, it) {
 const pushLog = (st, turn, text) => { st.log.push({ turn, text }); if (st.log.length > 120) st.log.splice(0, st.log.length - 120); };
 
 /* ---------- ボタン操作の増減（メッセージに付けて保存し、確定時に適用） ---------- */
-// op: { op: 'money', d } / { op: 'add', item } / { op: 'qty', id, d } / { op: 'patch', id, set } / { op: 'log', text }
+// op: { op: 'money', d } / { op: 'add', item } / { op: 'qty', id, name, at, d } / { op: 'patch', id, name, at, set } / { op: 'log', text }
+// 記憶を作り直すと持ち物の id が振り直されるので、id で見つからなければ同じ名前・同じ場所の品に当てる
+const opItem = (st, o) => st.items.find(i => i.id === o.id) || (o.name ? st.items.find(i => i.name === o.name && (i.at || '') === (o.at || '')) : null);
 export function applyOps(st, ops, turn = 0) {
   for (const o of ops || []) {
     if (o.op === 'money') st.money += Number(o.d) || 0;
     else if (o.op === 'add') addItem(st, o.item);
     else if (o.op === 'qty') {
-      const it = st.items.find(i => i.id === o.id);
+      const it = opItem(st, o);
       if (it) { it.qty += Number(o.d) || 0; if (it.qty <= 0) st.items.splice(st.items.indexOf(it), 1); }
     } else if (o.op === 'patch') {
-      const it = st.items.find(i => i.id === o.id);
+      const it = opItem(st, o);
       if (it) Object.assign(it, o.set);
     } else if (o.op === 'log') pushLog(st, turn, o.text);
   }
@@ -190,7 +226,7 @@ export function rollLoot(st, e, lib = [], what = '') {
       const rar = rollRarity(lvl), named = lib.filter(l => l.rar === rar);
       const l = named.length && Math.random() < 0.5 ? pick(named) : null;
       const item = l
-        ? { id: uid(), name: l.name, qty: 1, cat: l.cat || catLike(e, /遺品|貴重|魔道具/, ''), rar, named: true, ...(l.price ? { val: l.price } : {}) }
+        ? { id: uid(), name: l.name, qty: 1, cat: l.cat || catLike(e, /遺品|貴重|魔道具/, ''), rar, named: true }
         : { id: uid(), name: e.relic, qty: 1, cat: catLike(e, /遺品|貴重|魔道具/, ''), unid: true, rar };
       ops.push({ op: 'add', item }); parts.push(`${item.name}【${rarLabel(rar, e)}】×1`);
       finds.push({ name: item.name, qty: 1, rar, unid: !l, cat: item.cat });
@@ -229,21 +265,21 @@ export function appraiseOps(st, it, e) {
   const val = rollValue(it.rar, depthLevel(st.depth));
   const name = it.name.replace(/^未鑑定の?/, '') || it.name; // 正体はAIが描き、記憶係が名前を付ける
   return {
-    ops: [{ op: 'patch', id: it.id, set: { unid: false, val, name, tbd: true } },{ op: 'log', text: `🔍 ${itemLabel(it, e)} → 査定額 ${fmtMoney(val, e)}` }],
+    ops: [{ op: 'patch', id: it.id, name: it.name, at: it.at || '', set: { unid: false, val, name, tbd: true } },{ op: 'log', text: `🔍 ${itemLabel(it, e)} → 査定額 ${fmtMoney(val, e)}` }],
     text: `*🔍 ${itemLabel(it, e)}を鑑定: 査定額 ${fmtMoney(val, e)}*`,
     card: { plugin: 'status', kind: 'appraise', name: it.name, rar: it.rar, val },
   };
 }
 export function sellOps(it, e, price = it.val) {
   return {
-    ops: [{ op: 'money', d: price }, { op: 'qty', id: it.id, d: -1 }, { op: 'log', text: `💰 ${it.name}を売却 ${signed(price)}${e.currency}` }],
+    ops: [{ op: 'money', d: price }, { op: 'qty', id: it.id, name: it.name, at: it.at || '', d: -1 }, { op: 'log', text: `💰 ${it.name}を売却 ${signed(price)}${e.currency}` }],
     text: `*💰 ${it.name}を売った: ${signed(price)}${e.currency}*`,
     card: { plugin: 'status', kind: 'sell', name: it.name, rar: it.rar || '', val: price },
   };
 }
 export function useOps(it) {
   return {
-    ops: [{ op: 'qty', id: it.id, d: -1 }, { op: 'log', text: `🧪 ${it.name}を使った` }], text: `*🧪 ${it.name}を使った*`,
+    ops: [{ op: 'qty', id: it.id, name: it.name, at: it.at || '', d: -1 }, { op: 'log', text: `🧪 ${it.name}を使った` }], text: `*🧪 ${it.name}を使った*`,
     card: { plugin: 'status', kind: 'use', name: it.name, rar: it.rar || '' },
   };
 }
@@ -255,6 +291,7 @@ export function applyKeeper(st, r, e, turn) {
   const out = [], str = v => (typeof v === 'string' ? v.trim() : ''), int = v => (Number.isFinite(Number(v)) ? Math.round(Number(v)) : 0);
   const arr = v => (Array.isArray(v) ? v : []);
   const log = t => { pushLog(st, turn, t); out.push(t); };
+  let leave = false;
 
   if (int(r.money)) { st.money += int(r.money); log(`所持金 ${signed(int(r.money))}${e.currency}`); }
   for (const x of arr(r.items)) {
@@ -291,6 +328,7 @@ export function applyKeeper(st, r, e, turn) {
   // 生活（拠点・定期の収支・育つ物を先に決めてから、日付を進める）
   for (const x of arr(r.home).slice(0, 1)) {
     if (!str(x?.name)) continue;
+    if (/^(なし|無し|ない)$/.test(str(x.name))) { leave = true; continue; } // 引き払うのは日付を進めたあと（最後の晩の宿代は払う）
     const every = Math.max(0, int(x.every)), rent = Math.max(0, int(x.rent));
     st.home = { name: str(x.name), kind: str(x.kind), rent, every, next: st.day + (every || 0), arrears: false };
     log(`拠点: ${st.home.name}${rent ? `（${fmtMoney(rent, e)}／${every}日）` : ''}`);
@@ -315,12 +353,13 @@ export function applyKeeper(st, r, e, turn) {
     log(`${i >= 0 ? '定期の収支を変更' : '定期の収支'}: ${name} ${signed(rec.amount)}${e.currency}／${rec.every}日`);
   }
   for (const x of arr(r.timers)) {
-    const name = str(x?.name), days = clamp(int(x.days), 1, 365);
+    const name = str(x?.name), days = clamp(int(x?.days), 1, 365);
     if (!name || st.timers.some(t => t.name === name && !t.done)) continue;
     st.timers.push({ id: uid(), name, days, start: st.day, yieldName: str(x.yield_name), yieldQty: Math.max(0, int(x.yield_qty)), cat: str(x.cat), done: false });
     log(`⏳ ${name}（${days}日後）`);
   }
   if (int(r.days) > 0) out.push(...advanceDays(st, clamp(int(r.days), 0, 60), e, turn));
+  if (leave && st.home) { log(`拠点を引き払った: ${st.home.name}`); st.home = null; }
   for (const x of arr(r.quests)) {
     const title = str(x?.title);
     if (!title) continue;
@@ -367,7 +406,10 @@ export function applyKeeper(st, r, e, turn) {
     if (i < 0) log(`仲間に加わった: ${name}`);
     if (str(x.role)) m.role = str(x.role);
     if (int(x.hpmax) > 0) m.hp.max = int(x.hpmax);
-    if (Number.isFinite(Number(x.hp)) && int(x.hp) >= 0) { const v = clamp(int(x.hp), 0, m.hp.max); if (v !== m.hp.v && i >= 0) out.push(`${name} HP ${v}/${m.hp.max}`); m.hp.v = v; }
+    const hpKnown = Number.isFinite(Number(x.hp)) && int(x.hp) >= 0;
+    if (i < 0 && !hpKnown) m.hp.v = m.hp.max; // 加わったばかりで今のHPが分からなければ満タン
+    m.hp.v = Math.min(m.hp.v, m.hp.max);
+    if (hpKnown) { const v = clamp(int(x.hp), 0, m.hp.max); if (v !== m.hp.v && i >= 0) out.push(`${name} HP ${v}/${m.hp.max}`); m.hp.v = v; }
     if (str(x.equip)) m.equip = str(x.equip);
     if (str(x.note)) m.note = str(x.note);
     if (int(x.lv) > 0 && int(x.lv) !== m.lv) { log(`${name} Lv${int(x.lv)}`); m.lv = int(x.lv); }
@@ -495,11 +537,12 @@ export function addXp(st, amount, e, turn) {
 
 /* ---------- お店 ---------- */
 // 相場表「パン 3G／宿代（1泊）50G」→ [{ name, price, service }]。宿代・修理などは品物ではなくサービス
-const SERVICE = /宿|泊|家賃|賃料|修理|交換|治療|定食|建てる|運賃|入場|手数料/;
+const SERVICE = /宿|泊|家賃|賃料|修理|交換|治療|定食|建てる|購入|登録|運賃|入場|手数料/;
+export const RENT = /宿代|宿泊料|家賃|部屋代|賃料|[0-9０-９一二三]泊/; // 生活オンのときお店から外す宿代・家賃（宿泊券・停泊料などの品物は外さない）
 export function parsePrices(text) {
   const out = [];
   for (const part of String(text || '').split(/\n|／|\//)) {
-    const m = part.trim().match(/^(.+?)\s*([0-9][0-9,]*)\s*[^\d\s]{0,3}\s*〜?$/);
+    const m = part.trim().match(/^(.+?)\s*([0-9][0-9,]*)\s*[^\d\s]{0,8}\s*〜?$/); // 単位は G・C・円・ゴールド・クレジットなど
     if (!m) continue;
     const name = m[1].trim(), price = Number(m[2].replace(/,/g, ''));
     if (name && price > 0) out.push({ name, price, service: SERVICE.test(name) });
@@ -552,7 +595,7 @@ export function tradeOps({ buy = [], sell = [], shop = '' }, e) {
   }
   for (const s of sell) {
     total += s.price * s.qty;
-    ops.push({ op: 'qty', id: s.id, d: -s.qty });
+    ops.push({ op: 'qty', id: s.id, name: s.name, at: s.at || '', d: -s.qty });
   }
   ops.push({ op: 'money', d: total });
   if (buy.length) parts.push(`買った ${buy.map(b => `${b.name}×${b.qty}`).join('、')}`);
@@ -567,13 +610,13 @@ export function tradeOps({ buy = [], sell = [], shop = '' }, e) {
 
 /* ---------- スキルのランクと補正 ---------- */
 // ランクの書き方: 入門〜達人 / S〜F / EX・ユニーク・固有 / Lv3・レベル7 などの数字
-const RANKS = [['EX', 5], ['ユニーク', 5], ['固有', 5], ['神', 5], ['極', 5], ['達人', 5], ['上級', 4], ['熟練', 4], ['中級', 3], ['初級', 2], ['入門', 1], ['見習い', 1]];
+const RANKS = [['EX', 5], ['MAX', 5], ['ユニーク', 5], ['固有', 5], ['神', 5], ['極', 5], ['達人', 5], ['上級', 4], ['熟練', 4], ['中級', 3], ['初級', 2], ['入門', 1], ['見習い', 1]];
 const LETTER = { S: 5, A: 4, B: 3, C: 2, D: 1, E: 1, F: 0 };
 export function skillBonus(level) {
   const s = String(level || '').trim();
   const r = RANKS.find(([k]) => s.toUpperCase().includes(k));
   if (r) return r[1];
-  const l = s.match(/(?:^|ランク\s*)([SABCDEF])\+*$/i);
+  const l = s.match(/(?:^|ランク\s*)([SABCDEF])\1*\+*\s*(?:ランク|級)?$/i); // S・SSS・Sランク・S級・ランクA
   if (l) return LETTER[l[1].toUpperCase()];
   const n = Number(s.match(/\d+/)?.[0]);
   return n ? Math.min(5, Math.max(1, Math.round(n / 2))) : 1;
@@ -583,18 +626,21 @@ const STAT_HINTS = [
   [/筋力|STR|腕力/, /腕力|押|持ち上|叩|殴|斬|投げ|壊|運ぶ|組み/],
   [/体力|VIT|耐久|生命/, /耐え|我慢|毒|病|長時間|走り続/],
   [/敏捷|AGI|素早|速さ/, /避|躱|かわ|速|走|跳|隠|忍|逃|追/],
-  [/魔力|INT|知力|知性|MAG/, /魔法|呪文|詠唱|魔|術|知識|解読|調べ/],
+  [/魔力|INT|知力|知性|MAG/, /魔法|魔術|魔力|術式|呪文|詠唱|知識|解読|調べ/], // 「魔」1文字だと魔物・魔族が相手の判定まで魔力になる
   [/器用|DEX|技量/, /解錠|開け|細工|射|罠|作|修理|盗/],
   [/精神|MND|意志|WIS/, /抵抗|恐怖|誘惑|集中|祈/],
   [/魅力|CHA/, /説得|交渉|口説|騙|演技|歌/],
   [/幸運|LUK|^運$/, /運|くじ|偶然|賭/],
 ];
+// 名前として出ているか（単語の一部ではない: レイ → レイピア、アン → アンデッド は別）
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const nameIn = (text, name) => new RegExp(`(?:^|[^ァ-ヶー])${reEsc(name)}(?![ァ-ヶー])`).test(text); // 後読み (?<!) は古い iPhone で使えない
 // ダイス判定の補正（d20 基準。面数に合わせて伸縮）。[{ label, v }]
 // uncapped: 難易度「無双」のとき、補正の上限（各+5）を外す
 export function diceMods(st, what, skillName, sides, e, { uncapped = false } = {}) {
   const mods = [], text = `${what} ${skillName}`, cap = uncapped ? 99 : 5;
   // 仲間が挑む判定（判定文か技能に仲間の名前がある）なら、その仲間のレベルと得意なことで補正する
-  const m = (st.party || []).find(p => p.name && p.name.length > 0 && text.includes(p.name));
+  const m = (st.party || []).find(p => p.name && nameIn(text, p.name));
   if (m) {
     const good = list(m.good).find(g => text.includes(g));
     if (good) mods.push({ label: `${m.name}の得意（${good}）`, v: 3 });
@@ -639,7 +685,7 @@ export function craftRoll(st, picks, wish, skill, e) {
   const sb = skill ? skillBonus(skill.level) : 0;
   const score = d20 + sb + mat * 3 + Math.min(3, Math.floor((qty - 1) / 2));
   const matText = used.map(p => `${p.it.name}×${p.qty}`).join('＋');
-  const consume = p => ({ op: 'qty', id: p.it.id, d: -p.qty });
+  const consume = p => ({ op: 'qty', id: p.it.id, name: p.it.name, at: p.it.at || '', d: -p.qty });
   if (d20 === 1 || score < 7) {
     // 失敗: 素材の半分（切り上げ）を失う
     const lost = used.map(p => ({ ...p, qty: Math.ceil(p.qty / 2) }));

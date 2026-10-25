@@ -9,6 +9,7 @@ import { logLines } from '../engine/memory.js';
 import { ic, openSheet, closeAllSheets, setSheetBody } from '../ui/dom.js';
 
 const entriesOf = chat => (pluginState(chat, 'diary').entries ||= []);
+const busy = new Set(); // 日記を書いている最中のトーク
 
 async function writeDiary(chat) {
   const ctx = chatCtx(chat), list = entriesOf(chat);
@@ -53,8 +54,11 @@ definePlugin({
   fields: [{ key: 'every', label: '日記を書く間隔（ターン）', type: 'number', min: 3, max: 50 }],
 
   async afterReply(chat, msg, cfg) {
-    const last = entriesOf(chat).at(-1)?.turn || 0;
-    if (msg.turn - last >= (Number(cfg.every) || 8)) await writeDiary(chat);
+    // 巻き戻したあとは、消えた未来の日記を数えない。書いている途中なら重ねて書かない
+    const last = entriesOf(chat).filter(d => d.turn <= msg.turn).at(-1)?.turn || 0;
+    if (busy.has(chat.id) || msg.turn - last < (Number(cfg.every) || 8)) return;
+    busy.add(chat.id);
+    try { await writeDiary(chat); } finally { busy.delete(chat.id); }
   },
   menu: chat => [{ label: 'キャラクターの日記', val: `${entriesOf(chat).length}件`, act: 'p:diary:open' }],
 

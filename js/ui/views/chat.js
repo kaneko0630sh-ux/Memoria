@@ -155,7 +155,7 @@ function updateComposer() {
 function flashMem(text, err) {
   const el = document.getElementById('memFlash');
   if (!el) return;
-  el.innerHTML = `${ic('layers', 'xs')}${esc(text)}`;
+  el.innerHTML = `${ic('layers', 'xs')}<span class="mf-t">${esc(text)}</span>`;
   el.classList.toggle('err', !!err);
   el.classList.add('on');
   clearTimeout(el._t);
@@ -317,7 +317,8 @@ defineActions({
     const n = chat.messages.length - chat.messages.indexOf(msg);
     if (!confirm(`このメッセージ以降の${n}件を削除して巻き戻します。よろしいですか？`)) return;
     const r = await rewindTo(chat, msg);
-    if (msg.role === 'user') { S.ui.drafts[chat.id] = txt(msg); const ta = document.getElementById('input'); if (ta) { ta.value = txt(msg); autosize(ta); } }
+    // ボタン操作の結果（🎁 🛒 などのカード）は入力欄に戻さない（送り直しても反映されない文になる）
+    if (msg.role === 'user' && !msg.card && !msg.ops) { S.ui.drafts[chat.id] = txt(msg); const ta = document.getElementById('input'); if (ta) { ta.value = txt(msg); autosize(ta); } }
     renderMessages(chat);
     renderChoices(chat);
     toast(r === 'ok' ? '巻き戻しました（記憶もこの時点へ復元）' : r === 'fail' ? '巻き戻しました。※古すぎるため記憶は戻せませんでした。記憶パネルで確認してください。' : '巻き戻しました', r === 'fail' ? 'warn' : 'ok', 4000);
@@ -381,6 +382,9 @@ defineActions({
   },
   exportChat: el => {
     const chat = chatOf(el), st = getStory(chat.storyId);
-    saveFile(`memoria-talk-${safeName(chat.title)}-${ymd()}.json`, JSON.stringify({ app: 'memoria', version: 3, stories: st ? [st] : [], chats: [chat] }));
+    // このトークで使ったマイプロフィールも一緒に（別の端末で読み込んでも{{user}}が変わらないように）
+    const used = [chat.persona, ...chat.messages.map(m => m.persona)].filter(r => r?.kind === 'mine').map(r => r.id);
+    const personas = S.settings.personas.filter(p => used.includes(p.id));
+    saveFile(`memoria-talk-${safeName(chat.title)}-${ymd()}.json`, JSON.stringify({ app: 'memoria', version: 3, stories: st ? [st] : [], chats: [chat], personas }));
   },
 });

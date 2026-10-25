@@ -16,7 +16,7 @@ export function personaListHTML({ act, story = null, current = null, editIcons =
   const row = (p, kind) => {
     const on = cur.kind === kind && cur.id === p.id;
     const badge = kind === 'mine' && p.id === S.settings.defaultPersona ? '<span class="pill">既定</span>' : '';
-    return `<div class="pr-row ${on ? 'on' : ''}"><button class="pr-main" data-act="${act}" data-kind="${kind}" data-id="${p.id}">${avatarHTML(p, 44)}<span class="grow"><b>${esc(p.name || '（名前なし）')} ${badge}</b><small>${esc(snippet(p.desc)) || '設定なし'}</small></span>${on ? ic('check', 'sm') : ''}</button>${editIcons && kind === 'mine' ? `<button class="icon-btn" data-act="editPersona" data-id="${p.id}" aria-label="編集">${ic('edit', 'sm')}</button>` : ''}</div>`;
+    return `<div class="pr-row ${on ? 'on' : ''}"><button class="pr-main" data-act="${act}" data-kind="${kind}" data-id="${esc(p.id)}">${avatarHTML(p, 44)}<span class="grow"><b>${esc(p.name || '（名前なし）')} ${badge}</b><small>${esc(snippet(p.desc)) || '設定なし'}</small></span>${on ? ic('check', 'sm') : ''}</button>${editIcons && kind === 'mine' ? `<button class="icon-btn" data-act="editPersona" data-id="${esc(p.id)}" aria-label="編集">${ic('edit', 'sm')}</button>` : ''}</div>`;
   };
   const plot = (story?.profiles || []).filter(p => p.name.trim());
   return `<div class="lbl">マイプロフィール</div>

@@ -5,7 +5,7 @@ import { esc, clone, uid, hhmm } from '../../core/util.js';
 import { STYLE_GROUPS, STYLE_SECTIONS, INFOBOX_OPTIONS } from '../../engine/style.js';
 import { parseBlocks, textToItems, itemsToText } from '../../engine/parse.js';
 import { loreFromJSON } from '../../engine/lorebook.js';
-import { RARITY_OPTIONS, newItemData } from '../../core/items.js';
+import { RARITY_OPTIONS, newItemData, rarKey } from '../../core/items.js';
 import { allPlugins, getPlugin, blockOwners } from '../../plugins/registry.js';
 import { readCardFile } from '../../io/porting.js';
 import { ic, avatarHTML, openSheet, closeAllSheets, toast, pickFile, fileToImage, segButtons, draftInput } from '../dom.js';
@@ -94,7 +94,7 @@ function loreTab() {
 function itemCard(e, i) {
   const it = e.item;
   return `<div class="ed-card it-card ${e.on ? '' : 'off'}">
-    <div class="it-top"><button class="it-icon r-${it.rar || 'N'}" data-act="edItemIcon" data-i="${i}" aria-label="アイコン">${it.icon ? `<img src="${esc(it.icon)}" alt="">` : `${ic('image')}<small>アイコン</small>`}</button>
+    <div class="it-top"><button class="it-icon r-${rarKey(it.rar) || 'N'}" data-act="edItemIcon" data-i="${i}" aria-label="アイコン">${it.icon ? `<img src="${esc(it.icon)}" alt="">` : `${ic('image')}<small>アイコン</small>`}</button>
       <div class="grow"><input class="lore-title" data-draft="lore.${i}.title" value="${esc(e.title)}" placeholder="アイテム名（例: 月光苔）"></div>
       <button class="icon-btn" data-act="edRemove" data-list="lore" data-i="${i}" aria-label="削除">${ic('trash', 'sm')}</button></div>
     <div class="grid2"><label class="field"><span>種類</span><input data-draft="lore.${i}.item.cat" value="${esc(it.cat)}" placeholder="例: 素材"></label>

@@ -19,8 +19,11 @@ export function stripQ(s) {
 }
 
 // special: { 見出し名: pluginId }
+// 太字や Markdown の見出しで飾った見出し（**【リーネ】** ／ ### 【ダイス】）も見出しとして読む
+const unwrap = l => l.replace(/^\s*#{1,6}\s*(?=【)/, '').replace(/^\s*([*＊_]{1,3})\s*(【[^】]{1,30}】)\s*\1/, '$2');
+
 export function parseBlocks(text, chars, special = {}) {
-  const lines = String(text || '').replace(/\r/g, '').split('\n');
+  const lines = String(text || '').replace(/\r/g, '').split('\n').map(unwrap);
   const headered = lines.some(l => /^\s*【[^】]{1,30}】/.test(l));
   const main = chars[0]?.name || '';
   const blocks = [];

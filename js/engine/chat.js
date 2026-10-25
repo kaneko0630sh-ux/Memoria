@@ -40,11 +40,23 @@ export async function switchPersona(chat, persona) {
   return true;
 }
 
+// 記憶に取り込み済みの応答を作り直す・選び直すときは、記憶をその応答の前に戻す（次の発言で取り込み直す）
+// 記憶の自動更新がオフなら戻さない（取り込み直す人がいないため）
+function rollbackFor(chat, msg) {
+  if (!S.settings.mem.auto || msg.id > chat.mem.lastId) return;
+  if (restoreMemoryBefore(chat, msg.id) !== 'ok') return;
+  emit('memory:changed', chat);
+  emit('memory:flash', chat, '記憶をこの応答の前に戻しました（次の発言で取り込み直します）');
+}
+
 // onFirst: 本文の最初の文字が届いたとき（届かずに終わったときは最後）に1回だけ呼ぶ
 export async function generate(chat, { mode = 'reply', regenMsg = null, onFirst = null } = {}) {
   if (S.gen) { notify('生成中です'); return; }
   const s = S.settings;
   let target, end, base = '';
+  // 記憶に取り込み済みの応答を作り直す・続けるときは、記憶をその前に戻す（捨てる候補の出来事を残さない。次の確定で取り込み直す）
+  const redo = regenMsg || (mode === 'continue' ? lastDialog(chat) : null);
+  if (redo?.role === 'ai') rollbackFor(chat, redo);
   if (regenMsg) {
     target = regenMsg;
     end = chat.messages.indexOf(target);
@@ -113,8 +125,9 @@ export async function generate(chat, { mode = 'reply', regenMsg = null, onFirst 
   S.gen = null;
   firstDone();
   touch(chat);
-  await saveChat(chat);
-  emit('gen:changed', chat);
+  // 保存に失敗しても画面は「生成中」のまま残さない（気づかないまま遊び続けて消えるのを防ぐ）
+  try { await saveChat(chat); } catch (e) { notify(`保存に失敗しました。ページを再読み込みしてください（${e?.message || e}）`, 'err', 12000); }
+  finally { emit('gen:changed', chat); }
   if (!ok) return;
   if (chat.choices && mode !== 'continue') fetchChoices(chat, target);
   runAfterReply(chat, getStory(chat.storyId), target).then(() => saveChat(chat));
@@ -128,7 +141,7 @@ export async function sendMessage(chat, text, extra = {}) {
   const prevId = chat.messages.at(-1)?.id || 0;
   chat.messages.push({ id: ++chat.seq, role: 'user', swipes: [text], sw: 0, turn: maxTurn(chat) + 1, t: now(), persona: { ...chat.persona }, ...extra });
   touch(chat);
-  saveChat(chat).catch(() => {}); // 書き込みの完了は待たない（保存する内容はこの時点で確定している）
+  saveChat(chat).catch(e => notify(`保存に失敗しました。ページを再読み込みしてください（${e?.message || e}）`, 'err', 12000)); // 書き込みの完了は待たない（保存する内容はこの時点で確定している）
   // 前のターンの記憶処理は、返信が届き始めてから動かす（同じキーへの同時リクエストで返信を待たせない）
   return generate(chat, { mode: 'reply', onFirst: () => commitMemory(chat, prevId) });
 }
@@ -150,6 +163,7 @@ export function swipe(chat, msg, dir) {
   const next = msg.sw + dir;
   if (next < 0) return;
   if (next >= msg.swipes.length) return generate(chat, { regenMsg: msg });
+  rollbackFor(chat, msg); // 選び直した候補で記憶を取り込み直す
   msg.sw = next;
   chat.lastChoices = null;
   saveChat(chat);

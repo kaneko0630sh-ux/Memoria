@@ -1,9 +1,10 @@
 // 読み込み・書き出し・移行・サンプル
-import { S, DEFAULT_SETTINGS, normalizeStory, normalizeChar, normalizeChat, saveStory, saveSettings, migratePersonas } from '../core/store.js';
+import { S, DEFAULT_SETTINGS, normalizeStory, normalizeChar, normalizeChat, saveStory, saveSettings, migratePersonas, newPersona, safeId, sanitizeStory, sanitizeChat } from '../core/store.js';
 import { DB } from '../core/db.js';
 import { uid, now, clone, deepMerge, b64utf8 } from '../core/util.js';
 import { stEntriesToLore } from '../engine/lorebook.js';
 import { sanitizeStyle } from '../engine/style.js';
+import { PROVIDERS } from '../llm/providers.js';
 import { pickFile, fileToImage, toast } from '../ui/dom.js';
 
 /* ---------- キャラクターカード（SillyTavern PNG / JSON） ---------- */
@@ -75,18 +76,18 @@ function memoriaStory(json) {
   });
   const examples = (src.examples || []).map(({ char, ...x }) => ({ ...x, charId: ids[x.charId] || byName[char] || byName[x.charId] || chars[0]?.id || '' }));
   const lore = (src.lore || []).map(e => ({ ...e, keys: splitList(e.keys) }));
-  return normalizeStory({
+  return sanitizeStory(normalizeStory({
     ...clone(src), id: uid(), chars, examples, lore, tags: splitList(src.tags).slice(0, 8), style: sanitizeStyle(src.style || {}),
     cover: src.cover || '', fav: false, draft: false, createdAt: now(), updatedAt: now(),
-  });
+  }));
 }
 
 async function storyFromCard(f) {
   const r = await parseCard(f);
-  return normalizeStory({
+  return sanitizeStory(normalizeStory({
     title: r.char.name, cover: r.image ? await fileToImage(f, 600, 800) : '', description: (r.d.creator_notes || r.d.description || '').replace(/\s+/g, ' ').slice(0, 80),
     tags: (r.d.tags || []).slice(0, 6), chars: [r.char], prompt: r.scenario, opening: r.firstMes, lore: r.lore,
-  });
+  }));
 }
 
 async function saveImported(read) {
@@ -117,6 +118,16 @@ export function importStoryText(text) {
 }
 
 /* ---------- バックアップ ---------- */
+// 読み込んだ設定の数値・真偽値・文字列は既定値の型に揃える（画面の入力欄に埋め込むため）
+function fitTypes(def, val) {
+  for (const k of Object.keys(def)) {
+    const d = def[k], v = val[k];
+    if (typeof d === 'number') val[k] = Number.isFinite(Number(v)) ? Number(v) : d;
+    else if (typeof d === 'boolean') val[k] = typeof v === 'boolean' ? v : d;
+    else if (typeof d === 'string') val[k] = v == null ? d : String(v);
+    else if (d && typeof d === 'object' && !Array.isArray(d)) { if (!v || typeof v !== 'object' || Array.isArray(v)) val[k] = clone(d); else fitTypes(d, v); }
+  }
+}
 export async function importBackupFile() {
   const f = await pickFile('.json,application/json');
   let j;
@@ -124,17 +135,33 @@ export async function importBackupFile() {
   if (j.app !== 'memoria') { toast('Memoria のバックアップファイルではありません', 'err'); return false; }
   const ns = (j.stories || []).length, nc = (j.chats || []).length;
   if (!confirm(`プロット${ns}件・トーク${nc}件を読み込みます。同じIDのデータは上書きされます。よろしいですか？`)) return false;
-  for (const raw of j.stories || []) await saveStory(normalizeStory(raw));
+  for (const raw of j.stories || []) await saveStory(sanitizeStory(normalizeStory(raw)));
   for (const raw of j.chats || []) {
-    const c = normalizeChat(raw), i = S.chats.findIndex(x => x.id === c.id);
+    const c = sanitizeChat(normalizeChat(raw)), i = S.chats.findIndex(x => x.id === c.id);
     if (i >= 0) S.chats[i] = c; else S.chats.push(c);
     await DB.put('chats', c);
   }
   if (j.chars || j.worlds || j.plots) await migrateLegacy(j.chars || [], j.worlds || [], j.plots || []);
   if (j.settings && confirm('設定も読み込みますか？（APIキーが含まれていない場合は現在のキーを残します）')) {
-    const keys = S.settings.keys;
+    const keys = S.settings.keys, mine = S.settings.personas;
     S.settings = deepMerge(DEFAULT_SETTINGS, j.settings);
+    fitTypes(DEFAULT_SETTINGS, S.settings);
+    // 接続先は知っているものだけ（設定画面の属性に入るため）
+    if (!PROVIDERS[S.settings.provider]) S.settings.provider = DEFAULT_SETTINGS.provider;
+    if (S.settings.mem.provider && !PROVIDERS[S.settings.mem.provider]) S.settings.mem.provider = '';
+    for (const k of Object.keys(S.settings.models || {})) if (!PROVIDERS[k]) delete S.settings.models[k];
+    for (const k of Object.keys(S.settings.keys || {})) if (!PROVIDERS[k] || typeof S.settings.keys[k] !== 'string') delete S.settings.keys[k];
     for (const p of Object.keys(keys)) if (!S.settings.keys[p]) S.settings.keys[p] = keys[p];
+    // バックアップのあとに作ったプロフィールは残す（消すと、それを使うトークの{{user}}が変わってしまう）
+    S.settings.personas = (Array.isArray(S.settings.personas) ? S.settings.personas : []).filter(p => p && typeof p === 'object')
+      .map(p => ({ ...newPersona(p), id: safeId(p.id), name: String(p.name ?? ''), desc: String(p.desc ?? ''), avatar: String(p.avatar ?? '') }));
+    for (const p of mine) if (!S.settings.personas.some(x => x.id === p.id)) S.settings.personas.push(p);
+  }
+  // トークの書き出しに付いてくるプロフィールは、まだないものだけ足す（今の設定は置き換えない）
+  for (const p of Array.isArray(j.personas) ? j.personas : []) {
+    if (!p || typeof p !== 'object') continue;
+    const x = { ...newPersona(p), id: safeId(p.id), name: String(p.name ?? ''), desc: String(p.desc ?? ''), avatar: String(p.avatar ?? '') };
+    if (!S.settings.personas.some(q => q.id === x.id)) S.settings.personas.push(x);
   }
   const legacyPersona = S.settings.persona;
   delete S.settings.persona;

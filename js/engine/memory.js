@@ -123,14 +123,30 @@ function pushSnap(chat, at) {
   const last = chat.snaps.at(-1);
   if (last && last.at === at) last.data = d;
   else chat.snaps.push({ at, data: d });
-  while (chat.snaps.length > 15) chat.snaps.shift();
+  // 新しい10件は残し、それより古いものは間隔の詰まったところから間引く（遠くへ巻き戻しても近い時点へ戻せる）
+  while (chat.snaps.length > 20) {
+    let k = 1, gap = Infinity;
+    for (let i = 1; i < chat.snaps.length - 10; i++) { const g = chat.snaps[i].at - chat.snaps[i - 1].at; if (g < gap) { gap = g; k = i; } }
+    chat.snaps.splice(k, 1);
+  }
 }
 // msgId 以降を消したとき、その直前時点の記憶へ戻す。戻り値: none / ok / fail
 export function restoreMemoryBefore(chat, msgId) {
   const m = chat.mem;
   if (m.lastId < msgId) return 'none';
   const snap = chat.snaps.filter(s => s.at <= msgId).at(-1);
-  if (!snap) { m.rev++; return 'fail'; }
+  if (!snap) {
+    m.rev++;
+    // 記憶は戻せなくても、消す会話まであらすじにまとめていたら、その分はあらすじから外して原文を送り直す
+    // （そのままだと、消した未来のあらすじだけがAIに渡り、残った会話が送られない）
+    const msg = chat.messages.find(x => x.id === msgId);
+    if (msg && msgId <= m.coveredId) {
+      m.chronicle = m.chronicle.filter(c => c.to < msg.turn);
+      const lastTo = m.chronicle.at(-1)?.to;
+      m.coveredId = lastTo == null ? 0 : chat.messages.filter(x => isDialog(x) && x.turn <= lastTo && x.id < msgId).at(-1)?.id || 0;
+    }
+    return 'fail';
+  }
   const log = m.log, rev = m.rev + 1;
   chat.mem = clone(snap.data);
   chat.mem.rev = rev;
@@ -287,8 +303,11 @@ ${list}
 </memories>
 
 出力形式: {"entries":[{"text":"...","imp":3,"tag":"event","ents":["..."],"from":["m1","m4"]}]}`;
+  const texts = new Map(items.map(e => [e.id, e.text]));
   const res = await callLLM({ role: 'mem', kind: 'consolidate', demo: items, system: [{ text: macros(CONS_SYS, ctx) }], messages: [{ role: 'user', content: macros(prompt, ctx) }], maxTokens: 8000, schema: CONS_SCHEMA, temperature: 0.3 });
   if (chat.mem.rev !== rev || !S.chats.includes(chat)) return;
+  // 整理している間に、記憶パネルで固定・編集・削除された項目があれば、その結果で上書きしない
+  if (items.some(e => !chat.mem.entries.includes(e) || e.pinned || e.text !== texts.get(e.id))) { memLog(chat, `${label}: 整理中に記憶が変更されたため見送りました`); return; }
   const out = (parseJSON(res.text)?.entries || []).filter(e => e && String(e.text || '').trim());
   if (!out.length) throw new Error(`${label}の記憶の圧縮結果が空でした`);
   const newChars = out.reduce((a, e) => a + String(e.text).trim().length, 0);
@@ -375,7 +394,7 @@ export function rebuildMemory(chat) {
 export function resetMemoryItems(chat) {
   Object.assign(chat.mem, { entries: [], state: '', arc: '', threads: [], rel: [], scene: [], recall: [], loreRecall: [], brief: '' });
   chat.mem.rev++;
-  chat.mem.lastId = Math.max(chat.mem.lastId, chat.messages.at(-1)?.id || 0);
+  // 処理済みの位置は進めない（まだ確定していないボタン操作の結果や、生成中の応答を取りこぼさないため）
   memLog(chat, '記憶項目をすべて消去しました');
 }
 

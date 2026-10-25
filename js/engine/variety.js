@@ -1,17 +1,21 @@
 // 直近のAIの応答で使い回している言い回し・文頭・本心の説明を数え、次の応答で避けさせる（APIは使わない）
 import { txt } from '../core/store.js';
+import { parseBlocks } from './parse.js';
+import { blockOwners } from '../plugins/registry.js';
 
 const RECENT = 6, MIN_REPLIES = 3, MAX_PHRASES = 6;
 const OPENER = /^([^、。！？\s]{1,5})、/; // 「けれど、」「ふと、」など
 // 本心を地の文で説明する書き方
 const SPELL_OUT = /(けれど|しかし|だが|でも|それでも)[、,]?[^。\n]{0,30}(本当は|本心|内心|隠しきれない|滲ん|裏腹|ときめき)|言葉とは裏腹|隠しきれない[^。\n]{0,12}(が|を)/;
 
-const clean = s => s.replace(/^\s*【[^】]*】.*$/gm, '').replace(/[*＊]/g, '');
+// 数えるのは地の文と台詞だけ。【情報】やプラグインのブロック（【鑑定結果】など）は同じ内容が続いて当然なので除く
+const clean = (s, ctx) => parseBlocks(s, ctx.chars, blockOwners(ctx.story)).filter(b => b.type === 'narr' || b.type === 'char')
+  .map(b => b.paras.map(p => p.t).join('\n')).join('\n').replace(/[*＊]/g, '');
 const kanjiKana = s => (s.match(/[一-鿿゠-ヿ]/g) || []).length;
 
 // exclude: 名前・設定の固有名詞・キャラ設定に書かれた口癖など、繰り返して当然の語
 export function repetitionHint(chat, ctx, end = chat.messages.length) {
-  const replies = chat.messages.slice(0, end).filter(m => m.role === 'ai').slice(-RECENT).map(m => clean(txt(m)));
+  const replies = chat.messages.slice(0, end).filter(m => m.role === 'ai').slice(-RECENT).map(m => clean(txt(m), ctx));
   if (replies.length < MIN_REPLIES) return '';
   const st = ctx.story;
   const names = [ctx.user, ...ctx.chars.map(c => c.name), ...(st?.lore || []).flatMap(e => [e.title, ...e.keys])].filter(s => s && s.length > 1);
