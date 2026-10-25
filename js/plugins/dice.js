@@ -19,7 +19,7 @@ definePlugin({
   fields: [{ key: 'sides', label: 'ダイスの面数', type: 'select', options: [['6', '6面'], ['20', '20面'], ['100', '100面']] }],
   blocks: ['ダイス'],
 
-  rules: (ctx, cfg) => `- 戦闘・説得・危険な行動など結果が不確かな山場に限り、応答の最後に【ダイス】ブロックを置いてそこで止める。1行目に「判定: 何を試みるか」、2行目に「目標: 1〜${cfg.sides}の数字（この値以上で成功）」、{{user}}のスキルが関係するなら3行目に「技能: そのスキル名」を書き、成否は書かない。{{user}}の次のメッセージで出目（補正込み）が伝えられるので、それに従って成否を描写する。多用しない。`,
+  rules: (ctx, cfg) => `- 戦闘・説得・危険な行動など結果が不確かな山場に限り、応答の最後に【ダイス】ブロックを置いてそこで止める。1行目に「判定: 何を試みるか」、2行目に「目標: 1〜${cfg.sides}の数字（この値以上で成功）」、{{user}}のスキルが関係するなら3行目に「技能: そのスキル名」を書き、成否は書かない。仲間が挑む判定なら「判定」に仲間の名前を入れる。{{user}}の次のメッセージで出目（補正込み）が伝えられるので、それに従って成否を描写する。多用しない。`,
 
   renderBlock(b, env) {
     const lines = b.paras.map(p => p.t);
@@ -36,7 +36,7 @@ definePlugin({
 
   // 振った結果のカード（吹き出しの代わり）
   renderCard(card) {
-    const crit = card.roll === card.sides ? ' crit' : card.roll === 1 ? ' fumble' : '';
+    const crit = card.roll === card.sides ? ' crit' : card.roll === 1 && !card.ok ? ' fumble' : '';
     return `<div class="lcard dice ${card.ok ? 'ok' : 'ng'}${crit}"><div class="lc-head"><span>🎲 ${esc(card.what || '判定')}</span><small>目標 ${card.target}（${card.sides}面）</small></div>
       <div class="dc-body"><div class="dc-roll">${card.roll}</div>${card.mods.length ? `<div class="dc-mods">${card.mods.map(m => `<span>${esc(m.label)} <b>${signed(m.v)}</b></span>`).join('')}</div>` : ''}
       <div class="dc-total">${card.mods.length ? `合計 <b>${card.total}</b>` : ''}<span class="dc-res">${card.ok ? '成功' : '失敗'}</span></div></div></div>`;
@@ -51,10 +51,12 @@ definePlugin({
       const roll = 1 + Math.floor(Math.random() * sides);
       const mods = collect(getStory(chat.storyId), 'diceMods', chat, what, skill, sides).flat().filter(m => m && m.v);
       const bonus = mods.reduce((a, m) => a + m.v, 0), total = roll + bonus;
-      const ok = roll === sides || (roll !== 1 && total >= target); // 最大の目は必ず成功、1は必ず失敗
+      // 最大の目は必ず成功、1は必ず失敗（難易度「無双」では1でも合計で決まる）
+      const muso = getStory(chat.storyId)?.style?.difficulty === 'muso', fumble = roll === 1 && !muso;
+      const ok = roll === sides || (!fumble && total >= target);
       pluginState(chat, 'dice')[el.dataset.msg] = { roll, total, ok };
       const detail = mods.length ? `出目 ${roll} ${mods.map(m => `${signed(m.v)}（${m.label}）`).join(' ')} ＝ ${total}` : `出目 ${roll}`;
-      sendMessage(chat, `*🎲 ダイスを振った: ${detail}（目標 ${target}）→ ${ok ? '成功' : '失敗'}${roll === sides ? '（会心）' : roll === 1 ? '（大失敗）' : ''}*`,
+      sendMessage(chat, `*🎲 ダイスを振った: ${detail}（目標 ${target}）→ ${ok ? '成功' : '失敗'}${roll === sides ? '（会心）' : fumble ? '（大失敗）' : ''}*`,
         { card: { plugin: 'dice', kind: 'roll', what, target, sides, roll, mods, total, ok } });
     },
   },

@@ -9,6 +9,7 @@ const COMMON = {
   ranks: '', // ランク「冒険者ランク: F」（1行に1つ）
   regions: '', // 地域ごとの相場「王都: 装備品=1.3, 素材=1.2」（1行に1つ）
   party: '', // 最初の仲間「エルナ: 弓使い」（1行に1つ）
+  growthSpeed: 'normal', // 成長の速さ: slow / normal / fast / cheat（model.js の GROWTH）
 };
 
 export const PRESETS = {

@@ -173,8 +173,11 @@ function homeTab(st, e, base) {
 }
 
 function partyTab(st) {
-  return `<div class="st-list">${(st.party || []).map(m => `<button class="st-proj" data-act="${A('form')}" data-kind="member" data-id="${m.id}"><div class="st-row"><span><b>${esc(m.name)}</b>${m.role ? ` <span class="tag">${esc(m.role)}</span>` : ''}</span><b>HP ${m.hp.v}/${m.hp.max}</b></div>${meter(m.hp.v, m.hp.max)}${m.equip || m.note ? `<small>${esc([m.equip, m.note].filter(Boolean).join('／'))}</small>` : ''}</button>`).join('') || '<p class="empty-s">仲間はいません（物語の中で仲間になると、記憶係が自動で記録します）</p>'}</div>
-    <div class="btn-row">${btn('form', `${ic('plus', 'sm')}仲間を追加`, { kind: 'member', id: 'new' })}</div>`;
+  const seen = Object.entries(st.dossier || {}).sort((a, b) => b[1].turn - a[1].turn);
+  return `<div class="st-list">${(st.party || []).map(m => `<button class="st-proj" data-act="${A('form')}" data-kind="member" data-id="${m.id}"><div class="st-row"><span><b>${esc(m.name)}</b> <span class="tag">Lv${m.lv || 1}</span>${m.role ? ` <span class="tag">${esc(m.role)}</span>` : ''}</span><b>HP ${m.hp.v}/${m.hp.max}</b></div>${meter(m.hp.v, m.hp.max)}${m.good || m.equip || m.note ? `<small>${esc([m.good && `得意: ${m.good}`, m.equip, m.note].filter(Boolean).join('／'))}</small>` : ''}</button>`).join('') || '<p class="empty-s">仲間はいません（物語の中で仲間になると、記憶係が自動で記録します）</p>'}</div>
+    <div class="btn-row">${btn('form', `${ic('plus', 'sm')}仲間を追加`, { kind: 'member', id: 'new' })}</div>
+    ${seen.length ? `<div class="lbl st-sub">鑑定した相手 <small>（次に会ったときも同じ強さで描かれます）</small></div>
+    <div class="st-list">${seen.map(([n, d]) => `<details class="st-dossier"><summary><b>${esc(n)}</b><small>T${d.turn}</small></summary>${statusWindowHTML(d.lines)}<div class="btn-row end">${btn('forget', '記録を消す', { name: n }, 'btn sm')}</div></details>`).join('')}</div>` : ''}`;
 }
 
 /* ---------- AIが出す【鑑定結果】（なろう風のステータス画面） ---------- */

@@ -76,21 +76,34 @@ export function initState(e) {
     depth: '', rep: Object.fromEntries(list(e.factions).map(f => [f, 0])),
     lv: 1, xp: 0, shops: {},
     stats: parseStats(e.stats), ranks: Object.fromEntries(parsePairs(e.ranks).filter(([k]) => k)), titles: [],
-    recurring: [], timers: [], party: parseParty(e.party),
+    recurring: [], timers: [], party: parseParty(e.party), dossier: {},
     log: [], prev: null,
   };
 }
 // 古い版で作られた状態に、後から増えた項目を足す
 export function upgrade(st) {
   st.lv ??= 1; st.xp ??= 0; st.shops ||= {};
-  st.stats ||= {}; st.ranks ||= {}; st.titles ||= []; st.recurring ||= []; st.timers ||= []; st.party ||= [];
+  st.stats ||= {}; st.ranks ||= {}; st.titles ||= []; st.recurring ||= []; st.timers ||= []; st.party ||= []; st.dossier ||= {};
+  for (const m of st.party) { m.lv ||= 1; m.xp ||= 0; m.good ??= ''; }
   return st;
+}
+// AIの【鑑定結果】ブロックを読み取る → [{ name, lines }]（次に会ったときも同じ強さで描かれるよう覚えておく）
+export function extractAppraisals(text) {
+  const out = [];
+  const re = /^\s*【鑑定結果】\s*$([\s\S]*?)(?=^\s*【[^】]{1,30}】|$(?![\s\S]))/gm;
+  for (const m of String(text || '').matchAll(re)) {
+    const lines = m[1].split('\n').map(l => l.trim()).filter(l => /^[^:：]{1,16}[:：]/.test(l)).slice(0, 12);
+    const name = (lines.find(l => /^名前\s*[:：]/.test(l)) || '').replace(/^名前\s*[:：]\s*/, '').trim();
+    if (name && lines.length) out.push({ name, lines });
+  }
+  return out;
 }
 // 能力値「筋力:8,敏捷:10」→ { 筋力: 8, 敏捷: 10 }
 export const parseStats = s => Object.fromEntries(parsePairs(s).map(([k, v]) => [k, Number(String(v).replace(/[^\d-]/g, ''))]).filter(([k, v]) => k && Number.isFinite(v)));
 // 仲間「エルナ: 弓使い」→ [{ id, name, role, hp, equip, note }]
 export const parseParty = s => parsePairs(s).filter(([k]) => k).map(([name, role]) => newMember({ name, role }));
-export const newMember = (o = {}) => ({ id: uid(), name: '', role: '', hp: { v: 30, max: 30 }, equip: '', note: '', ...o });
+// 仲間は数字をゆるく持つ: レベル・HP・得意なこと（判定の補正に使う）・装備（文章）
+export const newMember = (o = {}) => ({ id: uid(), name: '', role: '', lv: 1, xp: 0, good: '', hp: { v: 30, max: 30 }, equip: '', note: '', ...o });
 
 export const fmtMoney = (n, e) => `${Math.round(n).toLocaleString()}${e.currency}`;
 export const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(Math.round(n)).toLocaleString();
@@ -357,6 +370,8 @@ export function applyKeeper(st, r, e, turn) {
     if (Number.isFinite(Number(x.hp)) && int(x.hp) >= 0) { const v = clamp(int(x.hp), 0, m.hp.max); if (v !== m.hp.v && i >= 0) out.push(`${name} HP ${v}/${m.hp.max}`); m.hp.v = v; }
     if (str(x.equip)) m.equip = str(x.equip);
     if (str(x.note)) m.note = str(x.note);
+    if (int(x.lv) > 0 && int(x.lv) !== m.lv) { log(`${name} Lv${int(x.lv)}`); m.lv = int(x.lv); }
+    if (str(x.good)) m.good = str(x.good);
   }
   // 能力値・ランク・称号
   for (const x of arr(r.stats)) {
@@ -422,34 +437,58 @@ export function advanceDays(st, n, e, turn) {
 /* ---------- 経験値とレベル ---------- */
 export const needXp = lv => 100 * lv;
 // 経験値を足し、レベルアップしたらゲージの最大値を伸ばして全快させる。st.lvup に演出用の情報を残す
+// 成長の速さ: 経験値の倍率と、レベルアップでの伸びの倍率（数字は厳密にしない。遊び方の好みに合わせるためのつまみ）
+export const GROWTH = {
+  slow: { label: 'ゆっくり', xp: 0.5, grow: 1 },
+  normal: { label: '普通', xp: 1, grow: 1 },
+  fast: { label: '早い', xp: 2, grow: 1.5 },
+  cheat: { label: 'チート', xp: 5, grow: 3 },
+};
+const growthOf = e => GROWTH[e.growthSpeed] || GROWTH.normal;
+const amountOf = s => parsePairs(s).map(([n, v]) => [n, Number(String(v).replace(/[^\d-]/g, '')) || 0]);
+const scaled = (d, mul) => (d > 0 ? Math.max(1, Math.round(d * mul)) : d);
+
 export function addXp(st, amount, e, turn) {
-  const out = [];
+  const out = [], G = growthOf(e);
+  amount = Math.max(1, Math.round(amount * G.xp));
   st.xp += amount;
   out.push(`経験値 +${amount}`);
-  const from = st.lv, grow = parsePairs(e.growth).map(([n, v]) => [n, Number(String(v).replace(/[^\d-]/g, '')) || 0]);
-  const gains = {};
-  for (let guard = 0; st.xp >= needXp(st.lv) && guard < 20; guard++) {
+  const from = st.lv, gains = {};
+  for (let guard = 0; st.xp >= needXp(st.lv) && guard < 50; guard++) {
     st.xp -= needXp(st.lv);
     st.lv++;
-    for (const [n, d] of grow) {
+    for (const [n, d] of amountOf(e.growth)) {
       const g = st.gauges[n];
       if (!g || !d) continue;
-      g.max += d; g.v = g.max;
-      gains[n] = (gains[n] || 0) + d;
+      const add = scaled(d, G.grow);
+      g.max += add; g.v = g.max;
+      gains[n] = (gains[n] || 0) + add;
     }
   }
   if (st.lv > from) {
     // 能力値の成長（基本の伸び＋ときどきアプリのサイコロで1多く伸びる）
-    for (const [n, d] of parsePairs(e.statGrowth).map(([k, v]) => [k, Number(String(v).replace(/[^\d-]/g, '')) || 0])) {
+    for (const [n, d] of amountOf(e.statGrowth)) {
       if (!(n in st.stats) || !d) continue;
       let add = 0;
-      for (let l = from; l < st.lv; l++) add += d + (Math.random() < 0.3 ? 1 : 0);
+      for (let l = from; l < st.lv; l++) add += scaled(d, G.grow) + (Math.random() < 0.3 ? 1 : 0);
       st.stats[n] += add;
       gains[n] = (gains[n] || 0) + add;
     }
     st.lvup = { from, to: st.lv, gains, turn };
     pushLog(st, turn, `⭐ レベルアップ Lv${from} → Lv${st.lv}`);
     out.push(`⭐ レベルアップ Lv${st.lv}`);
+  }
+  // 仲間もゆるく一緒に育つ（{{user}}がもらった経験値の7割。上がるとHPの最大が少し伸びて全快）
+  for (const m of st.party || []) {
+    m.lv ||= 1; m.xp ||= 0;
+    m.xp += Math.round(amount * 0.7);
+    const mfrom = m.lv;
+    for (let guard = 0; m.xp >= needXp(m.lv) && guard < 50; guard++) {
+      m.xp -= needXp(m.lv);
+      m.lv++;
+      m.hp.max += scaled(3, G.grow); m.hp.v = m.hp.max;
+    }
+    if (m.lv > mfrom) { pushLog(st, turn, `${m.name} Lv${mfrom} → Lv${m.lv}`); out.push(`${m.name} Lv${m.lv}`); }
   }
   return out;
 }
@@ -551,26 +590,40 @@ const STAT_HINTS = [
   [/幸運|LUK|^運$/, /運|くじ|偶然|賭/],
 ];
 // ダイス判定の補正（d20 基準。面数に合わせて伸縮）。[{ label, v }]
-export function diceMods(st, what, skillName, sides, e) {
-  const mods = [], text = `${what} ${skillName}`;
+// uncapped: 難易度「無双」のとき、補正の上限（各+5）を外す
+export function diceMods(st, what, skillName, sides, e, { uncapped = false } = {}) {
+  const mods = [], text = `${what} ${skillName}`, cap = uncapped ? 99 : 5;
+  // 仲間が挑む判定（判定文か技能に仲間の名前がある）なら、その仲間のレベルと得意なことで補正する
+  const m = (st.party || []).find(p => p.name && p.name.length > 0 && text.includes(p.name));
+  if (m) {
+    const good = list(m.good).find(g => text.includes(g));
+    if (good) mods.push({ label: `${m.name}の得意（${good}）`, v: 3 });
+    if ((m.lv || 1) > 1) mods.push({ label: `${m.name} Lv${m.lv}`, v: Math.min(cap, Math.floor((m.lv - 1) / 2)) });
+    if (m.hp.max && m.hp.v / m.hp.max < 0.3) mods.push({ label: `${m.name}のHPが少ない`, v: -2 });
+    return scaleMods(mods, sides);
+  }
   const sk = st.skills.find(k => skillName && (k.name === skillName || skillName.includes(k.name) || k.name.includes(skillName)))
     || st.skills.find(k => k.name.length > 1 && text.includes(k.name));
-  if (sk) mods.push({ label: `${sk.name}${sk.level ? `（${sk.level}）` : ''}`, v: skillBonus(sk.level) });
+  if (sk) mods.push({ label: `${sk.name}${sk.level ? `（${sk.level}）` : ''}`, v: uncapped ? skillBonus(sk.level) * 2 : skillBonus(sk.level) });
   // 能力値（10を基準に、2ごとに±1。−2〜+5）
   for (const [statRe, actRe] of STAT_HINTS) {
     const key = Object.keys(st.stats || {}).find(k => statRe.test(k));
     if (!key || !actRe.test(what)) continue;
-    const v = Math.max(-2, Math.min(5, Math.floor((st.stats[key] - 10) / 2)));
+    const v = Math.max(-2, Math.min(cap, Math.floor((st.stats[key] - 10) / 2)));
     if (v) mods.push({ label: `${key} ${st.stats[key]}`, v });
     break;
   }
-  if (e.xp === 'on' && st.lv > 1) mods.push({ label: `Lv${st.lv}`, v: Math.min(5, Math.floor((st.lv - 1) / 2)) });
+  if (e.xp === 'on' && st.lv > 1) mods.push({ label: `Lv${st.lv}`, v: Math.min(cap, Math.floor((st.lv - 1) / 2)) });
   if (/攻撃|戦|斬|撃|射|殴|突|防|守|避|受け/.test(what)) {
     const gear = Object.entries(st.equip).filter(([slot]) => /武器|防具|盾/.test(slot)).map(([, v]) => v);
     if (gear.length) mods.push({ label: `装備（${gear.join('・')}）`, v: 1 });
   }
   const g = Object.entries(st.gauges)[0];
-  if (g && g[1].max && g[1].v / g[1].max < 0.3) mods.push({ label: `${g[0]}が少ない`, v: -2 });
+  if (g && g[1].max && g[1].v / g[1].max < 0.3 && !uncapped) mods.push({ label: `${g[0]}が少ない`, v: -2 });
+  return scaleMods(mods, sides);
+}
+// d20 基準の補正を面数に合わせて伸縮
+function scaleMods(mods, sides) {
   const scale = Number(sides) / 20;
   return mods.map(m => ({ ...m, v: m.v === 0 ? 0 : Math.sign(m.v) * Math.max(1, Math.round(Math.abs(m.v) * scale)) })).filter(m => m.v);
 }

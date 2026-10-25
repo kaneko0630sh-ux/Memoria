@@ -15,7 +15,7 @@ import { libraryOf, findLibItem } from '../../core/items.js';
 import { sheetHTML, itemSheetHTML, barHTML, formHTML, cardHTML, noteHTML, shopHTML, craftHTML, lootBlockHTML, appraiseBlockHTML, statusWindowHTML, peekHTML } from './view.js';
 import { callLLM } from '../../llm/providers.js';
 import { parseJSON } from '../../core/util.js';
-import { chatCtx, macros } from '../../core/store.js';
+import { chatCtx, macros, txt } from '../../core/store.js';
 
 const ID = 'status';
 const cfgOf = chat => effective(pluginCfg(getStory(chat.storyId), getPlugin(ID)));
@@ -66,7 +66,7 @@ const decorated = (chat, st) => { const story = getStory(chat.storyId); return {
 const dropLib = story => libraryOf(story).filter(l => l.item.drop).map(l => ({ name: l.title, cat: l.item.cat, rar: l.item.rar, price: Number(l.item.price) || 0 }));
 
 /* ---------- AIに渡す文 ---------- */
-function statusText(st, e, { ids = false, turn = 0 } = {}) {
+function statusText(st, e, { ids = false, turn = 0, recent = '' } = {}) {
   const L = [];
   const g = Object.entries(st.gauges).map(([n, x]) => `${n} ${x.v}/${x.max}`).join('・');
   const lv = e.xp === 'on' ? `｜Lv${st.lv}（次のレベルまで経験値 ${M.needXp(st.lv) - st.xp}）` : '';
@@ -86,7 +86,10 @@ function statusText(st, e, { ids = false, turn = 0 } = {}) {
   const ranks = Object.entries(st.ranks || {});
   if (ranks.length || st.titles?.length) L.push(`${ranks.map(([k, v]) => `${k}: ${v}`).join('、')}${st.titles?.length ? `${ranks.length ? '｜' : ''}称号: ${st.titles.join('、')}` : ''}`);
   if (st.rankup && st.rankup.turn >= turn - 1) L.push(`直前にランクが上がった（${st.rankup.name} ${st.rankup.from || '—'} → ${st.rankup.to}）`);
-  if (st.party?.length) L.push(`仲間: ${st.party.map(m => `${m.name}${m.role ? `（${m.role}）` : ''} HP ${m.hp.v}/${m.hp.max}${m.equip ? `・${m.equip}` : ''}`).join('、')}`);
+  if (st.party?.length) L.push(`仲間: ${st.party.map(m => `${m.name}${m.role ? `（${m.role}）` : ''} Lv${m.lv || 1} HP ${m.hp.v}/${m.hp.max}${m.good ? `・得意: ${m.good}` : ''}${m.equip ? `・${m.equip}` : ''}`).join('、')}`);
+  // 前に鑑定した相手が最近の会話に出ていれば、その時の結果（同じ強さで描くため）
+  const seen = Object.entries(st.dossier || {}).filter(([n]) => recent.includes(n)).slice(0, 3);
+  for (const [n, d] of seen) L.push(`前に鑑定した${n}: ${d.lines.filter(l => !/^名前\s*[:：]/.test(l)).join('／')}`);
   if (e.life === 'on') {
     if (st.recurring?.length) L.push(`定期の収支: ${st.recurring.map(r => `${r.name} ${M.signed(r.amount)}${e.currency}／${r.every}日（次 ${r.next}日目）`).join('、')}`);
     const waiting = (st.timers || []).filter(t => !t.done);
@@ -132,7 +135,7 @@ function keeperPrompt(chat, ctx, cfg) {
 - timers: 植えた・仕込んだ・注文したなど、何日か後にできあがる物（name: 例 小麦畑、days: 何日後、yield_name: できる物、yield_qty: だいたいの量、cat）。できあがりはアプリが日付で処理する` : ''}${exp || String(e.regions).trim() ? `
 - depth: 現在地が変わったときだけ、新しい場所（例: 下層B4、王都の市場、辺境の村）。変わらなければ空` : ''}${exp ? `
 - rep: 勢力の評判の増減（faction: ${M.list(e.factions).join('／') || '本文に出た勢力'}、delta: -30〜30）` : ''}
-- party: 仲間（{{user}}と行動を共にする人物）の加入・離脱・変化（name、status: 加入／離脱／更新、role: 役割、hp: 今のHP（分からなければ-1）、hpmax（分からなければ0）、equip: 装備の要約、note）${Object.keys(base(chat, e).stats || {}).length ? `
+- party: 仲間（{{user}}と行動を共にする人物）の加入・離脱・変化（name、status: 加入／離脱／更新、role: 役割、lv: 物語でレベルが明かされたら（なければ0。ふだんの成長はアプリが行う）、good: 得意なこと（例: 弓, 索敵, 料理。分かったときだけ）、hp: 今のHP（分からなければ-1）、hpmax（分からなければ0）、equip: 装備の要約、note）${Object.keys(base(chat, e).stats || {}).length ? `
 - stats: {{user}}の能力値が物語の中で変わったとき（name、value。${Object.keys(base(chat, e).stats).join('、')}）。レベルアップでの伸びはアプリが行うので書かない` : ''}${String(e.ranks).trim() ? `
 - ranks: ランクが上がった・変わったとき（name、value。例: 冒険者ランク / E）
 - titles: 新しく得た称号` : ''}${e.xp === 'on' ? `
@@ -170,7 +173,7 @@ function keeperSchema(cfg) {
   });
   if (e.explore === 'on' || String(e.regions).trim()) props.depth = s;
   if (e.explore === 'on') props.rep = arr(obj({ faction: s, delta: i }));
-  props.party = arr(obj({ name: s, status: { type: 'string', enum: ['加入', '離脱', '更新'] }, role: s, hp: i, hpmax: i, equip: s, note: s }));
+  props.party = arr(obj({ name: s, status: { type: 'string', enum: ['加入', '離脱', '更新'] }, role: s, lv: i, good: s, hp: i, hpmax: i, equip: s, note: s }));
   if (M.parseStats(e.stats) && Object.keys(M.parseStats(e.stats)).length) props.stats = arr(obj({ name: s, value: i }));
   if (String(e.ranks).trim()) Object.assign(props, { ranks: arr(obj({ name: s, value: s })), titles: arr(s) });
   if (e.xp === 'on') props.xp = i;
@@ -220,13 +223,14 @@ const FORMS = {
     title: '仲間',
     fields: (st, e, id) => { const m = st.party.find(x => x.id === id) || {}; return [
       { name: 'name', label: '名前', value: m.name }, { name: 'role', label: '役割（例: 弓使い、回復役）', value: m.role },
+      { name: 'lv', label: 'レベル', type: 'number', value: m.lv ?? 1 }, { name: 'good', label: '得意なこと（例: 弓, 索敵。判定の補正になる）', value: m.good },
       { name: 'hp', label: 'HP', type: 'number', value: m.hp?.v ?? 30 }, { name: 'hpmax', label: 'HPの最大', type: 'number', value: m.hp?.max ?? 30 },
       { name: 'equip', label: '装備（例: 長弓・革鎧）', value: m.equip }, { name: 'note', label: 'メモ', value: m.note },
     ]; },
     save: (st, v, id) => {
       if (!v.name.trim()) return '';
       const i = st.party.findIndex(x => x.id === id), max = Math.max(1, num(v.hpmax));
-      const m = M.newMember({ id: i >= 0 ? st.party[i].id : uid(), name: v.name.trim(), role: v.role.trim(), hp: { v: Math.max(0, Math.min(max, num(v.hp))), max }, equip: v.equip.trim(), note: v.note.trim() });
+      const m = M.newMember({ id: i >= 0 ? st.party[i].id : uid(), name: v.name.trim(), role: v.role.trim(), lv: Math.max(1, num(v.lv)), xp: i >= 0 ? st.party[i].xp || 0 : 0, good: v.good.trim(), hp: { v: Math.max(0, Math.min(max, num(v.hp))), max }, equip: v.equip.trim(), note: v.note.trim() });
       if (i >= 0) st.party[i] = m; else st.party.push(m);
       return `仲間: ${m.name}`;
     },
@@ -454,6 +458,7 @@ definePlugin({
     { key: 'life', label: '生活（拠点・家賃・建設・依頼・日付）', type: 'select', options: [['', 'ひな型どおり'], ['on', '使う'], ['off', '使わない']] },
     { key: 'explore', label: '探索（現在地・戦利品・鑑定・評判）', type: 'select', options: [['', 'ひな型どおり'], ['on', '使う'], ['off', '使わない']] },
     { key: 'xp', label: '経験値とレベル', type: 'select', options: [['', 'ひな型どおり'], ['on', '使う'], ['off', '使わない']] },
+    { key: 'growthSpeed', label: '成長の速さ', type: 'select', options: [['', 'ひな型どおり（普通）'], ...Object.entries(M.GROWTH).map(([k, g]) => [k, `${g.label}（経験値×${g.xp}・伸び×${g.grow}）`])], hint: '無双したいならチート、じっくり育てたいならゆっくり' },
     { key: 'growth', label: 'レベルアップで伸びるゲージ（名前:+量）', type: 'text', ph: c => effective(c).growth },
     { key: 'stats', label: '能力値（名前:値、カンマ区切り。空なら使わない）', type: 'text', ph: c => effective(c).stats || '例: 筋力:8,敏捷:10,魔力:12' },
     { key: 'statGrowth', label: 'レベルアップで伸びる能力値（名前:+量）', type: 'text', ph: c => effective(c).statGrowth || '例: 筋力:+1,魔力:+2' },
@@ -479,8 +484,8 @@ definePlugin({
 - 🔍 の鑑定結果・🔨 の作成結果は、ランク（と査定額）に見合う出来として描く。🛒 の売買は店の人物とのやり取りとして描く${e.xp === 'on' ? `
 - <status> に「直前にレベルアップした」とあれば、成長を実感する一瞬を短く描く（数値は書かない）` : ''}${e.life === 'on' ? `
 - 日付が進むときは本文で分かるように描く（翌朝、三日後など）。家賃・宿代の支払い、定期の収入・支出（給金・売上など）、建設の進み、育つ物のできあがりはアプリが日付に合わせて処理するので、本文では給金を受け取る・売上を数える・収穫するといった場面として描き、金額や量の計算はしない` : ''}
-- <status> の仲間は{{user}}と行動を共にする人物。仲間の行動・HP・装備の描写を <status> に合わせる${Object.keys(M.parseStats(e.stats)).length || /鑑定/.test(e.skills) ? `
-- {{user}}が人物や魔物を鑑定したら（👁 の行や、鑑定する描写）、応答の中に【鑑定結果】ブロックを置き、対象の「名前・種族・レベル・HP・主な能力値・スキル・状態」を1行に1つ「項目: 値」で書く。{{user}}の鑑定スキルが低いうちは一部を「？？？」にしてよい` : ''}${String(e.ranks).trim() ? `
+- <status> の仲間は{{user}}と行動を共にする人物。仲間の行動・HP・装備の描写を <status> に合わせ、レベルと得意なことに見合った活躍をさせる${Object.keys(M.parseStats(e.stats)).length || /鑑定/.test(e.skills) ? `
+- {{user}}が人物や魔物を鑑定したら（👁 の行や、鑑定する描写）、応答の中に【鑑定結果】ブロックを置き、対象の「名前・種族・レベル・HP・主な能力値・スキル・状態」を1行に1つ「項目: 値」で書く。{{user}}の鑑定スキルが低いうちは一部を「？？？」にしてよい。<status> に「前に鑑定した〇〇」があれば、その強さと矛盾させない（その後の成長や負傷は描いてよい）` : ''}${String(e.ranks).trim() ? `
 - ランクや称号が上がったら（<status> に「直前にランクが上がった」）、周りの反応を短く描く` : ''}${String(e.regions).trim() ? `
 - 町や地域によって物の値段は違う。<status> の「この土地の相場」に合わせる` : ''}${e.explore === 'on' ? `
 - 深い場所ほど危険で実入りがよい。<status> の危険度に合わせる。⚠ の気配が出たら、危険（敵・罠・崩落など）を登場させる
@@ -490,7 +495,7 @@ definePlugin({
 ${String(e.prices).trim()}` : ''}`;
   },
 
-  context: (ctx, chat, cfg) => `<status>\n${statusText(decorated(chat, view(chat, effective(cfg))), effective(cfg), { turn: maxTurn(chat) })}\n</status>`,
+  context: (ctx, chat, cfg) => `<status>\n${statusText(decorated(chat, view(chat, effective(cfg))), effective(cfg), { turn: maxTurn(chat), recent: chat.messages.slice(-6).map(txt).join('\n') })}\n</status>`,
 
   memory: {
     key: 'status',
@@ -501,6 +506,8 @@ ${String(e.prices).trim()}` : ''}`;
       for (const m of batch) if (m.ops?.[ID]) M.applyOps(st, m.ops[ID], m.turn);
       const before = M.snapshot(st);
       const notes = M.applyKeeper(st, r, e, batch.at(-1).turn);
+      // AIが書いた【鑑定結果】は相手ごとに覚えておく（次に会ったときも同じ強さで描く）
+      for (const m of batch) if (m.role === 'ai') for (const a of M.extractAppraisals(txt(m))) st.dossier[a.name] = { lines: a.lines, turn: m.turn };
       // 読み取った変化は、そのやり取りのAIの応答の下にカードで添える
       const reply = batch.filter(m => m.role === 'ai').at(-1);
       const lvup = st.lvup?.turn === batch.at(-1).turn ? st.lvup : null, rankup = st.rankup?.turn === batch.at(-1).turn ? st.rankup : null;
@@ -512,7 +519,8 @@ ${String(e.prices).trim()}` : ''}`;
   },
 
   // ダイスプラグインの判定に、スキル・レベル・装備・負傷の補正を出す
-  diceMods: (chat, what, skill, sides, cfg) => M.diceMods(view(chat, effective(cfg)), what, skill, sides, effective(cfg)),
+  // 難易度「無双」では上限なし（能力値もスキルもそのまま効く）
+  diceMods: (chat, what, skill, sides, cfg) => M.diceMods(view(chat, effective(cfg)), what, skill, sides, effective(cfg), { uncapped: getStory(chat.storyId)?.style?.difficulty === 'muso' }),
   renderCard: (card, env, cfg) => cardHTML(card, effective(cfg), env, name => findLibItem(env.ctx?.story, name)?.item.icon || ''),
   renderNote: (note, env, cfg) => noteHTML(note, effective(cfg)),
   bar: (chat, cfg) => (cfg.bar === 'off' ? '' : barHTML(view(chat, effective(cfg)), effective(cfg))),
@@ -652,6 +660,10 @@ ${String(e.prices).trim()}` : ''}`;
       edit(chat, st => F.save(st, vals, el.dataset.id, cfgOf(chat)));
       closeSheet(w);
       closeSheet(sheetById('status-item'));
+    },
+    forget(el) {
+      const chat = curChat(), n = el.dataset.name;
+      edit(chat, st => (st.dossier?.[n] ? (delete st.dossier[n], `鑑定の記録を消去: ${n}`) : ''));
     },
     remove(el) {
       const chat = curChat(), F = FORMS[el.dataset.kind];
